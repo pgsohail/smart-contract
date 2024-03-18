@@ -2,6 +2,7 @@
 
 use guild_sc::unbond_token::UnbondTokenModule;
 use guild_sc::user_actions::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule;
+use guild_sc::FarmStaking;
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
@@ -25,7 +26,6 @@ use guild_sc::user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModul
 use guild_sc::user_actions::stake_farm::StakeFarmModule;
 use guild_sc::user_actions::unbond_farm::UnbondFarmModule;
 use guild_sc::user_actions::unstake_farm::UnstakeFarmModule;
-use guild_sc::*;
 use pausable::{PausableModule, State};
 
 pub static REWARD_TOKEN_ID: &[u8] = b"RIDE-abcdef"; // reward token ID
