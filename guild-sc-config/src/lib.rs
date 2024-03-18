@@ -37,7 +37,7 @@ pub trait GuildScConfig {
     #[init]
     fn init(&self) {}
 
-    /// Pairs of (min_stake, max_stake, apr)
+    /// Pairs of (min_stake, max_stake, apr, compounded_apr)
     /// APR is scaled by two decimals, i.e. 10_000 is 100%
     #[only_owner]
     #[endpoint(addGuildMasterTiers)]
@@ -68,7 +68,7 @@ pub trait GuildScConfig {
         self.set_apr(&mut tiers_mapper, reward_tier);
     }
 
-    /// Pairs of (min_stake, max_stake, apr)
+    /// Pairs of (min_stake, max_stake, apr, compounded_apr)
     /// APR is scaled by two decimals, i.e. 10_000 is 100%
     #[only_owner]
     #[endpoint(addUserTiers)]
