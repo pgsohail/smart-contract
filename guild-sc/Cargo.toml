@@ -1,0 +1,114 @@
+[package]
+name = "guild-sc"
+version = "0.0.0"
+authors = ["MultiversX <contact@multiversx.com>"]
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies.farm]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.farm-boosted-yields]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.weekly-rewards-splitting]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.week-timekeeping]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.energy-query]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.config]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.farm_base_impl]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.farm_token]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.rewards]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.events]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.contexts]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.utils]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.token_send]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.pausable]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.permissions_module]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.sc_whitelist_module]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.math]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.energy-factory]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.mergeable]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.fixed-supply-token]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.pair]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.common_structs]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.common_errors]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "f7940f4"
+
+[dependencies.multiversx-sc]
+version = "=0.47.5"
+features = ["esdt-token-payment-legacy-decode"]
+
+[dependencies.multiversx-sc-modules]
+version = "=0.47.5"
+
+[dev-dependencies]
+num-bigint = "0.4.2"
+
+[dev-dependencies.multiversx-sc-scenario]
+version = "=0.47.5"
