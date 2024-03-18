@@ -2,7 +2,7 @@
 
 pub mod farm_staking_setup;
 use farm_staking_setup::*;
-use guild_sc::{
+use guild_sc::user_actions::{
     claim_stake_farm_rewards::ClaimStakeFarmRewardsModule, stake_farm::StakeFarmModule,
     unstake_farm::UnstakeFarmModule,
 };

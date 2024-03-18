@@ -15,16 +15,11 @@ use token_attributes::StakingFarmTokenAttributes;
 use crate::custom_rewards::MAX_MIN_UNBOND_EPOCHS;
 
 pub mod base_impl_wrapper;
-pub mod claim_only_boosted_staking_rewards;
-pub mod claim_stake_farm_rewards;
-pub mod compound_stake_farm_rewards;
 pub mod custom_rewards;
 pub mod farm_token_roles;
-pub mod stake_farm;
 pub mod token_attributes;
-pub mod unbond_farm;
 pub mod unbond_token;
-pub mod unstake_farm;
+pub mod user_actions;
 
 #[multiversx_sc::contract]
 pub trait FarmStaking:
@@ -46,12 +41,12 @@ pub trait FarmStaking:
     + farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
     + farm_token_roles::FarmTokenRolesModule
-    + stake_farm::StakeFarmModule
-    + claim_stake_farm_rewards::ClaimStakeFarmRewardsModule
-    + compound_stake_farm_rewards::CompoundStakeFarmRewardsModule
-    + unstake_farm::UnstakeFarmModule
-    + unbond_farm::UnbondFarmModule
-    + claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
+    + user_actions::stake_farm::StakeFarmModule
+    + user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModule
+    + user_actions::compound_stake_farm_rewards::CompoundStakeFarmRewardsModule
+    + user_actions::unstake_farm::UnstakeFarmModule
+    + user_actions::unbond_farm::UnbondFarmModule
+    + user_actions::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + unbond_token::UnbondTokenModule
     + farm_boosted_yields::FarmBoostedYieldsModule
     + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
@@ -69,7 +64,7 @@ pub trait FarmStaking:
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
         max_apr: BigUint,
-        min_unbond_epochs: u64,
+        min_unbond_epochs: Epoch,
         owner: ManagedAddress,
         first_week_start_epoch: Epoch,
         admins: MultiValueEncoded<ManagedAddress>,

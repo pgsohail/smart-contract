@@ -1,7 +1,7 @@
 #![allow(deprecated)]
 
-use guild_sc::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule;
 use guild_sc::unbond_token::UnbondTokenModule;
+use guild_sc::user_actions::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule;
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
@@ -19,12 +19,12 @@ use energy_query::{Energy, EnergyQueryModule};
 use farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule;
 use farm_boosted_yields::FarmBoostedYieldsModule;
 use farm_token::FarmTokenModule;
-use guild_sc::claim_stake_farm_rewards::ClaimStakeFarmRewardsModule;
 use guild_sc::custom_rewards::CustomRewardsModule;
-use guild_sc::stake_farm::StakeFarmModule;
 use guild_sc::token_attributes::StakingFarmTokenAttributes;
-use guild_sc::unbond_farm::UnbondFarmModule;
-use guild_sc::unstake_farm::UnstakeFarmModule;
+use guild_sc::user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModule;
+use guild_sc::user_actions::stake_farm::StakeFarmModule;
+use guild_sc::user_actions::unbond_farm::UnbondFarmModule;
+use guild_sc::user_actions::unstake_farm::UnstakeFarmModule;
 use guild_sc::*;
 use pausable::{PausableModule, State};
 
