@@ -13,14 +13,21 @@ use guild_sc::{
 
 #[test]
 fn test_farm_setup() {
-    let _ = FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let _ = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 }
 
 #[test]
 fn test_enter_farm() {
     DebugApi::dummy();
-    let mut farm_setup =
-        FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
@@ -31,8 +38,11 @@ fn test_enter_farm() {
 #[test]
 fn test_unstake_farm() {
     DebugApi::dummy();
-    let mut farm_setup =
-        FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
@@ -70,8 +80,11 @@ fn test_unstake_farm() {
 #[test]
 fn test_claim_rewards() {
     DebugApi::dummy();
-    let mut farm_setup =
-        FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
@@ -98,15 +111,18 @@ fn test_claim_rewards() {
     farm_setup.check_farm_token_supply(farm_in_amount);
 }
 
-fn steps_enter_farm_twice<FarmObjBuilder, EnergyFactoryBuilder>(
+fn steps_enter_farm_twice<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>(
     farm_builder: FarmObjBuilder,
     energy_factory_builder: EnergyFactoryBuilder,
-) -> FarmStakingSetup<FarmObjBuilder, EnergyFactoryBuilder>
+    config_builder: ConfigScBuilder,
+) -> FarmStakingSetup<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>
 where
     FarmObjBuilder: 'static + Copy + Fn() -> guild_sc::ContractObj<DebugApi>,
     EnergyFactoryBuilder: 'static + Copy + Fn() -> energy_factory::ContractObj<DebugApi>,
+    ConfigScBuilder: 'static + Copy + Fn() -> guild_sc_config::ContractObj<DebugApi>,
 {
-    let mut farm_setup = FarmStakingSetup::new(farm_builder, energy_factory_builder);
+    let mut farm_setup =
+        FarmStakingSetup::new(farm_builder, energy_factory_builder, config_builder);
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
@@ -147,14 +163,21 @@ where
 #[test]
 fn test_enter_farm_twice() {
     DebugApi::dummy();
-    let _ = steps_enter_farm_twice(guild_sc::contract_obj, energy_factory::contract_obj);
+    let _ = steps_enter_farm_twice(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 }
 
 #[test]
 fn test_exit_farm_after_enter_twice() {
     DebugApi::dummy();
-    let mut farm_setup =
-        steps_enter_farm_twice(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = steps_enter_farm_twice(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
     let farm_in_amount = 100_000_000;
     let second_farm_in_amount = 200_000_000;
 
@@ -180,8 +203,11 @@ fn test_exit_farm_after_enter_twice() {
 #[test]
 fn test_unbond() {
     DebugApi::dummy();
-    let mut farm_setup =
-        FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
@@ -228,8 +254,11 @@ fn test_unbond() {
 #[test]
 fn test_withdraw_rewards() {
     DebugApi::dummy();
-    let mut farm_setup =
-        FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     let initial_rewards_capacity = 1_000_000_000_000u64;
     farm_setup.check_rewards_capacity(initial_rewards_capacity);
@@ -244,8 +273,11 @@ fn test_withdraw_rewards() {
 #[test]
 fn test_withdraw_after_produced_rewards() {
     DebugApi::dummy();
-    let mut farm_setup =
-        FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     let initial_rewards_capacity = 1_000_000_000_000u64;
     farm_setup.check_rewards_capacity(initial_rewards_capacity);
@@ -275,8 +307,11 @@ fn test_withdraw_after_produced_rewards() {
 #[test]
 fn cancel_unbond_test() {
     DebugApi::dummy();
-    let mut farm_setup =
-        FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;

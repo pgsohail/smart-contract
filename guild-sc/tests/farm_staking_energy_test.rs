@@ -12,7 +12,11 @@ use multiversx_sc_scenario::{managed_address, managed_biguint, rust_biguint, Deb
 
 #[test]
 fn farm_staking_with_energy_setup_test() {
-    let mut fs_setup = FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut fs_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     fs_setup.set_boosted_yields_factors();
     fs_setup.set_boosted_yields_rewards_percentage(BOOSTED_YIELDS_PERCENTAGE);
@@ -21,7 +25,11 @@ fn farm_staking_with_energy_setup_test() {
 #[test]
 fn farm_staking_boosted_rewards_no_energy_test() {
     DebugApi::dummy();
-    let mut fs_setup = FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut fs_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     fs_setup.set_boosted_yields_factors();
     fs_setup.set_boosted_yields_rewards_percentage(BOOSTED_YIELDS_PERCENTAGE);
@@ -56,7 +64,11 @@ fn farm_staking_boosted_rewards_no_energy_test() {
 #[test]
 fn farm_staking_boosted_rewards_with_energy_test() {
     DebugApi::dummy();
-    let mut fs_setup = FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut fs_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     fs_setup.set_boosted_yields_factors();
     fs_setup.set_boosted_yields_rewards_percentage(BOOSTED_YIELDS_PERCENTAGE);
@@ -163,7 +175,11 @@ fn farm_staking_boosted_rewards_with_energy_test() {
 #[test]
 fn farm_staking_claim_boosted_rewards_for_user_test() {
     DebugApi::dummy();
-    let mut fs_setup = FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut fs_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     fs_setup.set_boosted_yields_factors();
     fs_setup.set_boosted_yields_rewards_percentage(BOOSTED_YIELDS_PERCENTAGE);
@@ -257,7 +273,11 @@ fn farm_staking_claim_boosted_rewards_for_user_test() {
 #[test]
 fn farm_staking_full_position_boosted_rewards_test() {
     DebugApi::dummy();
-    let mut fs_setup = FarmStakingSetup::new(guild_sc::contract_obj, energy_factory::contract_obj);
+    let mut fs_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
 
     fs_setup.set_boosted_yields_factors();
     fs_setup.set_boosted_yields_rewards_percentage(BOOSTED_YIELDS_PERCENTAGE);
