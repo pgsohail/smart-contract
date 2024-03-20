@@ -3,5 +3,7 @@ resolver = "2"
 
 members = [
   "guild-sc",
-  "guild-sc/meta"
+  "guild-sc/meta",
+  "guild-sc-config",
+  "guild-sc-config/meta",
 ]

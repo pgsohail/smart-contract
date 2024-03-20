@@ -10,95 +10,95 @@ path = "src/lib.rs"
 
 [dependencies.farm]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.farm-boosted-yields]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.weekly-rewards-splitting]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.week-timekeeping]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.energy-query]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.config]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.farm_base_impl]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.farm_token]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.rewards]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.events]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.contexts]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.utils]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.token_send]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.pausable]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.permissions_module]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.sc_whitelist_module]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.math]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.energy-factory]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.mergeable]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.fixed-supply-token]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.pair]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.common_structs]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.common_errors]
 git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "f7940f4"
+rev = "71d5305"
 
 [dependencies.multiversx-sc]
 version = "=0.47.5"

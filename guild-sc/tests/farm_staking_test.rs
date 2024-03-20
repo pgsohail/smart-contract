@@ -8,7 +8,7 @@ pub mod farm_staking_setup;
 use farm_staking_setup::*;
 use guild_sc::{
     custom_rewards::{BLOCKS_IN_YEAR, MAX_PERCENT},
-    unbond_farm::UnbondFarmModule,
+    user_actions::unbond_farm::UnbondFarmModule,
 };
 
 #[test]
