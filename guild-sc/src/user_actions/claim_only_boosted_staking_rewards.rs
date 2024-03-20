@@ -23,6 +23,7 @@ pub trait ClaimOnlyBoostedStakingRewardsModule:
     + farm_boosted_yields::FarmBoostedYieldsModule
     + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
     + crate::custom_rewards::CustomRewardsModule
+    + crate::read_config::ReadConfigModule
 {
     #[endpoint(claimBoostedRewards)]
     fn claim_boosted_rewards(&self, opt_user: OptionalValue<ManagedAddress>) -> EsdtTokenPayment {

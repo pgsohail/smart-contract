@@ -252,6 +252,7 @@ dependencies = [
  "farm_base_impl",
  "farm_token",
  "fixed-supply-token",
+ "guild-sc-config",
  "math",
  "mergeable",
  "multiversx-sc",
@@ -265,6 +266,13 @@ dependencies = [
  "utils",
  "week-timekeeping",
  "weekly-rewards-splitting",
+]
+
+[[package]]
+name = "guild-sc-config"
+version = "0.0.0"
+dependencies = [
+ "multiversx-sc",
 ]
 
 [[package]]

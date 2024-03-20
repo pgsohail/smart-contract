@@ -31,6 +31,7 @@ pub trait UnbondFarmModule:
     + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
     + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
     + energy_query::EnergyQueryModule
+    + crate::read_config::ReadConfigModule
 {
     #[payable("*")]
     #[endpoint(unbondFarm)]

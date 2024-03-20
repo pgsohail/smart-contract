@@ -825,6 +825,7 @@ dependencies = [
  "farm_base_impl",
  "farm_token",
  "fixed-supply-token",
+ "guild-sc-config",
  "math",
  "mergeable",
  "multiversx-sc",

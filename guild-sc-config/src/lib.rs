@@ -3,6 +3,8 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+pub static TIER_NOT_FOUND_ERR_MSG: &[u8] = b"Tier not found";
+
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct RewardTier<M: ManagedTypeApi> {
     pub min_stake: BigUint<M>,
@@ -131,7 +133,7 @@ pub trait GuildScConfig {
             }
         }
 
-        require!(opt_found_index.is_some(), "Tier not found");
+        require!(opt_found_index.is_some(), TIER_NOT_FOUND_ERR_MSG);
 
         let index = unsafe { opt_found_index.unwrap_unchecked() };
         let mut tier = mapper.get(index);

@@ -100,6 +100,9 @@ rev = "71d5305"
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
 
+[dependencies.guild-sc-config]
+path = "../guild-sc-config"
+
 [dependencies.multiversx-sc]
 version = "=0.47.5"
 features = ["esdt-token-payment-legacy-decode"]
