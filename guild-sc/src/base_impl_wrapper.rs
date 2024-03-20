@@ -53,7 +53,8 @@ where
         let rps_diff = &storage_cache.reward_per_share - &token_rps;
         let compounded_amount = &token_attributes.compounded_reward;
         let base_farming_amount = farm_token_amount - compounded_amount;
-        let base_reward = base_farming_amount * &rps_diff / &storage_cache.division_safety_constant;
+        let base_reward =
+            &base_farming_amount * &rps_diff / &storage_cache.division_safety_constant;
         let compounded_reward = if *compounded_amount > 0 {
             compounded_amount * &rps_diff / &storage_cache.division_safety_constant
         } else {
@@ -61,9 +62,10 @@ where
         };
 
         let reward_tier: RewardTier<_> = sc.find_any_user_tier(caller, farm_token_amount);
-        let base_reward_apr_bounded = sc.get_amount_apr_bounded(&base_reward, &reward_tier.apr);
-        let compounded_reward_apr_bounded = if compounded_reward > 0 {
-            sc.get_amount_apr_bounded(&compounded_reward, &reward_tier.compounded_apr)
+        let base_reward_apr_bounded =
+            sc.get_amount_apr_bounded(&base_farming_amount, &reward_tier.apr);
+        let compounded_reward_apr_bounded = if *compounded_amount > 0 {
+            sc.get_amount_apr_bounded(compounded_amount, &reward_tier.compounded_apr)
         } else {
             BigUint::zero()
         };
