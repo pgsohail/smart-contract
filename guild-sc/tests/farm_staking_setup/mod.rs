@@ -210,6 +210,7 @@ where
         expected_farm_token_nonce: u64,
         expected_reward_per_share: u64,
         expected_compounded_reward: u64,
+        expected_last_action_block: u64,
     ) {
         let mut payments = Vec::with_capacity(1 + additional_farm_tokens.len());
         payments.push(TxTokenTransfer {
@@ -247,6 +248,7 @@ where
             compounded_reward: managed_biguint!(expected_compounded_reward),
             current_farm_amount: managed_biguint!(expected_total_out_amount),
             original_owner: managed_address!(&self.user_address),
+            last_action_block: expected_last_action_block,
         };
         self.b_mock.check_nft_balance(
             &self.user_address,
@@ -267,6 +269,7 @@ where
         expected_user_farming_token_balance: &RustBigUint,
         expected_farm_token_nonce_out: u64,
         expected_reward_per_share: u64,
+        expected_last_action_block: u64,
     ) {
         self.b_mock
             .execute_esdt_transfer(
@@ -304,6 +307,7 @@ where
             compounded_reward: managed_biguint!(0),
             current_farm_amount: managed_biguint!(farm_token_amount),
             original_owner: managed_address!(&self.user_address),
+            last_action_block: expected_last_action_block,
         };
 
         self.b_mock.check_nft_balance(

@@ -62,13 +62,18 @@ where
         };
 
         let reward_tier: RewardTier<_> = sc.find_any_user_tier(caller, farm_token_amount);
-        let base_reward_apr_bounded =
+        let base_reward_apr_bounded_per_block =
             sc.get_amount_apr_bounded(&base_farming_amount, &reward_tier.apr);
-        let compounded_reward_apr_bounded = if *compounded_amount > 0 {
+        let compounded_reward_apr_bounded_per_block = if *compounded_amount > 0 {
             sc.get_amount_apr_bounded(compounded_amount, &reward_tier.compounded_apr)
         } else {
             BigUint::zero()
         };
+
+        let current_block = sc.blockchain().get_block_nonce();
+        let block_diff = current_block - token_attributes.last_action_block;
+        let base_reward_apr_bounded = base_reward_apr_bounded_per_block * block_diff;
+        let compounded_reward_apr_bounded = compounded_reward_apr_bounded_per_block * block_diff;
 
         let final_base_reward = core::cmp::min(base_reward, base_reward_apr_bounded);
         let final_compounded_reward =
@@ -159,7 +164,7 @@ where
     }
 
     fn create_enter_farm_initial_attributes(
-        _sc: &Self::FarmSc,
+        sc: &Self::FarmSc,
         caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         farming_token_amount: BigUint<<Self::FarmSc as ContractBase>::Api>,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
@@ -169,11 +174,12 @@ where
             compounded_reward: BigUint::zero(),
             current_farm_amount: farming_token_amount,
             original_owner: caller,
+            last_action_block: sc.blockchain().get_block_nonce(),
         }
     }
 
     fn create_claim_rewards_initial_attributes(
-        _sc: &Self::FarmSc,
+        sc: &Self::FarmSc,
         caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         first_token_attributes: Self::AttributesType,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
@@ -183,11 +189,12 @@ where
             compounded_reward: first_token_attributes.compounded_reward,
             current_farm_amount: first_token_attributes.current_farm_amount,
             original_owner: caller,
+            last_action_block: sc.blockchain().get_block_nonce(),
         }
     }
 
     fn create_compound_rewards_initial_attributes(
-        _sc: &Self::FarmSc,
+        sc: &Self::FarmSc,
         caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         first_token_attributes: Self::AttributesType,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
@@ -200,6 +207,7 @@ where
             compounded_reward: new_pos_compounded_reward,
             current_farm_amount: new_pos_current_farm_amount,
             original_owner: caller,
+            last_action_block: sc.blockchain().get_block_nonce(),
         }
     }
 
