@@ -5,7 +5,6 @@ use core::marker::PhantomData;
 use common_structs::FarmToken;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::{FarmContract, RewardPair};
-use guild_sc_config::RewardTier;
 use multiversx_sc_modules::transfer_role_proxy::PaymentsVec;
 
 use crate::token_attributes::StakingFarmTokenAttributes;
@@ -19,7 +18,8 @@ pub trait FarmStakingTraits =
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
         + farm_boosted_yields::FarmBoostedYieldsModule
-        + crate::read_config::ReadConfigModule;
+        + crate::tiered_rewards::read_config::ReadConfigModule
+        + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule;
 
 pub struct FarmStakingWrapper<T>
 where
@@ -34,7 +34,6 @@ where
 {
     pub fn calculate_base_farm_rewards(
         sc: &<Self as FarmContract>::FarmSc,
-        caller: &ManagedAddress<<<Self as FarmContract>::FarmSc as ContractBase>::Api>,
         farm_token_amount: &BigUint<<<Self as FarmContract>::FarmSc as ContractBase>::Api>,
         token_attributes: &<Self as FarmContract>::AttributesType,
         storage_cache: &StorageCache<<Self as FarmContract>::FarmSc>,
@@ -46,40 +45,12 @@ where
         }
 
         let token_rps = token_attributes.get_reward_per_share();
-        if storage_cache.reward_per_share <= token_rps {
-            return BigUint::zero();
+        if storage_cache.reward_per_share > token_rps {
+            let rps_diff = &storage_cache.reward_per_share - &token_rps;
+            farm_token_amount * &rps_diff / &storage_cache.division_safety_constant
+        } else {
+            BigUint::zero()
         }
-
-        let rps_diff = &storage_cache.reward_per_share - &token_rps;
-        let compounded_amount = &token_attributes.compounded_reward;
-        let base_farming_amount = farm_token_amount - compounded_amount;
-        let base_reward =
-            &base_farming_amount * &rps_diff / &storage_cache.division_safety_constant;
-        let compounded_reward = if *compounded_amount > 0 {
-            compounded_amount * &rps_diff / &storage_cache.division_safety_constant
-        } else {
-            BigUint::zero()
-        };
-
-        let reward_tier: RewardTier<_> = sc.find_any_user_tier(caller, farm_token_amount);
-        let base_reward_apr_bounded_per_block =
-            sc.get_amount_apr_bounded(&base_farming_amount, &reward_tier.apr);
-        let compounded_reward_apr_bounded_per_block = if *compounded_amount > 0 {
-            sc.get_amount_apr_bounded(compounded_amount, &reward_tier.compounded_apr)
-        } else {
-            BigUint::zero()
-        };
-
-        let current_block = sc.blockchain().get_block_nonce();
-        let block_diff = current_block - token_attributes.last_action_block;
-        let base_reward_apr_bounded = base_reward_apr_bounded_per_block * block_diff;
-        let compounded_reward_apr_bounded = compounded_reward_apr_bounded_per_block * block_diff;
-
-        let final_base_reward = core::cmp::min(base_reward, base_reward_apr_bounded);
-        let final_compounded_reward =
-            core::cmp::min(compounded_reward, compounded_reward_apr_bounded);
-
-        final_base_reward + final_compounded_reward
     }
 
     pub fn calculate_boosted_rewards(
@@ -115,6 +86,29 @@ where
         _token_id: &TokenIdentifier<<Self::FarmSc as ContractBase>::Api>,
         _amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
     ) {
+    }
+
+    fn mint_per_block_rewards(
+        sc: &Self::FarmSc,
+        _token_id: &TokenIdentifier<<Self::FarmSc as ContractBase>::Api>,
+    ) -> BigUint<<Self::FarmSc as ContractBase>::Api> {
+        let current_block_nonce = sc.blockchain().get_block_nonce();
+        let last_reward_nonce = sc.last_reward_block_nonce().get();
+
+        if current_block_nonce <= last_reward_nonce {
+            return BigUint::zero();
+        }
+
+        let extra_rewards_unbounded =
+            Self::calculate_per_block_rewards(sc, current_block_nonce, last_reward_nonce);
+        let extra_rewards_apr_bounded_per_block = sc.get_amount_apr_bounded();
+
+        let block_nonce_diff = current_block_nonce - last_reward_nonce;
+        let extra_rewards_apr_bounded = extra_rewards_apr_bounded_per_block * block_nonce_diff;
+
+        sc.last_reward_block_nonce().set(current_block_nonce);
+
+        core::cmp::min(extra_rewards_unbounded, extra_rewards_apr_bounded)
     }
 
     fn generate_aggregated_rewards(
@@ -153,7 +147,6 @@ where
     ) -> RewardPair<<Self::FarmSc as ContractBase>::Api> {
         let base_farm_reward = Self::calculate_base_farm_rewards(
             sc,
-            caller,
             farm_token_amount,
             token_attributes,
             storage_cache,

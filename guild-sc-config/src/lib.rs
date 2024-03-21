@@ -37,7 +37,12 @@ pub type RewardTierMultiValue<M> = MultiValue4<BigUint<M>, BigUint<M>, BigUint<M
 #[multiversx_sc::contract]
 pub trait GuildScConfig {
     #[init]
-    fn init(&self) {}
+    fn init(&self, max_staked_tokens: BigUint) {
+        self.max_staked_tokens().set(max_staked_tokens);
+    }
+
+    #[upgrade]
+    fn upgrade(&self) {}
 
     /// Pairs of (min_stake, max_stake, apr, compounded_apr)
     /// APR is scaled by two decimals, i.e. 10_000 is 100%
@@ -45,6 +50,8 @@ pub trait GuildScConfig {
     #[endpoint(addGuildMasterTiers)]
     fn add_guild_master_tiers(&self, tiers: MultiValueEncoded<RewardTierMultiValue<Self::Api>>) {
         let mut tiers_mapper = self.guild_master_tiers();
+        self.require_empty_mapper(&tiers_mapper);
+
         for tier_multi in tiers {
             let reward_tier = RewardTier::from(tier_multi);
             self.add_tier(&mut tiers_mapper, &reward_tier);
@@ -76,6 +83,8 @@ pub trait GuildScConfig {
     #[endpoint(addUserTiers)]
     fn add_user_tiers(&self, tiers: MultiValueEncoded<RewardTierMultiValue<Self::Api>>) {
         let mut tiers_mapper = self.user_tiers();
+        self.require_empty_mapper(&tiers_mapper);
+
         for tier_multi in tiers {
             let reward_tier = RewardTier::from(tier_multi);
             self.add_tier(&mut tiers_mapper, &reward_tier);
@@ -142,6 +151,13 @@ pub trait GuildScConfig {
         mapper.set(index, &tier);
     }
 
+    fn require_empty_mapper(&self, mapper: &VecMapper<RewardTier<Self::Api>>) {
+        require!(
+            mapper.is_empty(),
+            "May not add more tiers after contract initialized"
+        );
+    }
+
     #[view(getGuildMasterTiers)]
     #[storage_mapper("guildMasterTiers")]
     fn guild_master_tiers(&self) -> VecMapper<RewardTier<Self::Api>>;
@@ -149,4 +165,8 @@ pub trait GuildScConfig {
     #[view(getUserTiers)]
     #[storage_mapper("userTiers")]
     fn user_tiers(&self) -> VecMapper<RewardTier<Self::Api>>;
+
+    #[view(getMaxStakedTokens)]
+    #[storage_mapper("maxStakedTokens")]
+    fn max_staked_tokens(&self) -> SingleValueMapper<BigUint>;
 }

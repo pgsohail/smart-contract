@@ -96,7 +96,7 @@ where
 
         b_mock
             .execute_tx(&owner_addr, &config_wrapper, &rust_zero, |sc| {
-                sc.init();
+                sc.init(managed_biguint!(u64::MAX));
 
                 let mut tiers = MultiValueEncoded::new();
                 tiers.push(

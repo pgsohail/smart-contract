@@ -3,8 +3,9 @@ use multiversx_sc::storage::StorageKey;
 
 multiversx_sc::imports!();
 
-pub static GUILD_MASTER_TIERS_STORAGE_KEY: &[u8] = b"guildMasterTiers";
-pub static USER_TIERS_STORAGE_KEY: &[u8] = b"userTiers";
+static GUILD_MASTER_TIERS_STORAGE_KEY: &[u8] = b"guildMasterTiers";
+static USER_TIERS_STORAGE_KEY: &[u8] = b"userTiers";
+static MAX_TOKENS_STORAGE_KEY: &[u8] = b"maxStakedTokens";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
@@ -14,10 +15,10 @@ pub trait ReadConfigModule {
         base_farming_amount: &BigUint,
     ) -> RewardTier<Self::Api> {
         let guild_master = self.guild_master().get();
-        if user == &guild_master {
-            self.find_guild_master_tier(base_farming_amount)
-        } else {
+        if user != &guild_master {
             self.find_user_tier(base_farming_amount)
+        } else {
+            self.find_guild_master_tier(base_farming_amount)
         }
     }
 
@@ -63,6 +64,16 @@ pub trait ReadConfigModule {
             config_addr,
             StorageKey::new(USER_TIERS_STORAGE_KEY),
         )
+    }
+
+    fn get_max_staked_tokens(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(MAX_TOKENS_STORAGE_KEY),
+        );
+
+        mapper.get()
     }
 
     #[storage_mapper("configScAddress")]

@@ -17,7 +17,7 @@ use crate::custom_rewards::MAX_MIN_UNBOND_EPOCHS;
 pub mod base_impl_wrapper;
 pub mod custom_rewards;
 pub mod farm_token_roles;
-pub mod read_config;
+pub mod tiered_rewards;
 pub mod token_attributes;
 pub mod unbond_token;
 pub mod user_actions;
@@ -58,7 +58,8 @@ pub trait FarmStaking:
     + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
     + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
     + energy_query::EnergyQueryModule
-    + read_config::ReadConfigModule
+    + tiered_rewards::read_config::ReadConfigModule
+    + tiered_rewards::tokens_per_tier::TokenPerTierModule
 {
     #[init]
     fn init(

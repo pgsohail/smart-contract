@@ -30,7 +30,8 @@ pub trait CustomRewardsModule:
     + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
     + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
     + energy_query::EnergyQueryModule
-    + crate::read_config::ReadConfigModule
+    + crate::tiered_rewards::read_config::ReadConfigModule
+    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
 {
     #[payable("*")]
     #[endpoint(topUpRewards)]
@@ -109,7 +110,35 @@ pub trait CustomRewardsModule:
         self.start_produce_rewards();
     }
 
-    fn get_amount_apr_bounded(&self, amount: &BigUint, apr: &BigUint) -> BigUint {
+    fn get_amount_apr_bounded(&self) -> BigUint {
+        let mut total = BigUint::zero();
+
+        let guild_master_tokens = self.guild_master_tokens().get();
+        let guild_master_tier = self.find_guild_master_tier(&guild_master_tokens.base);
+        let base_amount_bounded_guild_master =
+            self.bound_amount_by_apr(&guild_master_tokens.base, &guild_master_tier.apr);
+        let compounded_amount_bounded_guild_master = self.bound_amount_by_apr(
+            &guild_master_tokens.compounded,
+            &guild_master_tier.compounded_apr,
+        );
+        total += base_amount_bounded_guild_master;
+        total += compounded_amount_bounded_guild_master;
+
+        let tiers_mapper = self.get_user_tiers_mapper();
+        for tier in tiers_mapper.iter() {
+            let user_tokens_for_tier = self.tokens_per_tier(&tier.min_stake, &tier.max_stake).get();
+            let base_amount_users = self.bound_amount_by_apr(&user_tokens_for_tier.base, &tier.apr);
+            let compounded_amount_users =
+                self.bound_amount_by_apr(&user_tokens_for_tier.compounded, &tier.compounded_apr);
+
+            total += base_amount_users;
+            total += compounded_amount_users;
+        }
+
+        total
+    }
+
+    fn bound_amount_by_apr(&self, amount: &BigUint, apr: &BigUint) -> BigUint {
         amount * apr / MAX_PERCENT / BLOCKS_IN_YEAR
     }
 
