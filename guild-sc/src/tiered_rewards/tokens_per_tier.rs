@@ -107,7 +107,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
             args.caller,
             &new_tier.min_stake,
             &new_tier.max_stake,
-            &args.total_tokens,
+            args.total_tokens,
         );
     }
 
