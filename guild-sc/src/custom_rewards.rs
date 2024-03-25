@@ -113,16 +113,18 @@ pub trait CustomRewardsModule:
     fn get_amount_apr_bounded(&self) -> BigUint {
         let mut total = BigUint::zero();
 
-        let guild_master_tokens = self.guild_master_tokens().get();
-        let guild_master_tier = self.find_guild_master_tier(&guild_master_tokens.base);
-        let base_amount_bounded_guild_master =
-            self.bound_amount_by_apr(&guild_master_tokens.base, &guild_master_tier.apr);
-        let compounded_amount_bounded_guild_master = self.bound_amount_by_apr(
-            &guild_master_tokens.compounded,
-            &guild_master_tier.compounded_apr,
-        );
-        total += base_amount_bounded_guild_master;
-        total += compounded_amount_bounded_guild_master;
+        if !self.guild_master_tokens().is_empty() {
+            let guild_master_tokens = self.guild_master_tokens().get();
+            let guild_master_tier = self.find_guild_master_tier(&guild_master_tokens.base);
+            let base_amount_bounded_guild_master =
+                self.bound_amount_by_apr(&guild_master_tokens.base, &guild_master_tier.apr);
+            let compounded_amount_bounded_guild_master = self.bound_amount_by_apr(
+                &guild_master_tokens.compounded,
+                &guild_master_tier.compounded_apr,
+            );
+            total += base_amount_bounded_guild_master;
+            total += compounded_amount_bounded_guild_master;
+        }
 
         let tiers_mapper = self.get_user_tiers_mapper();
         for tier in tiers_mapper.iter() {

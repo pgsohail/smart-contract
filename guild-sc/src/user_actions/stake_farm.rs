@@ -75,6 +75,14 @@ pub trait StakeFarmModule:
         payments: PaymentsVec<Self::Api>,
     ) -> EsdtTokenPayment {
         let caller = self.blockchain().get_caller();
+        let guild_master = self.guild_master().get();
+        if caller != guild_master {
+            require!(
+                !self.guild_master_tokens().is_empty(),
+                "Guild master must stake first"
+            );
+        }
+
         let boosted_rewards = self.claim_only_boosted_payment(&original_caller);
         self.add_boosted_rewards(&original_caller, &boosted_rewards);
 
