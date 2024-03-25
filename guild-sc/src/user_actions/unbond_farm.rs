@@ -3,7 +3,10 @@ multiversx_sc::imports!();
 use contexts::storage_cache::StorageCache;
 use fixed_supply_token::FixedSupplyToken;
 
-use crate::{base_impl_wrapper::FarmStakingWrapper, token_attributes::UnbondSftAttributes};
+use crate::{
+    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::tokens_per_tier::TokensPerTier,
+    token_attributes::UnbondSftAttributes,
+};
 
 #[multiversx_sc::module]
 pub trait UnbondFarmModule:
@@ -88,6 +91,15 @@ pub trait UnbondFarmModule:
         let mut new_attributes = enter_result.new_farm_token.attributes;
         new_attributes.compounded_reward = unbond_attributes.original_attributes.compounded_reward;
         new_attributes.original_owner = caller.clone();
+
+        self.add_total_staked_tokens(&new_attributes.current_farm_amount);
+        self.add_and_update_tokens_per_tier(
+            &caller,
+            &TokensPerTier::new(
+                new_attributes.current_farm_amount.clone(),
+                new_attributes.compounded_reward.clone(),
+            ),
+        );
 
         let total_farm_tokens = new_attributes.get_total_supply();
 

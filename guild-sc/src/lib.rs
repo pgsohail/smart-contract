@@ -110,8 +110,6 @@ pub trait FarmStaking:
     #[endpoint(mergeFarmTokens)]
     fn merge_farm_tokens_endpoint(&self) -> EsdtTokenPayment {
         let caller = self.blockchain().get_caller();
-        self.migrate_old_farm_positions(&caller);
-
         let boosted_rewards = self.claim_only_boosted_payment(&caller);
         self.add_boosted_rewards(&caller, &boosted_rewards);
 

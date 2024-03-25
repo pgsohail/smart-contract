@@ -31,7 +31,7 @@ fn test_enter_farm() {
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0, 0);
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
     farm_setup.check_farm_token_supply(farm_in_amount);
 }
 
@@ -46,7 +46,7 @@ fn test_unstake_farm() {
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0, 0);
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
     farm_setup.check_farm_token_supply(farm_in_amount);
 
     let current_block = 10;
@@ -88,7 +88,7 @@ fn test_claim_rewards() {
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0, 0);
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
     farm_setup.check_farm_token_supply(farm_in_amount);
 
     farm_setup.set_block_epoch(5);
@@ -98,7 +98,7 @@ fn test_claim_rewards() {
     let expected_reward_token_out = 40;
     let expected_farming_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS - farm_in_amount + expected_reward_token_out);
-    let expected_reward_per_share = 500_000_000;
+    let expected_reward_per_share = 400_000;
     farm_setup.claim_rewards(
         farm_in_amount,
         expected_farm_token_nonce,
@@ -107,7 +107,6 @@ fn test_claim_rewards() {
         &expected_farming_token_balance,
         expected_farm_token_nonce + 1,
         expected_reward_per_share,
-        10,
     );
     farm_setup.check_farm_token_supply(farm_in_amount);
 }
@@ -115,7 +114,7 @@ fn test_claim_rewards() {
 fn steps_enter_farm_twice<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>(
     farm_builder: FarmObjBuilder,
     energy_factory_builder: EnergyFactoryBuilder,
-    config_builder: ConfigScBuilder,
+    config_sc_builder: ConfigScBuilder,
 ) -> FarmStakingSetup<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>
 where
     FarmObjBuilder: 'static + Copy + Fn() -> guild_sc::ContractObj<DebugApi>,
@@ -123,11 +122,11 @@ where
     ConfigScBuilder: 'static + Copy + Fn() -> guild_sc_config::ContractObj<DebugApi>,
 {
     let mut farm_setup =
-        FarmStakingSetup::new(farm_builder, energy_factory_builder, config_builder);
+        FarmStakingSetup::new(farm_builder, energy_factory_builder, config_sc_builder);
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0, 0);
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
     farm_setup.check_farm_token_supply(farm_in_amount);
 
     farm_setup.set_block_epoch(5);
@@ -142,7 +141,7 @@ where
 
     let total_amount = farm_in_amount + second_farm_in_amount;
     let first_reward_share = 0;
-    let second_reward_share = 500_000_000;
+    let second_reward_share = 400_000;
     let expected_reward_per_share = (first_reward_share * farm_in_amount
         + second_reward_share * second_farm_in_amount
         + total_amount
@@ -155,7 +154,6 @@ where
         expected_farm_token_nonce + 1,
         expected_reward_per_share,
         0,
-        10,
     );
     farm_setup.check_farm_token_supply(total_amount);
 
@@ -186,7 +184,7 @@ fn test_exit_farm_after_enter_twice() {
     farm_setup.set_block_epoch(8);
     farm_setup.set_block_nonce(25);
 
-    let expected_rewards = 60;
+    let expected_rewards = 83;
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount - second_farm_in_amount
             + expected_rewards;
@@ -213,7 +211,7 @@ fn test_unbond() {
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0, 0);
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
     farm_setup.check_farm_token_supply(farm_in_amount);
 
     let current_block = 10;
@@ -273,6 +271,40 @@ fn test_withdraw_rewards() {
 }
 
 #[test]
+fn test_withdraw_after_produced_rewards() {
+    DebugApi::dummy();
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
+
+    let initial_rewards_capacity = 1_000_000_000_000u64;
+    farm_setup.check_rewards_capacity(initial_rewards_capacity);
+
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 1;
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
+    farm_setup.check_farm_token_supply(farm_in_amount);
+
+    farm_setup.set_block_epoch(5);
+    farm_setup.set_block_nonce(10);
+
+    let withdraw_amount = rust_biguint!(TOTAL_REWARDS_AMOUNT);
+    farm_setup.withdraw_rewards_with_error(&withdraw_amount, 4, WITHDRAW_AMOUNT_TOO_HIGH);
+
+    let expected_reward_token_out = 40;
+
+    let withdraw_amount =
+        rust_biguint!(TOTAL_REWARDS_AMOUNT) - rust_biguint!(expected_reward_token_out);
+    farm_setup.withdraw_rewards(&withdraw_amount);
+
+    // Only the user's rewards will remain
+    let final_rewards_capacity = expected_reward_token_out;
+    farm_setup.check_rewards_capacity(final_rewards_capacity);
+}
+
+#[test]
 fn cancel_unbond_test() {
     DebugApi::dummy();
     let mut farm_setup = FarmStakingSetup::new(
@@ -283,7 +315,7 @@ fn cancel_unbond_test() {
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0, 0);
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
     farm_setup.check_farm_token_supply(farm_in_amount);
 
     let current_block = 10;

@@ -36,7 +36,7 @@ fn farm_staking_boosted_rewards_no_energy_test() {
 
     let farm_in_amount = 100_000_000;
     let expected_farm_token_nonce = 1;
-    fs_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0, 0);
+    fs_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
     fs_setup.check_farm_token_supply(farm_in_amount);
 
     fs_setup.set_block_epoch(5);
@@ -57,7 +57,6 @@ fn farm_staking_boosted_rewards_no_energy_test() {
         &expected_farming_token_balance,
         expected_farm_token_nonce + 1,
         expected_reward_per_share,
-        10,
     );
     fs_setup.check_farm_token_supply(farm_in_amount);
 }
@@ -77,7 +76,7 @@ fn farm_staking_boosted_rewards_with_energy_test() {
     fs_setup.set_user_energy(&fs_setup.user_address.clone(), 10_000, 0, 10);
 
     let farm_in_amount = 100_000_000;
-    fs_setup.stake_farm(farm_in_amount, &[], 1, 0, 0, 0);
+    fs_setup.stake_farm(farm_in_amount, &[], 1, 0, 0);
     fs_setup.check_farm_token_supply(farm_in_amount);
 
     // claim to get energy registered
@@ -158,7 +157,6 @@ fn farm_staking_boosted_rewards_with_energy_test() {
         &expected_farming_token_balance,
         4,
         expected_reward_per_share,
-        10,
     );
     fs_setup.check_farm_token_supply(farm_in_amount);
 
@@ -189,7 +187,7 @@ fn farm_staking_claim_boosted_rewards_for_user_test() {
     fs_setup.set_user_energy(&fs_setup.user_address.clone(), 10_000, 0, 10);
 
     let farm_in_amount = 100_000_000;
-    fs_setup.stake_farm(farm_in_amount, &[], 1, 0, 0, 0);
+    fs_setup.stake_farm(farm_in_amount, &[], 1, 0, 0);
     fs_setup.check_farm_token_supply(farm_in_amount);
 
     // claim to get energy registered
@@ -287,8 +285,8 @@ fn farm_staking_full_position_boosted_rewards_test() {
     fs_setup.set_user_energy(&fs_setup.user_address.clone(), 10_000, 0, 10);
 
     let farm_in_amount = 50_000_000;
-    fs_setup.stake_farm(farm_in_amount, &[], 1, 0, 0, 0);
-    fs_setup.stake_farm(farm_in_amount, &[], 2, 0, 0, 0);
+    fs_setup.stake_farm(farm_in_amount, &[], 1, 0, 0);
+    fs_setup.stake_farm(farm_in_amount, &[], 2, 0, 0);
     fs_setup.check_farm_token_supply(farm_in_amount * 2);
 
     // claim to get energy registered
@@ -366,7 +364,6 @@ fn farm_staking_full_position_boosted_rewards_test() {
         &expected_farming_token_balance,
         5,
         expected_reward_per_share,
-        10,
     );
 
     // Should receive half base rewards and no boosted rewards
@@ -379,7 +376,6 @@ fn farm_staking_full_position_boosted_rewards_test() {
         &expected_farming_token_balance,
         6,
         expected_reward_per_share,
-        10,
     );
     fs_setup.check_farm_token_supply(farm_in_amount * 2);
 }

@@ -35,13 +35,16 @@ pub trait CompoundStakeFarmRewardsModule:
     #[endpoint(compoundRewards)]
     fn compound_rewards(&self) -> EsdtTokenPayment {
         let caller = self.blockchain().get_caller();
-        self.migrate_old_farm_positions(&caller);
         let payments = self.get_non_empty_payments();
         let compound_result =
             self.compound_rewards_base::<FarmStakingWrapper<Self>>(caller.clone(), payments);
 
         let new_farm_token = compound_result.new_farm_token.payment.clone();
         self.send_payment_non_zero(&caller, &new_farm_token);
+
+        self.user_tokens(&caller).update(|tokens_per_tier| {
+            tokens_per_tier.compounded += &compound_result.compounded_rewards
+        });
 
         self.set_farm_supply_for_current_week(&compound_result.storage_cache.farm_token_supply);
 

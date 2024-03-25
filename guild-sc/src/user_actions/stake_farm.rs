@@ -2,7 +2,9 @@ multiversx_sc::imports!();
 
 use common_structs::PaymentsVec;
 
-use crate::base_impl_wrapper::FarmStakingWrapper;
+use crate::{
+    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::tokens_per_tier::TokensPerTier,
+};
 
 #[multiversx_sc::module]
 pub trait StakeFarmModule:
@@ -73,13 +75,18 @@ pub trait StakeFarmModule:
         payments: PaymentsVec<Self::Api>,
     ) -> EsdtTokenPayment {
         let caller = self.blockchain().get_caller();
-        self.migrate_old_farm_positions(&original_caller);
-
         let boosted_rewards = self.claim_only_boosted_payment(&original_caller);
         self.add_boosted_rewards(&original_caller, &boosted_rewards);
 
         let enter_result =
             self.enter_farm_base::<FarmStakingWrapper<Self>>(original_caller.clone(), payments);
+
+        let enter_farm_amount = enter_result.context.farming_token_payment.amount.clone();
+        self.add_total_staked_tokens(&enter_farm_amount);
+        self.add_and_update_tokens_per_tier(
+            &original_caller,
+            &TokensPerTier::new_base(enter_farm_amount),
+        );
 
         let new_farm_token = enter_result.new_farm_token.payment.clone();
         self.send_payment_non_zero(&caller, &new_farm_token);

@@ -5,6 +5,7 @@ use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
     base_impl_wrapper::FarmStakingWrapper,
+    tiered_rewards::tokens_per_tier::TokensPerTier,
     token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes},
 };
 
@@ -79,13 +80,9 @@ pub trait UnstakeFarmModule:
         payment: EsdtTokenPayment,
         opt_unbond_amount: Option<BigUint>,
     ) -> ExitFarmWithPartialPosResultType<Self::Api> {
-        let migrated_amount = self.migrate_old_farm_positions(&original_caller);
-
         let exit_result =
             self.exit_farm_base::<FarmStakingWrapper<Self>>(original_caller.clone(), payment);
         self.add_boosted_rewards(&original_caller, &exit_result.rewards.boosted);
-
-        self.decrease_old_farm_positions(migrated_amount, &original_caller);
 
         let unbond_token_amount =
             opt_unbond_amount.unwrap_or(exit_result.farming_token_payment.amount);
@@ -97,6 +94,16 @@ pub trait UnstakeFarmModule:
             .attributes
             .clone()
             .into_part(&exit_result.context.farm_token.payment.amount);
+
+        self.remove_total_staked_tokens(&original_attributes.current_farm_amount);
+        self.remove_and_update_tokens_per_tier(
+            &original_caller,
+            &TokensPerTier::new(
+                original_attributes.current_farm_amount.clone(),
+                original_attributes.compounded_reward.clone(),
+            ),
+        );
+
         let unbond_farm_token =
             self.create_and_send_unbond_tokens(&caller, unbond_token_amount, original_attributes);
 

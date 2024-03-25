@@ -24,7 +24,6 @@ pub struct StakingFarmTokenAttributes<M: ManagedTypeApi> {
     pub compounded_reward: BigUint<M>,
     pub current_farm_amount: BigUint<M>,
     pub original_owner: ManagedAddress<M>,
-    pub last_action_block: u64,
 }
 
 #[derive(ManagedVecItem, Clone)]
@@ -81,7 +80,6 @@ impl<M: ManagedTypeApi> FixedSupplyToken<M> for StakingFarmTokenAttributes<M> {
             compounded_reward: new_compounded_reward,
             current_farm_amount: new_current_farm_amount,
             original_owner: self.original_owner,
-            last_action_block: self.last_action_block,
         }
     }
 }

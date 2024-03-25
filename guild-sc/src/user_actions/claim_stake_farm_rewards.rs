@@ -2,7 +2,9 @@ multiversx_sc::imports!();
 
 use farm::base_functions::ClaimRewardsResultType;
 
-use crate::base_impl_wrapper::FarmStakingWrapper;
+use crate::{
+    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::tokens_per_tier::TokensPerTier,
+};
 
 #[multiversx_sc::module]
 pub trait ClaimStakeFarmRewardsModule:
@@ -70,8 +72,6 @@ pub trait ClaimStakeFarmRewardsModule:
             "Cannot claim rewards yet"
         );
 
-        self.migrate_old_farm_positions(&original_caller);
-
         let payment = self.call_value().single_esdt();
         let mut claim_result = self
             .claim_rewards_base_no_farm_token_mint::<FarmStakingWrapper<Self>>(
@@ -81,6 +81,24 @@ pub trait ClaimStakeFarmRewardsModule:
 
         let mut virtual_farm_token = claim_result.new_farm_token.clone();
         if let Some(new_amount) = opt_new_farming_amount {
+            if new_amount != virtual_farm_token.payment.amount {
+                if new_amount > virtual_farm_token.payment.amount {
+                    let diff = &new_amount - &virtual_farm_token.payment.amount;
+                    self.add_total_staked_tokens_ignore_limit(&diff);
+                    self.add_and_update_tokens_per_tier(
+                        &original_caller,
+                        &TokensPerTier::new_base(diff),
+                    );
+                } else {
+                    let diff = &virtual_farm_token.payment.amount - &new_amount;
+                    self.remove_total_staked_tokens(&diff);
+                    self.remove_and_update_tokens_per_tier(
+                        &original_caller,
+                        &TokensPerTier::new_base(diff),
+                    );
+                }
+            }
+
             claim_result.storage_cache.farm_token_supply -= &virtual_farm_token.payment.amount;
             claim_result.storage_cache.farm_token_supply += &new_amount;
 
