@@ -30,9 +30,9 @@ fn test_enter_farm() {
     );
 
     let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 1;
+    let expected_farm_token_nonce = 2;
     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 }
 
 #[test]
@@ -45,9 +45,9 @@ fn test_unstake_farm() {
     );
 
     let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 1;
+    let expected_farm_token_nonce = 2;
     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 
     let current_block = 10;
     let current_epoch = 5;
@@ -59,9 +59,9 @@ fn test_unstake_farm() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 40);
+    assert_eq!(expected_rewards, 39);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -74,7 +74,7 @@ fn test_unstake_farm() {
         1,
         farm_in_amount,
     );
-    farm_setup.check_farm_token_supply(0);
+    farm_setup.check_farm_token_supply(1);
 }
 
 #[test]
@@ -87,18 +87,18 @@ fn test_claim_rewards() {
     );
 
     let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 1;
+    let expected_farm_token_nonce = 2;
     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 
     farm_setup.set_block_epoch(5);
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 40;
+    let expected_reward_token_out = 39;
     let expected_farming_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS - farm_in_amount + expected_reward_token_out);
-    let expected_reward_per_share = 400_000;
+    let expected_reward_per_share = 399_999;
     farm_setup.claim_rewards(
         farm_in_amount,
         expected_farm_token_nonce,
@@ -108,7 +108,7 @@ fn test_claim_rewards() {
         expected_farm_token_nonce + 1,
         expected_reward_per_share,
     );
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 }
 
 fn steps_enter_farm_twice<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>(
@@ -125,9 +125,9 @@ where
         FarmStakingSetup::new(farm_builder, energy_factory_builder, config_sc_builder);
 
     let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 1;
+    let expected_farm_token_nonce = 2;
     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 
     farm_setup.set_block_epoch(5);
     farm_setup.set_block_nonce(10);
@@ -139,9 +139,9 @@ where
         value: rust_biguint!(farm_in_amount),
     }];
 
-    let total_amount = farm_in_amount + second_farm_in_amount;
+    let total_amount = farm_in_amount + second_farm_in_amount + 1;
     let first_reward_share = 0;
-    let second_reward_share = 400_000;
+    let second_reward_share = 399_999;
     let expected_reward_per_share = (first_reward_share * farm_in_amount
         + second_reward_share * second_farm_in_amount
         + total_amount
@@ -190,14 +190,14 @@ fn test_exit_farm_after_enter_twice() {
             + expected_rewards;
     farm_setup.unstake_farm(
         farm_in_amount,
-        2,
+        3,
         expected_rewards,
         &expected_ride_token_balance,
         &expected_ride_token_balance,
         1,
         farm_in_amount,
     );
-    farm_setup.check_farm_token_supply(second_farm_in_amount);
+    farm_setup.check_farm_token_supply(second_farm_in_amount + 1);
 }
 
 #[test]
@@ -210,9 +210,9 @@ fn test_unbond() {
     );
 
     let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 1;
+    let expected_farm_token_nonce = 2;
     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 
     let current_block = 10;
     let current_epoch = 5;
@@ -224,9 +224,9 @@ fn test_unbond() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 40);
+    assert_eq!(expected_rewards, 39);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -239,7 +239,7 @@ fn test_unbond() {
         1,
         farm_in_amount,
     );
-    farm_setup.check_farm_token_supply(0);
+    farm_setup.check_farm_token_supply(1);
 
     farm_setup.set_block_epoch(current_epoch + MIN_UNBOND_EPOCHS);
 
@@ -283,9 +283,9 @@ fn test_withdraw_after_produced_rewards() {
     farm_setup.check_rewards_capacity(initial_rewards_capacity);
 
     let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 1;
+    let expected_farm_token_nonce = 2;
     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 
     farm_setup.set_block_epoch(5);
     farm_setup.set_block_nonce(10);
@@ -314,9 +314,9 @@ fn cancel_unbond_test() {
     );
 
     let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 1;
+    let expected_farm_token_nonce = 2;
     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 
     let current_block = 10;
     let current_epoch = 5;
@@ -328,9 +328,9 @@ fn cancel_unbond_test() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 40);
+    assert_eq!(expected_rewards, 39);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -343,7 +343,7 @@ fn cancel_unbond_test() {
         1,
         farm_in_amount,
     );
-    farm_setup.check_farm_token_supply(0);
+    farm_setup.check_farm_token_supply(1);
 
     farm_setup.set_block_epoch(current_epoch + MIN_UNBOND_EPOCHS);
 

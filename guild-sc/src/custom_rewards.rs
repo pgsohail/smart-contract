@@ -126,7 +126,12 @@ pub trait CustomRewardsModule:
 
         let tiers_mapper = self.get_user_tiers_mapper();
         for tier in tiers_mapper.iter() {
-            let user_tokens_for_tier = self.tokens_per_tier(&tier.min_stake, &tier.max_stake).get();
+            let tokens_mapper = self.tokens_per_tier(&tier.min_stake, &tier.max_stake);
+            if tokens_mapper.is_empty() {
+                continue;
+            }
+
+            let user_tokens_for_tier = tokens_mapper.get();
             let base_amount_users = self.bound_amount_by_apr(&user_tokens_for_tier.base, &tier.apr);
             let compounded_amount_users =
                 self.bound_amount_by_apr(&user_tokens_for_tier.compounded, &tier.compounded_apr);

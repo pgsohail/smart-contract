@@ -7,7 +7,7 @@ use guild_sc_config::GuildScConfig;
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
-use multiversx_sc::types::{Address, BigInt, EsdtLocalRole, ManagedAddress, MultiValueEncoded};
+use multiversx_sc::types::{Address, BigInt, EsdtLocalRole, MultiValueEncoded};
 use multiversx_sc_scenario::whitebox_legacy::TxTokenTransfer;
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_token_id, rust_biguint, whitebox_legacy::*, DebugApi,
@@ -96,7 +96,7 @@ where
 
         b_mock
             .execute_tx(&owner_addr, &config_wrapper, &rust_zero, |sc| {
-                sc.init(managed_biguint!(u64::MAX));
+                sc.init(managed_biguint!(i64::MAX));
 
                 let mut tiers = MultiValueEncoded::new();
                 tiers.push(
@@ -126,7 +126,7 @@ where
                     MIN_UNBOND_EPOCHS,
                     managed_address!(&owner_addr),
                     managed_address!(config_wrapper.address_ref()),
-                    ManagedAddress::<DebugApi>::zero(),
+                    managed_address!(&owner_addr),
                     0,
                     MultiValueEncoded::new(),
                 );
@@ -193,14 +193,32 @@ where
             &rust_biguint!(USER_TOTAL_RIDE_TOKENS),
         );
 
-        FarmStakingSetup {
+        let mut setup = FarmStakingSetup {
             b_mock,
             owner_address: owner_addr,
             user_address: user_addr,
             farm_wrapper,
             energy_factory_wrapper,
             config_wrapper,
-        }
+        };
+        setup
+            .b_mock
+            .set_esdt_balance(&setup.owner_address, FARMING_TOKEN_ID, &rust_biguint!(1));
+        setup
+            .b_mock
+            .execute_esdt_transfer(
+                &setup.owner_address,
+                &setup.farm_wrapper,
+                FARMING_TOKEN_ID,
+                0,
+                &rust_biguint!(1),
+                |sc| {
+                    let _ = sc.stake_farm_endpoint(OptionalValue::None);
+                },
+            )
+            .assert_ok();
+
+        setup
     }
 
     pub fn stake_farm(
