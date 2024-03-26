@@ -96,6 +96,8 @@ pub trait StakeFarmModule:
             &TokensPerTier::new_base(enter_farm_amount),
         );
 
+        self.require_over_min_stake(&original_caller);
+
         let new_farm_token = enter_result.new_farm_token.payment.clone();
         self.send_payment_non_zero(&caller, &new_farm_token);
 

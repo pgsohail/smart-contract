@@ -3,6 +3,7 @@
 use guild_sc::unbond_token::UnbondTokenModule;
 use guild_sc::user_actions::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule;
 use guild_sc::FarmStaking;
+use guild_sc_config::tiers::TierModule;
 use guild_sc_config::GuildScConfig;
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
@@ -96,7 +97,13 @@ where
 
         b_mock
             .execute_tx(&owner_addr, &config_wrapper, &rust_zero, |sc| {
-                sc.init(managed_biguint!(i64::MAX), MIN_UNBOND_EPOCHS);
+                sc.init(
+                    managed_biguint!(i64::MAX),
+                    MIN_UNBOND_EPOCHS,
+                    MIN_UNBOND_EPOCHS,
+                    managed_biguint!(0),
+                    managed_biguint!(0),
+                );
 
                 let mut tiers = MultiValueEncoded::new();
                 tiers.push(

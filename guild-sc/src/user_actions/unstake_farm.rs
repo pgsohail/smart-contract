@@ -104,6 +104,8 @@ pub trait UnstakeFarmModule:
             ),
         );
 
+        self.require_over_min_stake(&original_caller);
+
         let unbond_farm_token =
             self.create_and_send_unbond_tokens(&caller, unbond_token_amount, original_attributes);
 
@@ -133,7 +135,7 @@ pub trait UnstakeFarmModule:
         amount: BigUint,
         original_attributes: StakingFarmTokenAttributes<Self::Api>,
     ) -> EsdtTokenPayment {
-        let min_unbond_epochs = self.get_min_unbond_epochs();
+        let min_unbond_epochs = self.get_min_unbond_epochs_user();
         let current_epoch = self.blockchain().get_block_epoch();
 
         self.unbond_token().nft_create_and_send(

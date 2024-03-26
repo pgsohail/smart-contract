@@ -64,7 +64,6 @@ pub trait FarmStaking:
         &self,
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
-
         owner: ManagedAddress,
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,

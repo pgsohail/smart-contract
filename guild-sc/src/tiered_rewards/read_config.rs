@@ -1,5 +1,5 @@
 use common_structs::Epoch;
-use guild_sc_config::{RewardTier, TIER_NOT_FOUND_ERR_MSG};
+use guild_sc_config::tiers::{RewardTier, TIER_NOT_FOUND_ERR_MSG};
 use multiversx_sc::storage::StorageKey;
 
 multiversx_sc::imports!();
@@ -7,7 +7,10 @@ multiversx_sc::imports!();
 static GUILD_MASTER_TIERS_STORAGE_KEY: &[u8] = b"guildMasterTiers";
 static USER_TIERS_STORAGE_KEY: &[u8] = b"userTiers";
 static MAX_TOKENS_STORAGE_KEY: &[u8] = b"maxStakedTokens";
-static MIN_UNBOND_EPOCHS_KEY: &[u8] = b"minUnbondEpochs";
+static MIN_UNBOND_EPOCHS_USER_KEY: &[u8] = b"minUnbondEpochsUser";
+static MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY: &[u8] = b"minUnbondEpochsGuildMaster"; // TODO: Use when closing guild
+static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
+static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
@@ -78,14 +81,53 @@ pub trait ReadConfigModule {
         mapper.get()
     }
 
-    fn get_min_unbond_epochs(&self) -> Epoch {
+    fn get_min_unbond_epochs_user(&self) -> Epoch {
         let config_addr = self.config_sc_address().get();
         let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
             config_addr,
-            StorageKey::new(MIN_UNBOND_EPOCHS_KEY),
+            StorageKey::new(MIN_UNBOND_EPOCHS_USER_KEY),
         );
 
         mapper.get()
+    }
+
+    fn get_min_unbond_epochs_guild_master(&self) -> Epoch {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_min_stake_user(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(MIN_STAKE_USER_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_min_stake_guild_master(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(MIN_STAKE_GUILD_MASTER_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_min_stake_for_user(&self, user: &ManagedAddress) -> BigUint {
+        let guild_master = self.guild_master().get();
+        if user != &guild_master {
+            self.get_min_stake_user()
+        } else {
+            self.get_min_stake_guild_master()
+        }
     }
 
     #[storage_mapper("configScAddress")]
