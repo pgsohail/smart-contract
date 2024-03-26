@@ -15,6 +15,7 @@ use token_attributes::StakingFarmTokenAttributes;
 pub mod base_impl_wrapper;
 pub mod custom_rewards;
 pub mod farm_token_roles;
+pub mod migration;
 pub mod tiered_rewards;
 pub mod token_attributes;
 pub mod unbond_token;
@@ -58,6 +59,7 @@ pub trait FarmStaking:
     + energy_query::EnergyQueryModule
     + tiered_rewards::read_config::ReadConfigModule
     + tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + migration::MigrationModule
 {
     #[init]
     fn init(
