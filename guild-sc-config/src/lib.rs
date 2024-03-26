@@ -1,9 +1,12 @@
 #![no_std]
 
+use common_structs::Epoch;
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 pub static TIER_NOT_FOUND_ERR_MSG: &[u8] = b"Tier not found";
+pub const MAX_MIN_UNBOND_EPOCHS: u64 = 30;
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct RewardTier<M: ManagedTypeApi> {
@@ -37,12 +40,24 @@ pub type RewardTierMultiValue<M> = MultiValue4<BigUint<M>, BigUint<M>, BigUint<M
 #[multiversx_sc::contract]
 pub trait GuildScConfig {
     #[init]
-    fn init(&self, max_staked_tokens: BigUint) {
+    fn init(&self, max_staked_tokens: BigUint, min_unbond_epochs: Epoch) {
+        self.set_min_unbond_epochs_endpoint(min_unbond_epochs);
         self.max_staked_tokens().set(max_staked_tokens);
     }
 
     #[upgrade]
     fn upgrade(&self) {}
+
+    #[only_owner]
+    #[endpoint(setMinUnbondEpochs)]
+    fn set_min_unbond_epochs_endpoint(&self, min_unbond_epochs: Epoch) {
+        require!(
+            min_unbond_epochs <= MAX_MIN_UNBOND_EPOCHS,
+            "Invalid min unbond epochs"
+        );
+
+        self.min_unbond_epochs().set(min_unbond_epochs);
+    }
 
     /// Pairs of (min_stake, max_stake, apr, compounded_apr)
     /// APR is scaled by two decimals, i.e. 10_000 is 100%
@@ -169,4 +184,8 @@ pub trait GuildScConfig {
     #[view(getMaxStakedTokens)]
     #[storage_mapper("maxStakedTokens")]
     fn max_staked_tokens(&self) -> SingleValueMapper<BigUint>;
+
+    #[view(getMinUnbondEpochs)]
+    #[storage_mapper("minUnbondEpochs")]
+    fn min_unbond_epochs(&self) -> SingleValueMapper<Epoch>;
 }

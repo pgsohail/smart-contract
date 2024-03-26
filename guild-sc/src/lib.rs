@@ -12,8 +12,6 @@ use farm_base_impl::base_traits_impl::FarmContract;
 use fixed_supply_token::FixedSupplyToken;
 use token_attributes::StakingFarmTokenAttributes;
 
-use crate::custom_rewards::MAX_MIN_UNBOND_EPOCHS;
-
 pub mod base_impl_wrapper;
 pub mod custom_rewards;
 pub mod farm_token_roles;
@@ -66,7 +64,7 @@ pub trait FarmStaking:
         &self,
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
-        min_unbond_epochs: Epoch,
+
         owner: ManagedAddress,
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,
@@ -87,14 +85,9 @@ pub trait FarmStaking:
             first_week_start_epoch >= current_epoch,
             "Invalid start epoch"
         );
-        require!(
-            min_unbond_epochs <= MAX_MIN_UNBOND_EPOCHS,
-            "Invalid min unbond epochs"
-        );
         self.require_sc_address(&config_sc_address);
 
         self.first_week_start_epoch().set(first_week_start_epoch);
-        self.min_unbond_epochs().set(min_unbond_epochs);
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
     }

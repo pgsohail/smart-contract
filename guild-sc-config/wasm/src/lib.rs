@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            8
+// Endpoints:                           10
 // Async Callback (empty):               1
-// Total number of exported functions:  10
+// Total number of exported functions:  12
 
 #![no_std]
 #![allow(internal_features)]
@@ -21,6 +21,7 @@ multiversx_sc_wasm_adapter::endpoints! {
     (
         init => init
         upgrade => upgrade
+        setMinUnbondEpochs => set_min_unbond_epochs_endpoint
         addGuildMasterTiers => add_guild_master_tiers
         setGuildMasterTierApr => set_guild_master_tier_apr
         addUserTiers => add_user_tiers
@@ -28,6 +29,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getGuildMasterTiers => guild_master_tiers
         getUserTiers => user_tiers
         getMaxStakedTokens => max_staked_tokens
+        getMinUnbondEpochs => min_unbond_epochs
     )
 }
 

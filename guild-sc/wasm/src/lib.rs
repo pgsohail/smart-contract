@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           74
+// Endpoints:                           72
 // Async Callback:                       1
-// Total number of exported functions:  76
+// Total number of exported functions:  74
 
 #![no_std]
 #![allow(internal_features)]
@@ -27,11 +27,9 @@ multiversx_sc_wasm_adapter::endpoints! {
         withdrawRewards => withdraw_rewards
         endProduceRewards => end_produce_rewards
         setPerBlockRewardAmount => set_per_block_rewards
-        setMinUnbondEpochs => set_min_unbond_epochs_endpoint
         startProduceRewards => start_produce_rewards_endpoint
         getAccumulatedRewards => accumulated_rewards
         getRewardCapacity => reward_capacity
-        getMinUnbondEpochs => min_unbond_epochs
         getRewardPerShare => reward_per_share
         getRewardReserve => reward_reserve
         allowExternalClaimBoostedRewards => allow_external_claim_boosted_rewards

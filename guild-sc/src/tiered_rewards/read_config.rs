@@ -1,3 +1,4 @@
+use common_structs::Epoch;
 use guild_sc_config::{RewardTier, TIER_NOT_FOUND_ERR_MSG};
 use multiversx_sc::storage::StorageKey;
 
@@ -6,6 +7,7 @@ multiversx_sc::imports!();
 static GUILD_MASTER_TIERS_STORAGE_KEY: &[u8] = b"guildMasterTiers";
 static USER_TIERS_STORAGE_KEY: &[u8] = b"userTiers";
 static MAX_TOKENS_STORAGE_KEY: &[u8] = b"maxStakedTokens";
+static MIN_UNBOND_EPOCHS_KEY: &[u8] = b"minUnbondEpochs";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
@@ -71,6 +73,16 @@ pub trait ReadConfigModule {
         let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
             config_addr,
             StorageKey::new(MAX_TOKENS_STORAGE_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_min_unbond_epochs(&self) -> Epoch {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(MIN_UNBOND_EPOCHS_KEY),
         );
 
         mapper.get()
