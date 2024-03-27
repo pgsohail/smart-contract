@@ -8,7 +8,7 @@ pub mod farm_staking_setup;
 use farm_staking_setup::*;
 use guild_sc::{
     custom_rewards::{BLOCKS_IN_YEAR, MAX_PERCENT},
-    user_actions::unbond_farm::UnbondFarmModule,
+    user_actions::{migration::MigrationModule, unbond_farm::UnbondFarmModule},
 };
 
 #[test]
@@ -361,6 +361,40 @@ fn cancel_unbond_test() {
                     original_farm_token.token_identifier,
                     managed_token_id!(FARM_TOKEN_ID)
                 );
+            },
+        )
+        .assert_ok();
+}
+
+#[test]
+fn close_guild_test() {
+    DebugApi::dummy();
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        energy_factory::contract_obj,
+        guild_sc_config::contract_obj,
+    );
+
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 2;
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
+
+    let current_block = 10;
+    let current_epoch = 5;
+    farm_setup.set_block_epoch(current_epoch);
+    farm_setup.set_block_nonce(current_block);
+
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.owner_address,
+            &farm_setup.farm_wrapper,
+            FARM_TOKEN_ID,
+            1,
+            &rust_biguint!(1),
+            |sc| {
+                sc.close_guild();
             },
         )
         .assert_ok();

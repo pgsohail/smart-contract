@@ -150,7 +150,13 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         caller: &ManagedAddress,
         new_tokens: &TokensPerTier<Self::Api>,
     ) {
-        let prev_tokens_mapper = self.user_tokens(caller);
+        let guild_master = self.guild_master().get();
+        let prev_tokens_mapper = if caller != &guild_master {
+            self.user_tokens(caller)
+        } else {
+            self.guild_master_tokens()
+        };
+
         let prev_tokens = if !prev_tokens_mapper.is_empty() {
             prev_tokens_mapper.get()
         } else {
@@ -196,7 +202,13 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         caller: &ManagedAddress,
         tokens: &TokensPerTier<Self::Api>,
     ) {
-        let prev_tokens = self.user_tokens(caller).get();
+        let guild_master = self.guild_master().get();
+        let prev_tokens = if caller != &guild_master {
+            self.user_tokens(caller).get()
+        } else {
+            self.guild_master_tokens().get()
+        };
+
         let prev_tier = self.find_any_user_tier(caller, &prev_tokens.base);
         self.remove_tokens_per_tier(caller, &prev_tier.min_stake, &prev_tier.max_stake, tokens);
 
