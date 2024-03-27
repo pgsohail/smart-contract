@@ -225,6 +225,23 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         );
     }
 
+    fn get_total_stake_for_user(&self, user: &ManagedAddress) -> BigUint {
+        let guild_master = self.guild_master().get();
+        let tokens_per_tier = if user != &guild_master {
+            self.user_tokens(user).get()
+        } else {
+            self.guild_master_tokens().get()
+        };
+
+        tokens_per_tier.base
+    }
+
+    fn require_over_min_stake(&self, user: &ManagedAddress) {
+        let total_stake = self.get_total_stake_for_user(user);
+        let min_stake = self.get_min_stake_for_user(user);
+        require!(total_stake >= min_stake, "Not enough stake");
+    }
+
     #[storage_mapper("totalStakedTokens")]
     fn total_staked_tokens(&self) -> SingleValueMapper<BigUint>;
 

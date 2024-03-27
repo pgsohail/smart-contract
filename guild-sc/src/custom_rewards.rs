@@ -1,7 +1,6 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-use common_structs::Epoch;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmContract;
 
@@ -9,7 +8,6 @@ use crate::base_impl_wrapper::FarmStakingWrapper;
 
 pub const MAX_PERCENT: u64 = 10_000;
 pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
-pub const MAX_MIN_UNBOND_EPOCHS: u64 = 30;
 
 #[multiversx_sc::module]
 pub trait CustomRewardsModule:
@@ -93,17 +91,6 @@ pub trait CustomRewardsModule:
         self.per_block_reward_amount().set(&per_block_amount);
     }
 
-    #[endpoint(setMinUnbondEpochs)]
-    fn set_min_unbond_epochs_endpoint(&self, min_unbond_epochs: Epoch) {
-        self.require_caller_has_admin_permissions();
-        require!(
-            min_unbond_epochs <= MAX_MIN_UNBOND_EPOCHS,
-            "Invalid min unbond epochs"
-        );
-
-        self.min_unbond_epochs().set(min_unbond_epochs);
-    }
-
     #[endpoint(startProduceRewards)]
     fn start_produce_rewards_endpoint(&self) {
         self.require_caller_has_admin_permissions();
@@ -156,8 +143,4 @@ pub trait CustomRewardsModule:
     #[view(getRewardCapacity)]
     #[storage_mapper("reward_capacity")]
     fn reward_capacity(&self) -> SingleValueMapper<BigUint>;
-
-    #[view(getMinUnbondEpochs)]
-    #[storage_mapper("minUnbondEpochs")]
-    fn min_unbond_epochs(&self) -> SingleValueMapper<Epoch>;
 }
