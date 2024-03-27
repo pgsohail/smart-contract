@@ -8,7 +8,7 @@ static GUILD_MASTER_TIERS_STORAGE_KEY: &[u8] = b"guildMasterTiers";
 static USER_TIERS_STORAGE_KEY: &[u8] = b"userTiers";
 static MAX_TOKENS_STORAGE_KEY: &[u8] = b"maxStakedTokens";
 static MIN_UNBOND_EPOCHS_USER_KEY: &[u8] = b"minUnbondEpochsUser";
-static MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY: &[u8] = b"minUnbondEpochsGuildMaster"; // TODO: Use when closing guild
+static MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY: &[u8] = b"minUnbondEpochsGuildMaster";
 static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
 static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
 
