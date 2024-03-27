@@ -52,7 +52,7 @@ pub trait CustomEventsModule {
             base_rewards,
             new_farm_token,
         };
-        self.migrate_to_other_farm_event(&caller, &event_data);
+        self.migrate_to_other_farm_event(caller, &event_data);
     }
 
     #[event("cancelUnbondEvent")]
