@@ -36,6 +36,7 @@ pub trait UnbondFarmModule:
     + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + super::custom_events::CustomEventsModule
 {
     #[payable("*")]
     #[endpoint(unbondFarm)]
@@ -89,7 +90,10 @@ pub trait UnbondFarmModule:
         );
 
         let mut new_attributes = enter_result.new_farm_token.attributes;
-        new_attributes.compounded_reward = unbond_attributes.original_attributes.compounded_reward;
+        new_attributes.compounded_reward = unbond_attributes
+            .original_attributes
+            .compounded_reward
+            .clone();
         new_attributes.original_owner = caller.clone();
 
         self.add_total_staked_tokens(&new_attributes.current_farm_amount);
@@ -102,10 +106,17 @@ pub trait UnbondFarmModule:
         );
 
         let total_farm_tokens = new_attributes.get_total_supply();
+        let new_farm_token =
+            self.farm_token()
+                .nft_create_and_send(&caller, total_farm_tokens, &new_attributes);
 
-        // TODO: Event
+        self.emit_cancel_unbond_event(
+            &caller,
+            unbond_attributes,
+            new_farm_token.clone(),
+            new_attributes,
+        );
 
-        self.farm_token()
-            .nft_create_and_send(&caller, total_farm_tokens, &new_attributes)
+        new_farm_token
     }
 }

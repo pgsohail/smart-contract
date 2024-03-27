@@ -107,7 +107,7 @@ impl<M: ManagedTypeApi> Mergeable<M> for StakingFarmTokenAttributes<M> {
     }
 }
 
-#[derive(TypeAbi, TopEncode, TopDecode, PartialEq, Debug)]
+#[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Debug)]
 pub struct UnbondSftAttributes<M: ManagedTypeApi> {
     pub unlock_epoch: Epoch,
     pub supply: BigUint<M>,
