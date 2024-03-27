@@ -17,7 +17,9 @@ pub trait FarmStakingTraits =
         + pausable::PausableModule
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-        + farm_boosted_yields::FarmBoostedYieldsModule;
+        + farm_boosted_yields::FarmBoostedYieldsModule
+        + crate::tiered_rewards::read_config::ReadConfigModule
+        + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule;
 
 pub struct FarmStakingWrapper<T>
 where
@@ -63,13 +65,12 @@ where
 
         let user_total_farm_position = sc.get_user_total_farm_position(caller);
         let user_farm_position = user_total_farm_position.total_farm_position;
-        let mut boosted_rewards = BigUint::zero();
 
         if user_farm_position > 0 {
-            boosted_rewards = sc.claim_boosted_yields_rewards(caller, user_farm_position);
+            sc.claim_boosted_yields_rewards(caller, user_farm_position)
+        } else {
+            BigUint::zero()
         }
-
-        boosted_rewards
     }
 }
 
@@ -100,9 +101,7 @@ where
 
         let extra_rewards_unbounded =
             Self::calculate_per_block_rewards(sc, current_block_nonce, last_reward_nonce);
-
-        let farm_token_supply = sc.farm_token_supply().get();
-        let extra_rewards_apr_bounded_per_block = sc.get_amount_apr_bounded(&farm_token_supply);
+        let extra_rewards_apr_bounded_per_block = sc.get_amount_apr_bounded();
 
         let block_nonce_diff = current_block_nonce - last_reward_nonce;
         let extra_rewards_apr_bounded = extra_rewards_apr_bounded_per_block * block_nonce_diff;
@@ -225,7 +224,6 @@ where
         }
     }
 
-    #[inline]
     fn increase_user_farm_position(
         sc: &Self::FarmSc,
         user: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,

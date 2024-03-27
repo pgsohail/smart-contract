@@ -17,6 +17,7 @@ use crate::custom_rewards::MAX_MIN_UNBOND_EPOCHS;
 pub mod base_impl_wrapper;
 pub mod custom_rewards;
 pub mod farm_token_roles;
+pub mod tiered_rewards;
 pub mod token_attributes;
 pub mod unbond_token;
 pub mod user_actions;
@@ -57,15 +58,18 @@ pub trait FarmStaking:
     + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
     + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
     + energy_query::EnergyQueryModule
+    + tiered_rewards::read_config::ReadConfigModule
+    + tiered_rewards::tokens_per_tier::TokenPerTierModule
 {
     #[init]
     fn init(
         &self,
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
-        max_apr: BigUint,
         min_unbond_epochs: Epoch,
         owner: ManagedAddress,
+        config_sc_address: ManagedAddress,
+        guild_master: ManagedAddress,
         first_week_start_epoch: Epoch,
         admins: MultiValueEncoded<ManagedAddress>,
     ) {
@@ -83,16 +87,16 @@ pub trait FarmStaking:
             first_week_start_epoch >= current_epoch,
             "Invalid start epoch"
         );
-        self.first_week_start_epoch().set(first_week_start_epoch);
-
-        require!(max_apr > 0u64, "Invalid max APR percentage");
-        self.max_annual_percentage_rewards().set(&max_apr);
-
         require!(
             min_unbond_epochs <= MAX_MIN_UNBOND_EPOCHS,
             "Invalid min unbond epochs"
         );
+        self.require_sc_address(&config_sc_address);
+
+        self.first_week_start_epoch().set(first_week_start_epoch);
         self.min_unbond_epochs().set(min_unbond_epochs);
+        self.config_sc_address().set(config_sc_address);
+        self.guild_master().set(guild_master);
     }
 
     #[endpoint]
@@ -106,8 +110,6 @@ pub trait FarmStaking:
     #[endpoint(mergeFarmTokens)]
     fn merge_farm_tokens_endpoint(&self) -> EsdtTokenPayment {
         let caller = self.blockchain().get_caller();
-        self.migrate_old_farm_positions(&caller);
-
         let boosted_rewards = self.claim_only_boosted_payment(&caller);
         self.add_boosted_rewards(&caller, &boosted_rewards);
 

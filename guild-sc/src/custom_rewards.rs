@@ -10,8 +10,6 @@ use crate::base_impl_wrapper::FarmStakingWrapper;
 pub const MAX_PERCENT: u64 = 10_000;
 pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
 pub const MAX_MIN_UNBOND_EPOCHS: u64 = 30;
-pub const WITHDRAW_AMOUNT_TOO_HIGH: &str =
-    "Withdraw amount is higher than the remaining uncollected rewards!";
 
 #[multiversx_sc::module]
 pub trait CustomRewardsModule:
@@ -32,6 +30,8 @@ pub trait CustomRewardsModule:
     + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
     + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
     + energy_query::EnergyQueryModule
+    + crate::tiered_rewards::read_config::ReadConfigModule
+    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
 {
     #[payable("*")]
     #[endpoint(topUpRewards)]
@@ -54,21 +54,20 @@ pub trait CustomRewardsModule:
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
 
         let reward_capacity_mapper = self.reward_capacity();
-        let accumulated_rewards_mapper = self.accumulated_rewards();
-        let remaining_rewards = reward_capacity_mapper.get() - accumulated_rewards_mapper.get();
+        let mut rewards_capacity = reward_capacity_mapper.get();
+        let accumulated_rewards = self.accumulated_rewards().get();
+        let remaining_rewards = &rewards_capacity - &accumulated_rewards;
         require!(
-            withdraw_amount <= remaining_rewards,
-            WITHDRAW_AMOUNT_TOO_HIGH
+            remaining_rewards >= withdraw_amount,
+            "Withdraw amount is higher than the remaining uncollected rewards!"
+        );
+        require!(
+            rewards_capacity >= withdraw_amount,
+            "Not enough rewards to withdraw"
         );
 
-        reward_capacity_mapper.update(|rewards| {
-            require!(
-                *rewards >= withdraw_amount,
-                "Not enough rewards to withdraw"
-            );
-
-            *rewards -= withdraw_amount.clone()
-        });
+        rewards_capacity -= &withdraw_amount;
+        reward_capacity_mapper.set(rewards_capacity);
 
         let caller = self.blockchain().get_caller();
         let reward_token_id = self.reward_token_id().get();
@@ -94,23 +93,9 @@ pub trait CustomRewardsModule:
         self.per_block_reward_amount().set(&per_block_amount);
     }
 
-    #[endpoint(setMaxApr)]
-    fn set_max_apr(&self, max_apr: BigUint) {
-        self.require_caller_has_admin_permissions();
-        require!(max_apr != 0, "Max APR cannot be zero");
-
-        let mut storage_cache = StorageCache::new(self);
-        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
-        self.max_annual_percentage_rewards().set(&max_apr);
-    }
-
     #[endpoint(setMinUnbondEpochs)]
     fn set_min_unbond_epochs_endpoint(&self, min_unbond_epochs: Epoch) {
         self.require_caller_has_admin_permissions();
-        self.try_set_min_unbond_epochs(min_unbond_epochs);
-    }
-
-    fn try_set_min_unbond_epochs(&self, min_unbond_epochs: Epoch) {
         require!(
             min_unbond_epochs <= MAX_MIN_UNBOND_EPOCHS,
             "Invalid min unbond epochs"
@@ -119,15 +104,49 @@ pub trait CustomRewardsModule:
         self.min_unbond_epochs().set(min_unbond_epochs);
     }
 
-    fn get_amount_apr_bounded(&self, amount: &BigUint) -> BigUint {
-        let max_apr = self.max_annual_percentage_rewards().get();
-        amount * &max_apr / MAX_PERCENT / BLOCKS_IN_YEAR
-    }
-
     #[endpoint(startProduceRewards)]
     fn start_produce_rewards_endpoint(&self) {
         self.require_caller_has_admin_permissions();
         self.start_produce_rewards();
+    }
+
+    fn get_amount_apr_bounded(&self) -> BigUint {
+        let mut total = BigUint::zero();
+
+        if !self.guild_master_tokens().is_empty() {
+            let guild_master_tokens = self.guild_master_tokens().get();
+            let guild_master_tier = self.find_guild_master_tier(&guild_master_tokens.base);
+            let base_amount_bounded_guild_master =
+                self.bound_amount_by_apr(&guild_master_tokens.base, &guild_master_tier.apr);
+            let compounded_amount_bounded_guild_master = self.bound_amount_by_apr(
+                &guild_master_tokens.compounded,
+                &guild_master_tier.compounded_apr,
+            );
+            total += base_amount_bounded_guild_master;
+            total += compounded_amount_bounded_guild_master;
+        }
+
+        let tiers_mapper = self.get_user_tiers_mapper();
+        for tier in tiers_mapper.iter() {
+            let tokens_mapper = self.tokens_per_tier(&tier.min_stake, &tier.max_stake);
+            if tokens_mapper.is_empty() {
+                continue;
+            }
+
+            let user_tokens_for_tier = tokens_mapper.get();
+            let base_amount_users = self.bound_amount_by_apr(&user_tokens_for_tier.base, &tier.apr);
+            let compounded_amount_users =
+                self.bound_amount_by_apr(&user_tokens_for_tier.compounded, &tier.compounded_apr);
+
+            total += base_amount_users;
+            total += compounded_amount_users;
+        }
+
+        total
+    }
+
+    fn bound_amount_by_apr(&self, amount: &BigUint, apr: &BigUint) -> BigUint {
+        amount * apr / MAX_PERCENT / BLOCKS_IN_YEAR
     }
 
     #[view(getAccumulatedRewards)]
@@ -137,10 +156,6 @@ pub trait CustomRewardsModule:
     #[view(getRewardCapacity)]
     #[storage_mapper("reward_capacity")]
     fn reward_capacity(&self) -> SingleValueMapper<BigUint>;
-
-    #[view(getAnnualPercentageRewards)]
-    #[storage_mapper("annualPercentageRewards")]
-    fn max_annual_percentage_rewards(&self) -> SingleValueMapper<BigUint>;
 
     #[view(getMinUnbondEpochs)]
     #[storage_mapper("minUnbondEpochs")]

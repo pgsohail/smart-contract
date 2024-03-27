@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            6
+// Endpoints:                            8
 // Async Callback (empty):               1
-// Total number of exported functions:   8
+// Total number of exported functions:  10
 
 #![no_std]
 #![allow(internal_features)]
@@ -20,12 +20,14 @@ multiversx_sc_wasm_adapter::endpoints! {
     guild_sc_config
     (
         init => init
+        upgrade => upgrade
         addGuildMasterTiers => add_guild_master_tiers
         setGuildMasterTierApr => set_guild_master_tier_apr
         addUserTiers => add_user_tiers
         setUserTierApr => set_user_tier_apr
         getGuildMasterTiers => guild_master_tiers
         getUserTiers => user_tiers
+        getMaxStakedTokens => max_staked_tokens
     )
 }
 
