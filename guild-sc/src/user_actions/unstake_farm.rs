@@ -1,5 +1,6 @@
 multiversx_sc::imports!();
 
+use common_structs::{Epoch, PaymentsVec};
 use contexts::storage_cache::FarmContracTraitBounds;
 use farm::ExitFarmWithPartialPosResultType;
 use farm_base_impl::exit_farm::InternalExitFarmResult;
@@ -19,6 +20,16 @@ where
     pub base_rewards_payment: EsdtTokenPayment<C::Api>,
     pub original_attributes: StakingFarmTokenAttributes<C::Api>,
     pub exit_result: InternalExitFarmResult<'a, C, T>,
+}
+
+pub struct MultiUnstakeResultType<M: ManagedTypeApi> {
+    pub base_rewards_payment: EsdtTokenPayment<M>,
+    pub farming_tokens_payment: EsdtTokenPayment<M>,
+}
+
+pub struct CreateUnbondTokenResult<M: ManagedTypeApi> {
+    pub unbond_token: EsdtTokenPayment<M>,
+    pub attributes: UnbondSftAttributes<M>,
 }
 
 #[multiversx_sc::module]
@@ -102,22 +113,28 @@ pub trait UnstakeFarmModule:
 
         self.require_over_min_stake(&original_caller);
 
-        let unbond_farm_token = self.create_and_send_unbond_tokens(
+        let min_unbond_epochs = self.get_min_unbond_epochs_user();
+        let create_unbond_token_result = self.create_and_send_unbond_tokens(
             &caller,
             unbond_token_amount,
-            unstake_result.original_attributes,
+            Some(unstake_result.original_attributes),
+            min_unbond_epochs,
         );
         self.send_payment_non_zero(&caller, &unstake_result.base_rewards_payment);
 
         self.emit_exit_farm_event(
             &caller,
             unstake_result.exit_result.context,
-            unbond_farm_token.clone(),
+            create_unbond_token_result.unbond_token.clone(),
             unstake_result.base_rewards_payment.clone(),
             unstake_result.exit_result.storage_cache,
         );
 
-        (unbond_farm_token, unstake_result.base_rewards_payment).into()
+        (
+            create_unbond_token_result.unbond_token,
+            unstake_result.base_rewards_payment,
+        )
+            .into()
     }
 
     fn unstake_farm_common_no_unbond_token_mint(
@@ -159,23 +176,54 @@ pub trait UnstakeFarmModule:
         }
     }
 
+    fn multi_unstake(
+        &self,
+        caller: &ManagedAddress,
+        payments: &PaymentsVec<Self::Api>,
+    ) -> MultiUnstakeResultType<Self::Api> {
+        let mut total_rewards = BigUint::zero();
+        let mut total_farming_tokens = BigUint::zero();
+        for payment in payments {
+            let unstake_result =
+                self.unstake_farm_common_no_unbond_token_mint(caller.clone(), payment);
+            total_rewards += unstake_result.base_rewards_payment.amount;
+            total_farming_tokens += unstake_result.exit_result.farming_token_payment.amount;
+        }
+
+        let reward_token_id = self.reward_token_id().get();
+        let reward_payment = EsdtTokenPayment::new(reward_token_id, 0, total_rewards);
+        self.send_payment_non_zero(caller, &reward_payment);
+
+        let farming_token_id = self.farming_token_id().get();
+        let farming_tokens_payment =
+            EsdtTokenPayment::new(farming_token_id, 0, total_farming_tokens);
+
+        MultiUnstakeResultType {
+            base_rewards_payment: reward_payment,
+            farming_tokens_payment,
+        }
+    }
+
     fn create_and_send_unbond_tokens(
         &self,
         to: &ManagedAddress,
         amount: BigUint,
-        original_attributes: StakingFarmTokenAttributes<Self::Api>,
-    ) -> EsdtTokenPayment {
-        let min_unbond_epochs = self.get_min_unbond_epochs_user();
+        opt_original_attributes: Option<StakingFarmTokenAttributes<Self::Api>>,
+        unbond_epochs: Epoch,
+    ) -> CreateUnbondTokenResult<Self::Api> {
         let current_epoch = self.blockchain().get_block_epoch();
+        let attributes = UnbondSftAttributes {
+            unlock_epoch: current_epoch + unbond_epochs,
+            opt_original_attributes,
+            supply: amount.clone(),
+        };
+        let unbond_token = self
+            .unbond_token()
+            .nft_create_and_send(to, amount, &attributes);
 
-        self.unbond_token().nft_create_and_send(
-            to,
-            amount.clone(),
-            &UnbondSftAttributes {
-                unlock_epoch: current_epoch + min_unbond_epochs,
-                original_attributes,
-                supply: amount,
-            },
-        )
+        CreateUnbondTokenResult {
+            unbond_token,
+            attributes,
+        }
     }
 }

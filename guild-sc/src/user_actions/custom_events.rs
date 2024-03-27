@@ -28,8 +28,12 @@ pub trait CustomEventsModule {
     }
 
     #[inline]
-    fn emit_guild_closing_event(&self) {
-        self.guild_closing_event();
+    fn emit_guild_closing_event(
+        &self,
+        guild_master: &ManagedAddress,
+        unbond_attributes: &UnbondSftAttributes<Self::Api>,
+    ) {
+        self.guild_closing_event(guild_master, unbond_attributes);
     }
 
     #[event("cancelUnbondEvent")]
@@ -40,5 +44,9 @@ pub trait CustomEventsModule {
     );
 
     #[event("guildClosingEvent")]
-    fn guild_closing_event(&self);
+    fn guild_closing_event(
+        &self,
+        #[indexed] guild_master: &ManagedAddress,
+        unbond_attributes: &UnbondSftAttributes<Self::Api>,
+    );
 }

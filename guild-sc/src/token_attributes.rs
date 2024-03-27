@@ -111,7 +111,7 @@ impl<M: ManagedTypeApi> Mergeable<M> for StakingFarmTokenAttributes<M> {
 pub struct UnbondSftAttributes<M: ManagedTypeApi> {
     pub unlock_epoch: Epoch,
     pub supply: BigUint<M>,
-    pub original_attributes: StakingFarmTokenAttributes<M>,
+    pub opt_original_attributes: Option<StakingFarmTokenAttributes<M>>,
 }
 
 impl<M: ManagedTypeApi> FixedSupplyToken<M> for UnbondSftAttributes<M> {
@@ -126,12 +126,14 @@ impl<M: ManagedTypeApi> FixedSupplyToken<M> for UnbondSftAttributes<M> {
         }
 
         let new_supply = payment_amount.clone();
-        let new_attributes = self.original_attributes.into_part(payment_amount);
+        let opt_new_attributes = self
+            .opt_original_attributes
+            .map(|attr| attr.into_part(payment_amount));
 
         UnbondSftAttributes {
             unlock_epoch: self.unlock_epoch,
             supply: new_supply,
-            original_attributes: new_attributes,
+            opt_original_attributes: opt_new_attributes,
         }
     }
 }

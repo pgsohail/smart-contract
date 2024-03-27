@@ -79,8 +79,20 @@ pub trait UnbondFarmModule:
 
         unbond_token_mapper.nft_burn(payment.token_nonce, &payment.amount);
 
+        require!(
+            unbond_attributes.opt_original_attributes.is_some(),
+            "May not cancel unbond for this token"
+        );
+
+        let original_attributes = unsafe {
+            unbond_attributes
+                .opt_original_attributes
+                .clone()
+                .unwrap_unchecked()
+        };
+
         let caller = self.blockchain().get_caller();
-        let total_farming_tokens = unbond_attributes.original_attributes.get_total_supply();
+        let total_farming_tokens = original_attributes.get_total_supply();
         let farming_token_id = self.farming_token_id().get();
         let farming_token_payment =
             EsdtTokenPayment::new(farming_token_id, 0, total_farming_tokens.clone());
@@ -90,10 +102,7 @@ pub trait UnbondFarmModule:
         );
 
         let mut new_attributes = enter_result.new_farm_token.attributes;
-        new_attributes.compounded_reward = unbond_attributes
-            .original_attributes
-            .compounded_reward
-            .clone();
+        new_attributes.compounded_reward = original_attributes.compounded_reward.clone();
         new_attributes.original_owner = caller.clone();
 
         self.add_total_staked_tokens(&new_attributes.current_farm_amount);

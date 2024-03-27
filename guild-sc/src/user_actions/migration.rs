@@ -34,13 +34,38 @@ pub trait MigrationModule:
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::custom_events::CustomEventsModule
 {
+    #[payable("*")]
     #[endpoint(closeGuild)]
     fn close_guild(&self) {
-        // TODO: Require guild master caller + send unbond tokens
         self.require_not_closing();
 
+        let guild_master = self.guild_master().get();
+        let caller = self.blockchain().get_caller();
+        require!(guild_master == caller, "Only guild master may close guild");
+
+        let payments = self.get_non_empty_payments();
+        let mut total_payment = BigUint::zero();
+        for payment in &payments {
+            total_payment += payment.amount;
+        }
+
+        let total_guild_master_tokens = self.guild_master_tokens().get();
+        require!(
+            total_payment == total_guild_master_tokens.base,
+            "Must send all tokens when closing guild"
+        );
+
+        let multi_unstake_result = self.multi_unstake(&caller, &payments);
+        let unbond_epochs = self.get_min_unbond_epochs_guild_master();
+        let create_unbond_token_result = self.create_and_send_unbond_tokens(
+            &caller,
+            multi_unstake_result.farming_tokens_payment.amount,
+            None,
+            unbond_epochs,
+        );
+
         self.guild_closing().set(true);
-        self.emit_guild_closing_event();
+        self.emit_guild_closing_event(&caller, &create_unbond_token_result.attributes);
     }
 
     #[payable("*")]
@@ -58,27 +83,11 @@ pub trait MigrationModule:
         );
 
         let payments = self.get_non_empty_payments();
-        let mut total_rewards = BigUint::zero();
-        let mut total_farming_tokens = BigUint::zero();
-        for payment in &payments {
-            let unstake_result =
-                self.unstake_farm_common_no_unbond_token_mint(caller.clone(), payment);
-            total_rewards += unstake_result.base_rewards_payment.amount;
-            total_farming_tokens += unstake_result.exit_result.farming_token_payment.amount;
-        }
-
-        let reward_token_id = self.reward_token_id().get();
-        let reward_payment = EsdtTokenPayment::new(reward_token_id, 0, total_rewards);
-        self.send_payment_non_zero(&caller, &reward_payment);
-
-        let farming_token_id = self.farming_token_id().get();
-        let farming_tokens_payment =
-            EsdtTokenPayment::new(farming_token_id, 0, total_farming_tokens);
-
+        let multi_unstake_result = self.multi_unstake(&caller, &payments);
         let farm_token: EsdtTokenPayment = self
             .own_proxy(guild_address)
-            .stake_farm_endpoint(OptionalValue::Some(caller.clone()))
-            .with_esdt_transfer(farming_tokens_payment)
+            .stake_farm_endpoint(caller.clone())
+            .with_esdt_transfer(multi_unstake_result.farming_tokens_payment)
             .execute_on_dest_context();
 
         // TODO: Event
