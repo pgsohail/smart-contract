@@ -1,12 +1,12 @@
-use crate::user_actions::stake_farm::ProxyTrait as _;
+use super::stake_farm::ProxyTrait as _;
 
 multiversx_sc::imports!();
 
 #[multiversx_sc::module]
 pub trait MigrationModule:
-    crate::user_actions::unstake_farm::UnstakeFarmModule
+    super::unstake_farm::UnstakeFarmModule
     + crate::custom_rewards::CustomRewardsModule
-    + crate::user_actions::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
+    + super::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + crate::unbond_token::UnbondTokenModule
     + rewards::RewardsModule
     + config::ConfigModule
