@@ -130,7 +130,6 @@ where
                 sc.init(
                     farming_token_id,
                     division_safety_constant,
-                    managed_address!(&owner_addr),
                     managed_address!(config_wrapper.address_ref()),
                     managed_address!(&owner_addr),
                     0,

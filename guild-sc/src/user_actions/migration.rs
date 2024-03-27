@@ -84,13 +84,19 @@ pub trait MigrationModule:
 
         let payments = self.get_non_empty_payments();
         let multi_unstake_result = self.multi_unstake(&caller, &payments);
+
+        // TODO: Change endpoint to one from guild factory SC
         let farm_token: EsdtTokenPayment = self
             .own_proxy(guild_address)
             .stake_farm_endpoint(caller.clone())
             .with_esdt_transfer(multi_unstake_result.farming_tokens_payment)
             .execute_on_dest_context();
 
-        // TODO: Event
+        self.emit_migrate_to_other_farm_event(
+            &caller,
+            multi_unstake_result.base_rewards_payment,
+            farm_token.clone(),
+        );
 
         self.send_payment_non_zero(&caller, &farm_token);
     }
