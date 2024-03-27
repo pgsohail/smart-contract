@@ -27,10 +27,18 @@ pub trait CustomEventsModule {
         self.cancel_unbond_event(caller, &event_data);
     }
 
+    #[inline]
+    fn emit_guild_closing_event(&self) {
+        self.guild_closing_event();
+    }
+
     #[event("cancelUnbondEvent")]
     fn cancel_unbond_event(
         &self,
         #[indexed] caller: &ManagedAddress,
         event_data: &CancelUnbondEventData<Self::Api>,
     );
+
+    #[event("guildClosingEvent")]
+    fn guild_closing_event(&self);
 }

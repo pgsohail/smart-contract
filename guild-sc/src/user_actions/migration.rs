@@ -32,6 +32,7 @@ pub trait MigrationModule:
     + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + super::custom_events::CustomEventsModule
 {
     #[endpoint(closeGuild)]
     fn close_guild(&self) {
@@ -39,6 +40,7 @@ pub trait MigrationModule:
         self.require_not_closing();
 
         self.guild_closing().set(true);
+        self.emit_guild_closing_event();
     }
 
     #[payable("*")]
