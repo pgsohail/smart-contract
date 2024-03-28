@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            1
+// Endpoints:                           10
 // Async Callback (empty):               1
-// Total number of exported functions:   3
+// Total number of exported functions:  12
 
 #![no_std]
 #![allow(internal_features)]
@@ -21,6 +21,15 @@ multiversx_sc_wasm_adapter::endpoints! {
     (
         init => init
         upgrade => upgrade
+        deployConfigSc => deploy_config_sc
+        callConfigFunction => call_config_function
+        deployGuild => deploy_guild
+        setTransferRoleGuild => set_transfer_role_guild
+        setTransferRoleForFactory => set_transfer_role_for_factory
+        isAdmin => is_admin
+        addAdmin => add_admin
+        removeAdmin => remove_admin
+        getAdmins => admins
     )
 }
 

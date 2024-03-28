@@ -11,6 +11,23 @@ path = "src/lib.rs"
 [dependencies.multiversx-sc]
 version = "=0.47.5"
 
+[dependencies.guild-sc]
+path = "../guild-sc"
+
+[dependencies.guild-sc-config]
+path = "../guild-sc-config"
+
+[dependencies.common_structs]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "71d5305"
+
+[dependencies.utils]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "71d5305"
+
+[dependencies.multiversx-sc-modules]
+version = "=0.47.5"
+
 [dev-dependencies]
 num-bigint = "0.4"
 

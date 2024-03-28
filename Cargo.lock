@@ -813,9 +813,14 @@ dependencies = [
 name = "guild-factory"
 version = "0.0.0"
 dependencies = [
+ "common_structs",
+ "guild-sc",
+ "guild-sc-config",
  "multiversx-sc",
+ "multiversx-sc-modules",
  "multiversx-sc-scenario",
  "num-bigint",
+ "utils",
 ]
 
 [[package]]

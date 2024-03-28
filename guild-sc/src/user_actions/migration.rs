@@ -1,3 +1,8 @@
+use contexts::storage_cache::StorageCache;
+use farm_base_impl::base_traits_impl::FarmContract;
+
+use crate::base_impl_wrapper::FarmStakingWrapper;
+
 use super::stake_farm::ProxyTrait as _;
 
 multiversx_sc::imports!();
@@ -65,6 +70,18 @@ pub trait MigrationModule:
         );
 
         self.guild_closing().set(true);
+
+        let mut storage_cache = StorageCache::new(self);
+        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
+        self.produce_rewards_enabled().set(false);
+
+        let rewards_capacity = self.reward_capacity().get();
+        let accumulated_rewards = self.accumulated_rewards().get();
+        let remaining_rewards = rewards_capacity - accumulated_rewards;
+        self.withdraw_rewards_common(&remaining_rewards);
+
+        // TODO: Send remaining rewards to guild factory
+
         self.emit_guild_closing_event(&caller, &create_unbond_token_result.attributes);
     }
 
@@ -85,7 +102,8 @@ pub trait MigrationModule:
         let payments = self.get_non_empty_payments();
         let multi_unstake_result = self.multi_unstake(&caller, &payments);
 
-        // TODO: Change endpoint to one from guild factory SC
+        // TODO: Change endpoint to one from guild factory SC - no permission for original caller arg otherwise
+        // TODO: Remove guild from list once migration is complete
         let farm_token: EsdtTokenPayment = self
             .own_proxy(guild_address)
             .stake_farm_endpoint(caller.clone())

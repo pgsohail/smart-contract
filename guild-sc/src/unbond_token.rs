@@ -5,7 +5,6 @@ pub trait UnbondTokenModule:
     permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
 {
-    #[only_owner]
     #[payable("EGLD")]
     #[endpoint(registerUnbondToken)]
     fn register_unbond_token(

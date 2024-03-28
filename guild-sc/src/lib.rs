@@ -69,9 +69,11 @@ pub trait FarmStaking:
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,
         first_week_start_epoch: Epoch,
-        admins: MultiValueEncoded<ManagedAddress>,
+        per_reward_block_amount: BigUint,
+        mut admins: MultiValueEncoded<ManagedAddress>,
     ) {
         let owner = self.blockchain().get_caller();
+        admins.push(guild_master.clone());
 
         // farming and reward token are the same
         self.base_farm_init(
@@ -92,6 +94,8 @@ pub trait FarmStaking:
         self.first_week_start_epoch().set(first_week_start_epoch);
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
+        self.per_block_reward_amount().set(per_reward_block_amount);
+
         self.sc_whitelist_addresses().add(&owner);
     }
 

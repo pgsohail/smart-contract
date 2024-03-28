@@ -48,6 +48,14 @@ pub trait CustomRewardsModule:
     fn withdraw_rewards(&self, withdraw_amount: BigUint) {
         self.require_caller_has_admin_permissions();
 
+        self.withdraw_rewards_common(&withdraw_amount);
+
+        let caller = self.blockchain().get_caller();
+        let reward_token_id = self.reward_token_id().get();
+        self.send_tokens_non_zero(&caller, &reward_token_id, 0, &withdraw_amount);
+    }
+
+    fn withdraw_rewards_common(&self, withdraw_amount: &BigUint) {
         let mut storage_cache = StorageCache::new(self);
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
 
@@ -56,45 +64,16 @@ pub trait CustomRewardsModule:
         let accumulated_rewards = self.accumulated_rewards().get();
         let remaining_rewards = &rewards_capacity - &accumulated_rewards;
         require!(
-            remaining_rewards >= withdraw_amount,
+            &remaining_rewards >= withdraw_amount,
             "Withdraw amount is higher than the remaining uncollected rewards!"
         );
         require!(
-            rewards_capacity >= withdraw_amount,
+            &rewards_capacity >= withdraw_amount,
             "Not enough rewards to withdraw"
         );
 
-        rewards_capacity -= &withdraw_amount;
+        rewards_capacity -= withdraw_amount;
         reward_capacity_mapper.set(rewards_capacity);
-
-        let caller = self.blockchain().get_caller();
-        let reward_token_id = self.reward_token_id().get();
-        self.send_tokens_non_zero(&caller, &reward_token_id, 0, &withdraw_amount);
-    }
-
-    #[endpoint(endProduceRewards)]
-    fn end_produce_rewards(&self) {
-        self.require_caller_has_admin_permissions();
-
-        let mut storage_cache = StorageCache::new(self);
-        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
-        self.produce_rewards_enabled().set(false);
-    }
-
-    #[endpoint(setPerBlockRewardAmount)]
-    fn set_per_block_rewards(&self, per_block_amount: BigUint) {
-        self.require_caller_has_admin_permissions();
-        require!(per_block_amount != 0, "Amount cannot be zero");
-
-        let mut storage_cache = StorageCache::new(self);
-        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
-        self.per_block_reward_amount().set(&per_block_amount);
-    }
-
-    #[endpoint(startProduceRewards)]
-    fn start_produce_rewards_endpoint(&self) {
-        self.require_caller_has_admin_permissions();
-        self.start_produce_rewards();
     }
 
     fn get_amount_apr_bounded(&self) -> BigUint {
