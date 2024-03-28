@@ -810,6 +810,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "guild-factory"
+version = "0.0.0"
+dependencies = [
+ "multiversx-sc",
+ "multiversx-sc-scenario",
+ "num-bigint",
+]
+
+[[package]]
+name = "guild-factory-meta"
+version = "0.0.0"
+dependencies = [
+ "guild-factory",
+ "multiversx-sc-meta",
+]
+
+[[package]]
 name = "guild-sc"
 version = "0.0.0"
 dependencies = [
