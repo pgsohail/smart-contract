@@ -95,7 +95,7 @@ pub trait FarmStaking:
         self.sc_whitelist_addresses().add(&owner);
     }
 
-    #[endpoint]
+    #[upgrade]
     fn upgrade(&self) {}
 
     #[payable("*")]
