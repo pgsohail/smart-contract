@@ -69,7 +69,7 @@ pub trait FarmStaking:
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,
         first_week_start_epoch: Epoch,
-        per_reward_block_amount: BigUint,
+        per_block_reward_amount: BigUint,
         mut admins: MultiValueEncoded<ManagedAddress>,
     ) {
         let owner = self.blockchain().get_caller();
@@ -94,7 +94,7 @@ pub trait FarmStaking:
         self.first_week_start_epoch().set(first_week_start_epoch);
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
-        self.per_block_reward_amount().set(per_reward_block_amount);
+        self.per_block_reward_amount().set(per_block_reward_amount);
 
         self.sc_whitelist_addresses().add(&owner);
     }
@@ -119,6 +119,25 @@ pub trait FarmStaking:
         self.send_payment_non_zero(&caller, &merged_farm_token);
 
         merged_farm_token
+    }
+
+    #[endpoint(checkLocalRolesSet)]
+    fn check_local_roles_set(&self) {
+        // Will fail if tokens were not issued yet
+        let farm_token_id = self.farm_token().get_token_id();
+        let unbond_token_id = self.unbond_token().get_token_id();
+
+        let farm_token_roles = self.blockchain().get_esdt_local_roles(&farm_token_id);
+        require!(
+            farm_token_roles.has_role(&EsdtLocalRole::Transfer),
+            "Transfer role not set for farm token"
+        );
+
+        let unbond_token_roles = self.blockchain().get_esdt_local_roles(&unbond_token_id);
+        require!(
+            unbond_token_roles.has_role(&EsdtLocalRole::Transfer),
+            "Transfer role not set for unbond token"
+        );
     }
 
     #[view(calculateRewardsForGivenPosition)]

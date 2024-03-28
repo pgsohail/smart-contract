@@ -20,8 +20,7 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
             "Config SC already deployed"
         );
 
-        let code_metadata =
-            CodeMetadata::PAYABLE_BY_SC | CodeMetadata::UPGRADEABLE | CodeMetadata::READABLE;
+        let code_metadata = self.get_default_code_metadata();
         let (config_address, _) = self
             .config_proxy()
             .init(
@@ -56,6 +55,10 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
         }
 
         let _: IgnoreValue = call_data.execute_on_dest_context();
+    }
+
+    fn get_default_code_metadata(&self) -> CodeMetadata {
+        CodeMetadata::PAYABLE_BY_SC | CodeMetadata::UPGRADEABLE | CodeMetadata::READABLE
     }
 
     #[proxy]

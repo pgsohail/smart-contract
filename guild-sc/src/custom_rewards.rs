@@ -43,6 +43,12 @@ pub trait CustomRewardsModule:
         self.reward_capacity().update(|r| *r += payment_amount);
     }
 
+    #[only_owner]
+    #[endpoint(startProduceRewards)]
+    fn start_produce_rewards_endpoint(&self) {
+        self.start_produce_rewards();
+    }
+
     #[payable("*")]
     #[endpoint(withdrawRewards)]
     fn withdraw_rewards(&self, withdraw_amount: BigUint) {

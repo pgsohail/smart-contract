@@ -26,14 +26,11 @@ pub trait UnbondTokenModule:
         );
     }
 
-    #[only_owner]
     #[endpoint(setTransferRoleUnbondToken)]
-    fn set_transfer_role_unbond_token(&self, opt_address: OptionalValue<ManagedAddress>) {
-        let address = match opt_address {
-            OptionalValue::Some(addr) => addr,
-            OptionalValue::None => self.blockchain().get_sc_address(),
-        };
+    fn set_transfer_role_unbond_token(&self) {
+        self.require_caller_has_owner_or_admin_permissions();
 
+        let address = self.blockchain().get_sc_address();
         self.unbond_token()
             .set_local_roles_for_address(&address, &[EsdtLocalRole::Transfer], None);
     }

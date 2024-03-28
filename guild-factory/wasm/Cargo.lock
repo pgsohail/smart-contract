@@ -245,6 +245,7 @@ dependencies = [
  "guild-sc-config",
  "multiversx-sc",
  "multiversx-sc-modules",
+ "pausable",
  "utils",
 ]
 

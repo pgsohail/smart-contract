@@ -6,13 +6,11 @@ multiversx_sc::imports!();
 
 pub mod config;
 pub mod factory;
-pub mod token_roles;
 
 #[multiversx_sc::contract]
 pub trait GuildFactory:
     config::ConfigModule
     + factory::FactoryModule
-    + token_roles::TokenRolesModule
     + multiversx_sc_modules::only_admin::OnlyAdminModule
     + utils::UtilsModule
 {

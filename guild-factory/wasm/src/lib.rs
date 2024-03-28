@@ -24,8 +24,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         deployConfigSc => deploy_config_sc
         callConfigFunction => call_config_function
         deployGuild => deploy_guild
-        setTransferRoleGuild => set_transfer_role_guild
-        setTransferRoleForFactory => set_transfer_role_for_factory
+        resumeGuild => resume_guild_endpoint
+        removeGuild => remove_guild
         isAdmin => is_admin
         addAdmin => add_admin
         removeAdmin => remove_admin

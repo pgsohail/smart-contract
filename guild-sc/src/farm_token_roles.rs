@@ -6,26 +6,12 @@ pub trait FarmTokenRolesModule:
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
 {
-    #[only_owner]
-    #[endpoint(setBurnRoleForAddress)]
-    fn set_burn_role_for_address(&self, opt_address: OptionalValue<ManagedAddress>) {
-        let address = self.address_from_opt(opt_address);
-        self.farm_token()
-            .set_local_roles_for_address(&address, &[EsdtLocalRole::NftBurn], None);
-    }
+    #[endpoint(setTransferRoleFarmToken)]
+    fn set_transfer_role_farm_token(&self) {
+        self.require_caller_has_owner_or_admin_permissions();
 
-    #[only_owner]
-    #[endpoint(setTransferRoleForAddress)]
-    fn set_transfer_role_for_address(&self, opt_address: OptionalValue<ManagedAddress>) {
-        let address = self.address_from_opt(opt_address);
+        let address = self.blockchain().get_sc_address();
         self.farm_token()
             .set_local_roles_for_address(&address, &[EsdtLocalRole::Transfer], None);
-    }
-
-    fn address_from_opt(&self, opt_address: OptionalValue<ManagedAddress>) -> ManagedAddress {
-        match opt_address {
-            OptionalValue::Some(address) => address,
-            OptionalValue::None => self.blockchain().get_sc_address(),
-        }
     }
 }
