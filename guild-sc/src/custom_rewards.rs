@@ -49,11 +49,10 @@ pub trait CustomRewardsModule:
         self.start_produce_rewards();
     }
 
+    #[only_owner]
     #[payable("*")]
     #[endpoint(withdrawRewards)]
     fn withdraw_rewards(&self, withdraw_amount: BigUint) {
-        self.require_caller_has_admin_permissions();
-
         self.withdraw_rewards_common(&withdraw_amount);
 
         let caller = self.blockchain().get_caller();
