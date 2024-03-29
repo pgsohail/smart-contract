@@ -15,10 +15,8 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
         min_stake_guild_master: BigUint,
         config_sc_code: ManagedBuffer,
     ) {
-        require!(
-            self.config_sc_address().is_empty(),
-            "Config SC already deployed"
-        );
+        let config_mapper = self.config_sc_address();
+        require!(config_mapper.is_empty(), "Config SC already deployed");
 
         let code_metadata = self.get_default_code_metadata();
         let (config_address, _) = self
@@ -32,7 +30,7 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
             )
             .deploy_contract::<()>(&config_sc_code, code_metadata);
 
-        self.config_sc_address().set(config_address);
+        config_mapper.set(config_address);
     }
 
     #[only_admin]
@@ -42,12 +40,10 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
         function_name: ManagedBuffer,
         args: MultiValueEncoded<ManagedBuffer>,
     ) {
-        require!(
-            !self.config_sc_address().is_empty(),
-            "Config not deployed yet"
-        );
+        let config_mapper = self.config_sc_address();
+        require!(!config_mapper.is_empty(), "Config not deployed yet");
 
-        let config_sc_address = self.config_sc_address().get();
+        let config_sc_address = config_mapper.get();
         let mut call_data =
             ContractCallNoPayment::<_, IgnoreValue>::new(config_sc_address, function_name);
         for arg in args {

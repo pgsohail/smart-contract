@@ -70,9 +70,13 @@ pub trait FactoryModule:
         self.start_produce_rewards(guild);
     }
 
+    /// To be used by admins when guild was created, but no further action was taken for it
     #[only_admin]
     #[endpoint(removeGuild)]
-    fn remove_guild(&self, guild: ManagedAddress) {}
+    fn remove_guild(&self, guild: ManagedAddress, user: ManagedAddress) {
+        let _ = self.deployed_guilds().swap_remove(&guild);
+        self.guild_sc_for_user(&user).clear();
+    }
 
     fn require_known_guild(&self, guild: &ManagedAddress) {
         require!(self.deployed_guilds().contains(guild), "Unknown guild");
