@@ -1,6 +1,7 @@
 #![no_std]
 
 use factory::GuildLocalConfig;
+use farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactors;
 
 multiversx_sc::imports!();
 
@@ -24,6 +25,7 @@ pub trait GuildFactory:
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
         per_block_reward_amount: BigUint,
+        boosted_yields_factors: BoostedYieldsFactors<Self::Api>,
         admins: MultiValueEncoded<ManagedAddress>,
     ) {
         self.require_sc_address(&guild_sc_source_address);
@@ -36,6 +38,8 @@ pub trait GuildFactory:
             division_safety_constant,
             per_block_reward_amount,
         });
+        self.boosted_yields_default_factors()
+            .set(boosted_yields_factors);
 
         self.admins().extend(admins);
     }

@@ -75,6 +75,7 @@ pub trait FarmStaking:
     ) {
         let owner = self.blockchain().get_caller();
         admins.push(guild_master.clone());
+        admins.push(owner.clone());
 
         // farming and reward token are the same
         self.base_farm_init(

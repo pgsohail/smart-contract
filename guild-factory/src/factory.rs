@@ -1,3 +1,5 @@
+use farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactors;
+use farm_boosted_yields::boosted_yields_factors::ProxyTrait as _;
 use guild_sc::custom_rewards::ProxyTrait as _;
 use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
@@ -20,7 +22,7 @@ pub trait FactoryModule:
     crate::config::ConfigModule + multiversx_sc_modules::only_admin::OnlyAdminModule
 {
     #[endpoint(deployGuild)]
-    fn deploy_guild(&self) {
+    fn deploy_guild(&self) -> ManagedAddress {
         let caller = self.blockchain().get_caller();
         let guild_mapper = self.guild_sc_for_user(&caller);
         require!(guild_mapper.is_empty(), "Already have a guild deployed");
@@ -54,7 +56,9 @@ pub trait FactoryModule:
             .deploy_from_source::<()>(&source_address, code_metadata);
 
         guild_mapper.set(&guild_address);
-        let _ = deployed_guilds_mapper.insert(guild_address);
+        let _ = deployed_guilds_mapper.insert(guild_address.clone());
+
+        guild_address
     }
 
     #[endpoint(resumeGuild)]
@@ -65,6 +69,8 @@ pub trait FactoryModule:
         self.require_guild_master_caller(guild.clone(), &caller);
         self.require_guild_setup_complete(guild.clone());
 
+        let factors = self.boosted_yields_default_factors().get();
+        self.set_boosted_yields_factors(guild.clone(), factors);
         self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
     }
@@ -109,6 +115,24 @@ pub trait FactoryModule:
             .execute_on_dest_context();
     }
 
+    fn set_boosted_yields_factors(
+        &self,
+        guild: ManagedAddress,
+        factors: BoostedYieldsFactors<Self::Api>,
+    ) {
+        let _: IgnoreValue = self
+            .guild_proxy()
+            .contract(guild)
+            .set_boosted_yields_factors(
+                factors.max_rewards_factor,
+                factors.user_rewards_energy_const,
+                factors.user_rewards_farm_const,
+                factors.min_energy_amount,
+                factors.min_farm_amount,
+            )
+            .execute_on_dest_context();
+    }
+
     fn resume_guild(&self, guild: ManagedAddress) {
         let _: IgnoreValue = self
             .guild_proxy()
@@ -137,12 +161,17 @@ pub trait FactoryModule:
     #[storage_mapper("guildLocalConfig")]
     fn guild_local_config(&self) -> SingleValueMapper<GuildLocalConfig<Self::Api>>;
 
+    #[storage_mapper("boostedYieldsDefaultFactors")]
+    fn boosted_yields_default_factors(&self) -> SingleValueMapper<BoostedYieldsFactors<Self::Api>>;
+
     #[storage_mapper("deployedGuilds")]
     fn deployed_guilds(&self) -> UnorderedSetMapper<ManagedAddress>;
 
+    #[view(getGuildScForUser)]
     #[storage_mapper("guildScForUser")]
     fn guild_sc_for_user(&self, user: &ManagedAddress) -> SingleValueMapper<ManagedAddress>;
 
+    #[view(getRemainingRewards)]
     #[storage_mapper("remainingRewards")]
     fn remaining_rewards(&self) -> SingleValueMapper<BigUint>;
 }
