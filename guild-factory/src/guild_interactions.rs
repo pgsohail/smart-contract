@@ -1,0 +1,84 @@
+use guild_sc::user_actions::stake_farm::ProxyTrait as _;
+
+multiversx_sc::imports!();
+
+static INVALID_PAYMENT_ERR_MSG: &[u8] = b"Invalid payment";
+
+#[multiversx_sc::module]
+pub trait GuildInteractionsModule:
+    crate::factory::FactoryModule
+    + crate::config::ConfigModule
+    + multiversx_sc_modules::only_admin::OnlyAdminModule
+{
+    #[payable("*")]
+    #[endpoint(migrateToOtherGuild)]
+    fn migrate_to_other_guild(&self, guild: ManagedAddress, original_caller: ManagedAddress) {
+        let caller = self.blockchain().get_caller();
+        self.require_closed_guild(&caller);
+        self.require_known_guild(&guild);
+
+        let payment = self.check_payment_is_farming_token();
+        let farm_token: EsdtTokenPayment = self
+            .guild_sc_proxy(guild)
+            .stake_farm_endpoint(original_caller.clone())
+            .with_esdt_transfer(payment)
+            .execute_on_dest_context();
+
+        self.send().direct_esdt(
+            &original_caller,
+            &farm_token.token_identifier,
+            farm_token.token_nonce,
+            &farm_token.amount,
+        );
+    }
+
+    #[payable("*")]
+    #[endpoint(depositRewardsGuild)]
+    fn deposit_rewards_guild(&self, guild_master: ManagedAddress) {
+        let caller = self.blockchain().get_caller();
+        self.require_known_guild(&caller);
+
+        self.deposit_rewards_common();
+
+        self.remove_guild(caller.clone(), guild_master);
+        self.closed_guilds().insert(caller);
+    }
+
+    #[only_admin]
+    #[payable("*")]
+    #[endpoint(depositRewardsAdmins)]
+    fn deposit_rewards_admins(&self) {
+        self.deposit_rewards_common();
+    }
+
+    fn deposit_rewards_common(&self) {
+        // Farming token is the same as reward token in farm staking
+        let payment = self.check_payment_is_farming_token();
+        self.remaining_rewards()
+            .update(|rew| *rew += payment.amount);
+    }
+
+    fn check_payment_is_farming_token(&self) -> EsdtTokenPayment {
+        let (token_id, amount) = self.call_value().single_fungible_esdt();
+        let guild_config = self.guild_local_config().get();
+        require!(
+            token_id == guild_config.farming_token_id,
+            INVALID_PAYMENT_ERR_MSG
+        );
+
+        EsdtTokenPayment::new(token_id, 0, amount)
+    }
+
+    fn require_closed_guild(&self, guild: &ManagedAddress) {
+        require!(
+            self.closed_guilds().contains(guild),
+            "Guild not closed or not known"
+        );
+    }
+
+    #[proxy]
+    fn guild_sc_proxy(&self, sc_address: ManagedAddress) -> guild_sc::Proxy<Self::Api>;
+
+    #[storage_mapper("closedGuilds")]
+    fn closed_guilds(&self) -> UnorderedSetMapper<ManagedAddress>;
+}

@@ -6,6 +6,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 static GUILD_MASTER_STORAGE_KEY: &[u8] = b"guildMaster";
+static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
@@ -18,8 +19,6 @@ pub struct GuildLocalConfig<M: ManagedTypeApi> {
 pub trait FactoryModule:
     crate::config::ConfigModule + multiversx_sc_modules::only_admin::OnlyAdminModule
 {
-    // TODO: Remove guild from list when closing
-
     #[endpoint(deployGuild)]
     fn deploy_guild(&self) {
         let caller = self.blockchain().get_caller();
@@ -74,12 +73,20 @@ pub trait FactoryModule:
     #[only_admin]
     #[endpoint(removeGuild)]
     fn remove_guild(&self, guild: ManagedAddress, user: ManagedAddress) {
-        let _ = self.deployed_guilds().swap_remove(&guild);
-        self.guild_sc_for_user(&user).clear();
+        let removed = self.deployed_guilds().swap_remove(&guild);
+        require!(removed, UNKNOWN_GUILD_ERR_MSG);
+
+        let mapper = self.guild_sc_for_user(&user);
+        require!(!mapper.is_empty(), "Unknown guild master");
+
+        mapper.clear();
     }
 
     fn require_known_guild(&self, guild: &ManagedAddress) {
-        require!(self.deployed_guilds().contains(guild), "Unknown guild");
+        require!(
+            self.deployed_guilds().contains(guild),
+            UNKNOWN_GUILD_ERR_MSG
+        );
     }
 
     fn require_guild_master_caller(&self, guild: ManagedAddress, caller: &ManagedAddress) {
@@ -135,4 +142,7 @@ pub trait FactoryModule:
 
     #[storage_mapper("guildScForUser")]
     fn guild_sc_for_user(&self, user: &ManagedAddress) -> SingleValueMapper<ManagedAddress>;
+
+    #[storage_mapper("remainingRewards")]
+    fn remaining_rewards(&self) -> SingleValueMapper<BigUint>;
 }

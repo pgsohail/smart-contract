@@ -37,6 +37,7 @@ pub trait UnbondFarmModule:
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::custom_events::CustomEventsModule
+    + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(unbondFarm)]
@@ -70,6 +71,8 @@ pub trait UnbondFarmModule:
     #[payable("*")]
     #[endpoint(cancelUnbond)]
     fn cancel_unbond(&self) -> EsdtTokenPayment {
+        self.require_not_closing();
+
         let unbond_token_mapper = self.unbond_token();
         let payment = self.call_value().single_esdt();
         unbond_token_mapper.require_same_token(&payment.token_identifier);

@@ -12,8 +12,9 @@ pub struct CancelUnbondEventData<M: ManagedTypeApi> {
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct MigrateToOtherFarmData<M: ManagedTypeApi> {
+    pub guild_address: ManagedAddress<M>,
+    pub total_farming_tokens: BigUint<M>,
     pub base_rewards: EsdtTokenPayment<M>,
-    pub new_farm_token: EsdtTokenPayment<M>,
 }
 
 #[multiversx_sc::module]
@@ -45,12 +46,14 @@ pub trait CustomEventsModule {
     fn emit_migrate_to_other_farm_event(
         &self,
         caller: &ManagedAddress,
+        guild_address: ManagedAddress,
+        total_farming_tokens: BigUint,
         base_rewards: EsdtTokenPayment,
-        new_farm_token: EsdtTokenPayment,
     ) {
         let event_data = MigrateToOtherFarmData {
+            guild_address,
+            total_farming_tokens,
             base_rewards,
-            new_farm_token,
         };
         self.migrate_to_other_farm_event(caller, &event_data);
     }

@@ -60,6 +60,7 @@ pub trait FarmStaking:
     + tiered_rewards::tokens_per_tier::TokenPerTierModule
     + user_actions::migration::MigrationModule
     + user_actions::custom_events::CustomEventsModule
+    + user_actions::close_guild::CloseGuildModule
 {
     #[init]
     fn init(
