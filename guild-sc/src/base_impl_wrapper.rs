@@ -122,11 +122,14 @@ where
         let accumulated_rewards_mapper = sc.accumulated_rewards();
         let mut accumulated_rewards = accumulated_rewards_mapper.get();
         let reward_capacity = sc.reward_capacity().get();
-
-        // TODO: Request rewards if remaining < total_reward
-        let remaining_rewards = &reward_capacity - &accumulated_rewards;
-
+        let mut remaining_rewards = &reward_capacity - &accumulated_rewards;
         let mut total_reward = Self::mint_per_block_rewards(sc, &storage_cache.reward_token_id);
+        if total_reward > remaining_rewards {
+            let needed_rewards = &total_reward - &remaining_rewards;
+            let received_rewards = sc.request_rewards(needed_rewards);
+            remaining_rewards += received_rewards;
+        }
+
         total_reward = core::cmp::min(total_reward, remaining_rewards);
         if total_reward == 0 {
             return;
