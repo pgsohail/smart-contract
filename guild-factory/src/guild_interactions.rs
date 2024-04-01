@@ -15,7 +15,7 @@ pub trait GuildInteractionsModule:
     #[endpoint(requestRewards)]
     fn request_rewards(&self, amount: BigUint) -> BigUint {
         let caller = self.blockchain().get_caller();
-        let caller_id = self.user_ids().get_id_non_zero(&caller);
+        let caller_id = self.guild_ids().get_id_non_zero(&caller);
         self.require_known_guild(caller_id);
 
         let mut total_request = amount * BASE_REWARD_MULTIPLIER;
@@ -36,9 +36,8 @@ pub trait GuildInteractionsModule:
     #[endpoint(migrateToOtherGuild)]
     fn migrate_to_other_guild(&self, guild: ManagedAddress, original_caller: ManagedAddress) {
         let caller = self.blockchain().get_caller();
-        let caller_id = self.user_ids().get_id_non_zero(&caller);
         let guild_id = self.guild_ids().get_id_non_zero(&guild);
-        self.require_closed_guild(caller_id);
+        self.require_closed_guild(&caller);
         self.require_known_guild(guild_id);
 
         let payment = self.check_payment_is_farming_token();
@@ -65,8 +64,8 @@ pub trait GuildInteractionsModule:
 
         self.deposit_rewards_common();
 
-        self.remove_guild(caller, guild_master);
-        self.closed_guilds().insert(caller_id);
+        self.remove_guild(caller.clone(), guild_master);
+        self.closed_guilds().insert(caller);
     }
 
     #[only_admin]
@@ -94,9 +93,9 @@ pub trait GuildInteractionsModule:
         EsdtTokenPayment::new(token_id, 0, amount)
     }
 
-    fn require_closed_guild(&self, guild_id: AddressId) {
+    fn require_closed_guild(&self, guild: &ManagedAddress) {
         require!(
-            self.closed_guilds().contains(&guild_id),
+            self.closed_guilds().contains(guild),
             "Guild not closed or not known"
         );
     }
@@ -105,5 +104,5 @@ pub trait GuildInteractionsModule:
     fn guild_sc_proxy(&self, sc_address: ManagedAddress) -> guild_sc::Proxy<Self::Api>;
 
     #[storage_mapper("closedGuilds")]
-    fn closed_guilds(&self) -> UnorderedSetMapper<AddressId>;
+    fn closed_guilds(&self) -> UnorderedSetMapper<ManagedAddress>;
 }

@@ -242,6 +242,7 @@ where
             EsdtLocalRole::NftCreate,
             EsdtLocalRole::NftAddQuantity,
             EsdtLocalRole::NftBurn,
+            EsdtLocalRole::Transfer,
         ];
         b_mock.set_esdt_local_roles(
             first_farm_wrapper.address_ref(),
@@ -254,7 +255,11 @@ where
             &farm_token_roles[..],
         );
 
-        let unbond_token_roles = [EsdtLocalRole::NftCreate, EsdtLocalRole::NftBurn];
+        let unbond_token_roles = [
+            EsdtLocalRole::NftCreate,
+            EsdtLocalRole::NftBurn,
+            EsdtLocalRole::Transfer,
+        ];
         b_mock.set_esdt_local_roles(
             first_farm_wrapper.address_ref(),
             UNBOND_TOKEN_ID,
@@ -270,13 +275,13 @@ where
 
         b_mock
             .execute_tx(&first_owner_addr, &factory_wrapper, &rust_zero, |sc| {
-                sc.resume_guild(managed_address!(first_farm_wrapper.address_ref()));
+                sc.resume_guild_endpoint(managed_address!(first_farm_wrapper.address_ref()));
             })
             .assert_ok();
 
         b_mock
             .execute_tx(&second_owner_addr, &factory_wrapper, &rust_zero, |sc| {
-                sc.resume_guild(managed_address!(second_farm_wrapper.address_ref()));
+                sc.resume_guild_endpoint(managed_address!(second_farm_wrapper.address_ref()));
             })
             .assert_ok();
 
@@ -335,6 +340,8 @@ where
                 },
             )
             .assert_ok();
+
+        setup.set_user_energy(&setup.user_address.clone(), 10_000, 0, 10);
 
         setup
     }
