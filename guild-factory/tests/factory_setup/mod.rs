@@ -24,8 +24,10 @@ use guild_sc::user_actions::stake_farm::StakeFarmModule;
 
 pub static REWARD_TOKEN_ID: &[u8] = b"RIDE-abcdef"; // reward token ID
 pub static FARMING_TOKEN_ID: &[u8] = b"RIDE-abcdef"; // farming token ID
-pub static FARM_TOKEN_ID: &[u8] = b"FARM-abcdef";
-pub static UNBOND_TOKEN_ID: &[u8] = b"UNBOND-abcdef";
+pub static FARM_TOKEN_ID: &[u8] = b"FARM1-abcdef";
+pub static OTHER_FARM_TOKEN_ID: &[u8] = b"FARM2-abcdef";
+pub static UNBOND_TOKEN_ID: &[u8] = b"UNBOND1-abcdef";
+pub static OTHER_UNBOND_TOKEN_ID: &[u8] = b"UNBOND2-abcdef";
 pub const DIVISION_SAFETY_CONSTANT: u64 = 1_000_000_000_000;
 pub const MIN_UNBOND_EPOCHS: u64 = 5;
 pub const MAX_APR: u64 = 2_500; // 25%
@@ -51,9 +53,11 @@ where
     FactoryBuilder: 'static + Copy + Fn() -> guild_factory::ContractObj<DebugApi>,
 {
     pub b_mock: BlockchainStateWrapper,
-    pub owner_address: Address,
+    pub first_owner_address: Address,
+    pub second_owner_address: Address,
     pub user_address: Address,
-    pub farm_wrapper: ContractObjWrapper<guild_sc::ContractObj<DebugApi>, FarmObjBuilder>,
+    pub first_farm_wrapper: ContractObjWrapper<guild_sc::ContractObj<DebugApi>, FarmObjBuilder>,
+    pub second_farm_wrapper: ContractObjWrapper<guild_sc::ContractObj<DebugApi>, FarmObjBuilder>,
     pub energy_factory_wrapper:
         ContractObjWrapper<energy_factory::ContractObj<DebugApi>, EnergyFactoryBuilder>,
     pub config_wrapper: ContractObjWrapper<guild_sc_config::ContractObj<DebugApi>, ConfigScBuilder>,
@@ -76,17 +80,30 @@ where
     ) -> Self {
         let rust_zero = rust_biguint!(0u64);
         let mut b_mock = BlockchainStateWrapper::new();
-        let owner_addr = b_mock.create_user_account(&rust_zero);
-        let config_wrapper =
-            b_mock.create_sc_account(&rust_zero, Some(&owner_addr), config_builder, "config");
-        let factory_wrapper =
-            b_mock.create_sc_account(&rust_zero, Some(&owner_addr), factory_builder, "factory");
-        let guild_source_wrapper =
-            b_mock.create_sc_account(&rust_zero, Some(&owner_addr), farm_builder, "guilds source");
+        let first_owner_addr = b_mock.create_user_account(&rust_zero);
+        let second_owner_addr = b_mock.create_user_account(&rust_zero);
+        let config_wrapper = b_mock.create_sc_account(
+            &rust_zero,
+            Some(&first_owner_addr),
+            config_builder,
+            "config",
+        );
+        let factory_wrapper = b_mock.create_sc_account(
+            &rust_zero,
+            Some(&first_owner_addr),
+            factory_builder,
+            "factory",
+        );
+        let guild_source_wrapper = b_mock.create_sc_account(
+            &rust_zero,
+            Some(&first_owner_addr),
+            farm_builder,
+            "guilds source",
+        );
 
         let energy_factory_wrapper = b_mock.create_sc_account(
             &rust_zero,
-            Some(&owner_addr),
+            Some(&first_owner_addr),
             energy_factory_builder,
             "energy_factory.wasm",
         );
@@ -94,7 +111,7 @@ where
         // init config SC
 
         b_mock
-            .execute_tx(&owner_addr, &config_wrapper, &rust_zero, |sc| {
+            .execute_tx(&first_owner_addr, &config_wrapper, &rust_zero, |sc| {
                 sc.init(
                     managed_biguint!(i64::MAX),
                     MIN_UNBOND_EPOCHS,
@@ -121,9 +138,9 @@ where
         // init factory SC
 
         b_mock
-            .execute_tx(&owner_addr, &factory_wrapper, &rust_zero, |sc| {
+            .execute_tx(&first_owner_addr, &factory_wrapper, &rust_zero, |sc| {
                 let mut admins = MultiValueEncoded::new();
-                admins.push(managed_address!(&owner_addr));
+                admins.push(managed_address!(&first_owner_addr));
 
                 let factors = BoostedYieldsFactors {
                     max_rewards_factor: managed_biguint!(MAX_REWARDS_FACTOR),
@@ -135,7 +152,7 @@ where
 
                 sc.init(
                     managed_address!(guild_source_wrapper.address_ref()),
-                    1,
+                    2,
                     managed_token_id!(FARMING_TOKEN_ID),
                     managed_biguint!(DIVISION_SAFETY_CONSTANT),
                     managed_biguint!(PER_BLOCK_REWARD_AMOUNT),
@@ -149,22 +166,38 @@ where
             })
             .assert_ok();
 
-        let farm_wrapper =
-            b_mock.prepare_deploy_from_sc(factory_wrapper.address_ref(), farm_builder);
-
         // deploy guild from factory
 
+        let first_farm_wrapper =
+            b_mock.prepare_deploy_from_sc(factory_wrapper.address_ref(), farm_builder);
+
         b_mock
-            .execute_tx(&owner_addr, &factory_wrapper, &rust_zero, |sc| {
+            .execute_tx(&first_owner_addr, &factory_wrapper, &rust_zero, |sc| {
                 let guild_address = sc.deploy_guild();
-                assert_eq!(guild_address, managed_address!(farm_wrapper.address_ref()));
+                assert_eq!(
+                    guild_address,
+                    managed_address!(first_farm_wrapper.address_ref())
+                );
+            })
+            .assert_ok();
+
+        let second_farm_wrapper =
+            b_mock.prepare_deploy_from_sc(factory_wrapper.address_ref(), farm_builder);
+
+        b_mock
+            .execute_tx(&second_owner_addr, &factory_wrapper, &rust_zero, |sc| {
+                let guild_address = sc.deploy_guild();
+                assert_eq!(
+                    guild_address,
+                    managed_address!(second_farm_wrapper.address_ref())
+                );
             })
             .assert_ok();
 
         // init farm contract - simulate issue and set roles for tokens
 
         b_mock
-            .execute_tx(&owner_addr, &farm_wrapper, &rust_zero, |sc| {
+            .execute_tx(&first_owner_addr, &first_farm_wrapper, &rust_zero, |sc| {
                 sc.farm_token()
                     .set_token_id(managed_token_id!(FARM_TOKEN_ID));
                 sc.unbond_token()
@@ -175,10 +208,26 @@ where
             })
             .assert_ok();
 
-        b_mock.set_esdt_balance(&owner_addr, REWARD_TOKEN_ID, &TOTAL_REWARDS_AMOUNT.into());
+        b_mock
+            .execute_tx(&second_owner_addr, &second_farm_wrapper, &rust_zero, |sc| {
+                sc.farm_token()
+                    .set_token_id(managed_token_id!(OTHER_FARM_TOKEN_ID));
+                sc.unbond_token()
+                    .set_token_id(managed_token_id!(OTHER_UNBOND_TOKEN_ID));
+
+                sc.energy_factory_address()
+                    .set(managed_address!(energy_factory_wrapper.address_ref()));
+            })
+            .assert_ok();
+
+        b_mock.set_esdt_balance(
+            &first_owner_addr,
+            REWARD_TOKEN_ID,
+            &TOTAL_REWARDS_AMOUNT.into(),
+        );
         b_mock
             .execute_esdt_transfer(
-                &owner_addr,
+                &first_owner_addr,
                 &factory_wrapper,
                 REWARD_TOKEN_ID,
                 0,
@@ -195,26 +244,41 @@ where
             EsdtLocalRole::NftBurn,
         ];
         b_mock.set_esdt_local_roles(
-            farm_wrapper.address_ref(),
+            first_farm_wrapper.address_ref(),
             FARM_TOKEN_ID,
+            &farm_token_roles[..],
+        );
+        b_mock.set_esdt_local_roles(
+            second_farm_wrapper.address_ref(),
+            OTHER_FARM_TOKEN_ID,
             &farm_token_roles[..],
         );
 
         let unbond_token_roles = [EsdtLocalRole::NftCreate, EsdtLocalRole::NftBurn];
         b_mock.set_esdt_local_roles(
-            farm_wrapper.address_ref(),
+            first_farm_wrapper.address_ref(),
             UNBOND_TOKEN_ID,
             &unbond_token_roles[..],
         );
-
-        // let farming_token_roles = [EsdtLocalRole::Burn];
-        // b_mock.set_esdt_local_roles(
-        //     farm_wrapper.address_ref(),
-        //     FARMING_TOKEN_ID,
-        //     &farming_token_roles[..],
-        // );
+        b_mock.set_esdt_local_roles(
+            second_farm_wrapper.address_ref(),
+            OTHER_UNBOND_TOKEN_ID,
+            &unbond_token_roles[..],
+        );
 
         // resume guild
+
+        b_mock
+            .execute_tx(&first_owner_addr, &factory_wrapper, &rust_zero, |sc| {
+                sc.resume_guild(managed_address!(first_farm_wrapper.address_ref()));
+            })
+            .assert_ok();
+
+        b_mock
+            .execute_tx(&second_owner_addr, &factory_wrapper, &rust_zero, |sc| {
+                sc.resume_guild(managed_address!(second_farm_wrapper.address_ref()));
+            })
+            .assert_ok();
 
         let user_addr = b_mock.create_user_account(&rust_biguint!(100_000_000));
         b_mock.set_esdt_balance(
@@ -225,21 +289,44 @@ where
 
         let mut setup = FarmStakingSetup {
             b_mock,
-            owner_address: owner_addr,
+            first_owner_address: first_owner_addr,
+            second_owner_address: second_owner_addr,
             user_address: user_addr,
-            farm_wrapper,
+            first_farm_wrapper,
+            second_farm_wrapper,
             energy_factory_wrapper,
             config_wrapper,
             factory_wrapper,
         };
-        setup
-            .b_mock
-            .set_esdt_balance(&setup.owner_address, FARMING_TOKEN_ID, &rust_biguint!(1));
+        setup.b_mock.set_esdt_balance(
+            &setup.first_owner_address,
+            FARMING_TOKEN_ID,
+            &rust_biguint!(1),
+        );
         setup
             .b_mock
             .execute_esdt_transfer(
-                &setup.owner_address,
-                &setup.farm_wrapper,
+                &setup.first_owner_address,
+                &setup.first_farm_wrapper,
+                FARMING_TOKEN_ID,
+                0,
+                &rust_biguint!(1),
+                |sc| {
+                    let _ = sc.stake_farm_endpoint(OptionalValue::None);
+                },
+            )
+            .assert_ok();
+
+        setup.b_mock.set_esdt_balance(
+            &setup.second_owner_address,
+            FARMING_TOKEN_ID,
+            &rust_biguint!(1),
+        );
+        setup
+            .b_mock
+            .execute_esdt_transfer(
+                &setup.second_owner_address,
+                &setup.second_farm_wrapper,
                 FARMING_TOKEN_ID,
                 0,
                 &rust_biguint!(1),
@@ -261,7 +348,7 @@ where
     ) {
         self.b_mock
             .execute_tx(
-                &self.owner_address,
+                &self.first_owner_address,
                 &self.energy_factory_wrapper,
                 &rust_biguint!(0),
                 |sc| {

@@ -182,13 +182,6 @@ where
             &unbond_token_roles[..],
         );
 
-        let farming_token_roles = [EsdtLocalRole::Burn];
-        b_mock.set_esdt_local_roles(
-            farm_wrapper.address_ref(),
-            FARMING_TOKEN_ID,
-            &farming_token_roles[..],
-        );
-
         let user_addr = b_mock.create_user_account(&rust_biguint!(100_000_000));
         b_mock.set_esdt_balance(
             &user_addr,
