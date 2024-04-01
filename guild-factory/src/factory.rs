@@ -53,7 +53,7 @@ pub trait FactoryModule:
                 guild_config.farming_token_id,
                 guild_config.division_safety_constant,
                 config_sc_address,
-                caller.clone(),
+                caller,
                 current_epoch,
                 guild_config.per_block_reward_amount,
                 MultiValueEncoded::new(),
