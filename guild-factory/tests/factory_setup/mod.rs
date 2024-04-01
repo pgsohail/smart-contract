@@ -207,12 +207,14 @@ where
             &unbond_token_roles[..],
         );
 
-        let farming_token_roles = [EsdtLocalRole::Burn];
-        b_mock.set_esdt_local_roles(
-            farm_wrapper.address_ref(),
-            FARMING_TOKEN_ID,
-            &farming_token_roles[..],
-        );
+        // let farming_token_roles = [EsdtLocalRole::Burn];
+        // b_mock.set_esdt_local_roles(
+        //     farm_wrapper.address_ref(),
+        //     FARMING_TOKEN_ID,
+        //     &farming_token_roles[..],
+        // );
+
+        // resume guild
 
         let user_addr = b_mock.create_user_account(&rust_biguint!(100_000_000));
         b_mock.set_esdt_balance(
@@ -230,22 +232,22 @@ where
             config_wrapper,
             factory_wrapper,
         };
-        // setup
-        //     .b_mock
-        //     .set_esdt_balance(&setup.owner_address, FARMING_TOKEN_ID, &rust_biguint!(1));
-        // setup
-        //     .b_mock
-        //     .execute_esdt_transfer(
-        //         &setup.owner_address,
-        //         &setup.farm_wrapper,
-        //         FARMING_TOKEN_ID,
-        //         0,
-        //         &rust_biguint!(1),
-        //         |sc| {
-        //             let _ = sc.stake_farm_endpoint(OptionalValue::None);
-        //         },
-        //     )
-        //     .assert_ok();
+        setup
+            .b_mock
+            .set_esdt_balance(&setup.owner_address, FARMING_TOKEN_ID, &rust_biguint!(1));
+        setup
+            .b_mock
+            .execute_esdt_transfer(
+                &setup.owner_address,
+                &setup.farm_wrapper,
+                FARMING_TOKEN_ID,
+                0,
+                &rust_biguint!(1),
+                |sc| {
+                    let _ = sc.stake_farm_endpoint(OptionalValue::None);
+                },
+            )
+            .assert_ok();
 
         setup
     }

@@ -140,6 +140,8 @@ pub trait FarmStaking:
             unbond_token_roles.has_role(&EsdtLocalRole::Transfer),
             "Transfer role not set for unbond token"
         );
+
+        // TODO: Farming token burn role?
     }
 
     #[view(calculateRewardsForGivenPosition)]

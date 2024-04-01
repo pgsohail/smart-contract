@@ -26,7 +26,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         deployGuild => deploy_guild
         resumeGuild => resume_guild_endpoint
         removeGuild => remove_guild
-        getGuildScForUser => guild_sc_for_user
+        getAllGuilds => get_all_guilds
         getRemainingRewards => remaining_rewards
         requestRewards => request_rewards
         migrateToOtherGuild => migrate_to_other_guild
