@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           72
+// Endpoints:                           74
 // Async Callback:                       1
-// Total number of exported functions:  74
+// Total number of exported functions:  76
 
 #![no_std]
 #![allow(internal_features)]
@@ -92,6 +92,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         getCurrentClaimProgress => current_claim_progress
         setEnergyFactoryAddress => set_energy_factory_address
         getEnergyFactoryAddress => energy_factory_address
+        closeGuild => close_guild
+        migrateToOtherGuild => migrate_to_other_guild
     )
 }
 

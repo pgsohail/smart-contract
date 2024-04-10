@@ -58,24 +58,27 @@ pub trait FarmStaking:
     + energy_query::EnergyQueryModule
     + tiered_rewards::read_config::ReadConfigModule
     + tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + user_actions::migration::MigrationModule
+    + user_actions::custom_events::CustomEventsModule
 {
     #[init]
     fn init(
         &self,
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
-        owner: ManagedAddress,
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,
         first_week_start_epoch: Epoch,
         admins: MultiValueEncoded<ManagedAddress>,
     ) {
+        let owner = self.blockchain().get_caller();
+
         // farming and reward token are the same
         self.base_farm_init(
             farming_token_id.clone(),
             farming_token_id,
             division_safety_constant,
-            owner,
+            owner.clone(),
             admins,
         );
 
@@ -89,14 +92,11 @@ pub trait FarmStaking:
         self.first_week_start_epoch().set(first_week_start_epoch);
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
+        self.sc_whitelist_addresses().add(&owner);
     }
 
-    #[endpoint]
-    fn upgrade(&self) {
-        // Farm position migration code
-        let farm_token_mapper = self.farm_token();
-        self.try_set_farm_position_migration_nonce(farm_token_mapper);
-    }
+    #[upgrade]
+    fn upgrade(&self) {}
 
     #[payable("*")]
     #[endpoint(mergeFarmTokens)]
