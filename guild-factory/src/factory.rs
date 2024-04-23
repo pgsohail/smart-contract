@@ -126,6 +126,11 @@ pub trait FactoryModule:
         result
     }
 
+    #[view(getGuildId)]
+    fn get_guild_id(&self, guild_address: ManagedAddress) -> AddressId {
+        self.guild_ids().get_id_non_zero(&guild_address)
+    }
+
     fn require_known_guild(&self, guild_id: AddressId) {
         require!(
             self.deployed_guilds().contains(&guild_id),

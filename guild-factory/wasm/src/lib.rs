@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           16
+// Endpoints:                           17
 // Async Callback (empty):               1
-// Total number of exported functions:  18
+// Total number of exported functions:  19
 
 #![no_std]
 #![allow(internal_features)]
@@ -27,6 +27,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         resumeGuild => resume_guild_endpoint
         removeGuild => remove_guild
         getAllGuilds => get_all_guilds
+        getGuildId => get_guild_id
         getRemainingRewards => remaining_rewards
         requestRewards => request_rewards
         migrateToOtherGuild => migrate_to_other_guild
