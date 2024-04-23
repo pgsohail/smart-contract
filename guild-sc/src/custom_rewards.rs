@@ -9,6 +9,16 @@ use crate::base_impl_wrapper::FarmStakingWrapper;
 pub const MAX_PERCENT: u64 = 10_000;
 pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
 
+mod guild_factory_proxy {
+    multiversx_sc::imports!();
+
+    #[multiversx_sc::proxy]
+    pub trait GuildFactoryProxy {
+        #[endpoint(requestRewards)]
+        fn request_rewards(&self, amount: BigUint) -> BigUint;
+    }
+}
+
 #[multiversx_sc::module]
 pub trait CustomRewardsModule:
     rewards::RewardsModule
@@ -119,6 +129,25 @@ pub trait CustomRewardsModule:
     fn bound_amount_by_apr(&self, amount: &BigUint, apr: &BigUint) -> BigUint {
         amount * apr / MAX_PERCENT / BLOCKS_IN_YEAR
     }
+
+    fn request_rewards(&self, base_amount: BigUint) -> BigUint {
+        let guild_factory = self.blockchain().get_owner_address();
+        let received_rewards = self
+            .guild_factory_proxy(guild_factory)
+            .request_rewards(base_amount)
+            .execute_on_dest_context();
+
+        self.reward_capacity()
+            .update(|cap| *cap += &received_rewards);
+
+        received_rewards
+    }
+
+    #[proxy]
+    fn guild_factory_proxy(
+        &self,
+        sc_address: ManagedAddress,
+    ) -> guild_factory_proxy::Proxy<Self::Api>;
 
     #[view(getAccumulatedRewards)]
     #[storage_mapper("accumulatedRewards")]

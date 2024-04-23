@@ -814,6 +814,12 @@ name = "guild-factory"
 version = "0.0.0"
 dependencies = [
  "common_structs",
+ "config",
+ "energy-factory",
+ "energy-query",
+ "farm",
+ "farm-boosted-yields",
+ "farm_token",
  "guild-sc",
  "guild-sc-config",
  "multiversx-sc",

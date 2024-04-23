@@ -1,11 +1,11 @@
+use farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactors;
+use farm_boosted_yields::boosted_yields_factors::ProxyTrait as _;
 use guild_sc::custom_rewards::ProxyTrait as _;
-use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-static GUILD_MASTER_STORAGE_KEY: &[u8] = b"guildMaster";
 static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
@@ -15,14 +15,21 @@ pub struct GuildLocalConfig<M: ManagedTypeApi> {
     pub per_block_reward_amount: BigUint<M>,
 }
 
+#[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
+pub struct GetGuildResultType<M: ManagedTypeApi> {
+    pub guild: ManagedAddress<M>,
+    pub guild_master: ManagedAddress<M>,
+}
+
 #[multiversx_sc::module]
 pub trait FactoryModule:
     crate::config::ConfigModule + multiversx_sc_modules::only_admin::OnlyAdminModule
 {
     #[endpoint(deployGuild)]
-    fn deploy_guild(&self) {
+    fn deploy_guild(&self) -> ManagedAddress {
         let caller = self.blockchain().get_caller();
-        let guild_mapper = self.guild_sc_for_user(&caller);
+        let caller_id = self.user_ids().get_id_or_insert(&caller);
+        let guild_mapper = self.guild_sc_for_user(caller_id);
         require!(guild_mapper.is_empty(), "Already have a guild deployed");
 
         let max_guilds = self.max_guilds().get();
@@ -53,18 +60,27 @@ pub trait FactoryModule:
             )
             .deploy_from_source::<()>(&source_address, code_metadata);
 
-        guild_mapper.set(&guild_address);
-        let _ = deployed_guilds_mapper.insert(guild_address);
+        let guild_id = self.guild_ids().insert_new(&guild_address);
+        let _ = deployed_guilds_mapper.insert(guild_id);
+        self.guild_master_for_guild(guild_id).set(caller_id);
+        guild_mapper.set(guild_id);
+
+        guild_address
     }
 
     #[endpoint(resumeGuild)]
     fn resume_guild_endpoint(&self, guild: ManagedAddress) {
-        self.require_known_guild(&guild);
+        let guild_id = self.guild_ids().get_id_non_zero(&guild);
+
+        self.require_known_guild(guild_id);
 
         let caller = self.blockchain().get_caller();
-        self.require_guild_master_caller(guild.clone(), &caller);
+        let caller_id = self.user_ids().get_id_non_zero(&caller);
+        self.require_guild_master_caller(guild_id, caller_id);
         self.require_guild_setup_complete(guild.clone());
 
+        let factors = self.boosted_yields_default_factors().get();
+        self.set_boosted_yields_factors(guild.clone(), factors);
         self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
     }
@@ -73,30 +89,54 @@ pub trait FactoryModule:
     #[only_admin]
     #[endpoint(removeGuild)]
     fn remove_guild(&self, guild: ManagedAddress, user: ManagedAddress) {
-        let removed = self.deployed_guilds().swap_remove(&guild);
+        let guild_id = self.guild_ids().remove_by_address(&guild);
+        let user_id = self.user_ids().remove_by_address(&user);
+
+        let removed = self.deployed_guilds().swap_remove(&guild_id);
         require!(removed, UNKNOWN_GUILD_ERR_MSG);
 
-        let mapper = self.guild_sc_for_user(&user);
+        let mapper = self.guild_sc_for_user(user_id);
         require!(!mapper.is_empty(), "Unknown guild master");
 
         mapper.clear();
+
+        self.guild_master_for_guild(guild_id).clear();
     }
 
-    fn require_known_guild(&self, guild: &ManagedAddress) {
+    #[view(getAllGuilds)]
+    fn get_all_guilds(&self) -> MultiValueEncoded<GetGuildResultType<Self::Api>> {
+        let mut result = MultiValueEncoded::new();
+        for guild_id in self.deployed_guilds().iter() {
+            let guild_master_id = self.guild_master_for_guild(guild_id).get();
+            let opt_guild_address = self.guild_ids().get_address(guild_id);
+            let opt_guild_master_address = self.user_ids().get_address(guild_master_id);
+            require!(
+                opt_guild_address.is_some() && opt_guild_master_address.is_some(),
+                "Invalid setup"
+            );
+
+            let guild_address = unsafe { opt_guild_address.unwrap_unchecked() };
+            let guild_master_address = unsafe { opt_guild_master_address.unwrap_unchecked() };
+            result.push(GetGuildResultType {
+                guild: guild_address,
+                guild_master: guild_master_address,
+            });
+        }
+
+        result
+    }
+
+    fn require_known_guild(&self, guild_id: AddressId) {
         require!(
-            self.deployed_guilds().contains(guild),
+            self.deployed_guilds().contains(&guild_id),
             UNKNOWN_GUILD_ERR_MSG
         );
     }
 
-    fn require_guild_master_caller(&self, guild: ManagedAddress, caller: &ManagedAddress) {
-        let mapper = SingleValueMapper::<_, ManagedAddress, ManagedAddress>::new_from_address(
-            guild,
-            StorageKey::new(GUILD_MASTER_STORAGE_KEY),
-        );
-        let guild_master = mapper.get();
+    fn require_guild_master_caller(&self, guild_id: AddressId, caller_id: AddressId) {
+        let guild_master_id = self.guild_master_for_guild(guild_id).get();
         require!(
-            &guild_master == caller,
+            guild_master_id == caller_id,
             "Only guild master may call this function"
         );
     }
@@ -106,6 +146,24 @@ pub trait FactoryModule:
             .guild_proxy()
             .contract(guild)
             .check_local_roles_set()
+            .execute_on_dest_context();
+    }
+
+    fn set_boosted_yields_factors(
+        &self,
+        guild: ManagedAddress,
+        factors: BoostedYieldsFactors<Self::Api>,
+    ) {
+        let _: IgnoreValue = self
+            .guild_proxy()
+            .contract(guild)
+            .set_boosted_yields_factors(
+                factors.max_rewards_factor,
+                factors.user_rewards_energy_const,
+                factors.user_rewards_farm_const,
+                factors.min_energy_amount,
+                factors.min_farm_amount,
+            )
             .execute_on_dest_context();
     }
 
@@ -137,12 +195,25 @@ pub trait FactoryModule:
     #[storage_mapper("guildLocalConfig")]
     fn guild_local_config(&self) -> SingleValueMapper<GuildLocalConfig<Self::Api>>;
 
+    #[storage_mapper("boostedYieldsDefaultFactors")]
+    fn boosted_yields_default_factors(&self) -> SingleValueMapper<BoostedYieldsFactors<Self::Api>>;
+
     #[storage_mapper("deployedGuilds")]
-    fn deployed_guilds(&self) -> UnorderedSetMapper<ManagedAddress>;
+    fn deployed_guilds(&self) -> UnorderedSetMapper<AddressId>;
 
     #[storage_mapper("guildScForUser")]
-    fn guild_sc_for_user(&self, user: &ManagedAddress) -> SingleValueMapper<ManagedAddress>;
+    fn guild_sc_for_user(&self, user_id: AddressId) -> SingleValueMapper<AddressId>;
 
+    #[storage_mapper("guildMasterForGuild")]
+    fn guild_master_for_guild(&self, guild_id: AddressId) -> SingleValueMapper<AddressId>;
+
+    #[view(getRemainingRewards)]
     #[storage_mapper("remainingRewards")]
     fn remaining_rewards(&self) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("userIds")]
+    fn user_ids(&self) -> AddressToIdMapper<Self::Api>;
+
+    #[storage_mapper("guildIds")]
+    fn guild_ids(&self) -> AddressToIdMapper<Self::Api>;
 }

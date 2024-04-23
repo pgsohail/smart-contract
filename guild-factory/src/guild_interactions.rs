@@ -4,18 +4,41 @@ multiversx_sc::imports!();
 
 static INVALID_PAYMENT_ERR_MSG: &[u8] = b"Invalid payment";
 
+pub const BASE_REWARD_MULTIPLIER: u32 = 10;
+
 #[multiversx_sc::module]
 pub trait GuildInteractionsModule:
     crate::factory::FactoryModule
     + crate::config::ConfigModule
     + multiversx_sc_modules::only_admin::OnlyAdminModule
 {
+    #[endpoint(requestRewards)]
+    fn request_rewards(&self, amount: BigUint) -> BigUint {
+        let caller = self.blockchain().get_caller();
+        let caller_id = self.guild_ids().get_id_non_zero(&caller);
+        self.require_known_guild(caller_id);
+
+        let mut total_request = amount * BASE_REWARD_MULTIPLIER;
+        self.remaining_rewards().update(|rew| {
+            total_request = core::cmp::min(total_request.clone(), (*rew).clone());
+            *rew -= &total_request;
+        });
+
+        let guild_config = self.guild_local_config().get();
+        let reward_payment = EsdtTokenPayment::new(guild_config.farming_token_id, 0, total_request);
+        self.send()
+            .direct_non_zero_esdt_payment(&caller, &reward_payment);
+
+        reward_payment.amount
+    }
+
     #[payable("*")]
     #[endpoint(migrateToOtherGuild)]
     fn migrate_to_other_guild(&self, guild: ManagedAddress, original_caller: ManagedAddress) {
         let caller = self.blockchain().get_caller();
+        let guild_id = self.guild_ids().get_id_non_zero(&guild);
         self.require_closed_guild(&caller);
-        self.require_known_guild(&guild);
+        self.require_known_guild(guild_id);
 
         let payment = self.check_payment_is_farming_token();
         let farm_token: EsdtTokenPayment = self
@@ -36,7 +59,8 @@ pub trait GuildInteractionsModule:
     #[endpoint(depositRewardsGuild)]
     fn deposit_rewards_guild(&self, guild_master: ManagedAddress) {
         let caller = self.blockchain().get_caller();
-        self.require_known_guild(&caller);
+        let caller_id = self.guild_ids().get_id_non_zero(&caller);
+        self.require_known_guild(caller_id);
 
         self.deposit_rewards_common();
 
