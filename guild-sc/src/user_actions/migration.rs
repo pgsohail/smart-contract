@@ -1,4 +1,22 @@
-use super::stake_farm::ProxyTrait as _;
+use contexts::storage_cache::StorageCache;
+use farm_base_impl::base_traits_impl::FarmContract;
+
+use crate::base_impl_wrapper::FarmStakingWrapper;
+
+mod guild_factory_proxy {
+    multiversx_sc::imports!();
+
+    #[multiversx_sc::proxy]
+    pub trait GuildFactoryProxy {
+        #[payable("*")]
+        #[endpoint(depositRewardsGuild)]
+        fn deposit_rewards_guild(&self, guild_master: ManagedAddress);
+
+        #[payable("*")]
+        #[endpoint(migrateToOtherGuild)]
+        fn migrate_to_other_guild(&self, guild: ManagedAddress, original_caller: ManagedAddress);
+    }
+}
 
 multiversx_sc::imports!();
 
@@ -33,6 +51,7 @@ pub trait MigrationModule:
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::custom_events::CustomEventsModule
+    + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(closeGuild)]
@@ -65,14 +84,30 @@ pub trait MigrationModule:
         );
 
         self.guild_closing().set(true);
+
+        let mut storage_cache = StorageCache::new(self);
+        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
+        self.produce_rewards_enabled().set(false);
+
+        let rewards_capacity = self.reward_capacity().get();
+        let accumulated_rewards = self.accumulated_rewards().get();
+        let remaining_rewards = rewards_capacity - accumulated_rewards;
+        self.withdraw_rewards_common(&remaining_rewards);
+
+        let reward_token_id = self.reward_token_id().get();
+        let guild_factory = self.blockchain().get_owner_address();
+        let _: IgnoreValue = self
+            .factory_proxy(guild_factory)
+            .deposit_rewards_guild(guild_master)
+            .with_esdt_transfer((reward_token_id, 0, remaining_rewards))
+            .execute_on_dest_context();
+
         self.emit_guild_closing_event(&caller, &create_unbond_token_result.attributes);
     }
 
     #[payable("*")]
     #[endpoint(migrateToOtherGuild)]
     fn migrate_to_other_guild(&self, guild_address: ManagedAddress) {
-        // TODO: Validate guild address -> needs guild factory SC
-
         self.require_closing();
 
         let caller = self.blockchain().get_caller();
@@ -84,36 +119,23 @@ pub trait MigrationModule:
 
         let payments = self.get_non_empty_payments();
         let multi_unstake_result = self.multi_unstake(&caller, &payments);
+        let total_farming_tokens = multi_unstake_result.farming_tokens_payment.amount.clone();
 
-        // TODO: Change endpoint to one from guild factory SC
-        let farm_token: EsdtTokenPayment = self
-            .own_proxy(guild_address)
-            .stake_farm_endpoint(caller.clone())
+        let guild_factory = self.blockchain().get_owner_address();
+        let _: IgnoreValue = self
+            .factory_proxy(guild_factory)
+            .migrate_to_other_guild(guild_address.clone(), caller.clone())
             .with_esdt_transfer(multi_unstake_result.farming_tokens_payment)
             .execute_on_dest_context();
 
-        self.send_payment_non_zero(&caller, &farm_token);
-
         self.emit_migrate_to_other_farm_event(
             &caller,
+            guild_address,
+            total_farming_tokens,
             multi_unstake_result.base_rewards_payment,
-            farm_token,
         );
     }
 
-    fn require_not_closing(&self) {
-        let closing = self.guild_closing().get();
-        require!(!closing, "Guild closing");
-    }
-
-    fn require_closing(&self) {
-        let closing = self.guild_closing().get();
-        require!(closing, "Guild not closing");
-    }
-
-    #[storage_mapper("guildClosing")]
-    fn guild_closing(&self) -> SingleValueMapper<bool>;
-
     #[proxy]
-    fn own_proxy(&self, sc_address: ManagedAddress) -> crate::Proxy<Self::Api>;
+    fn factory_proxy(&self, sc_address: ManagedAddress) -> guild_factory_proxy::Proxy<Self::Api>;
 }

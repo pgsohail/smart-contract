@@ -34,6 +34,7 @@ pub trait StakeFarmModule:
     + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(stakeFarmThroughProxy)]
@@ -74,6 +75,8 @@ pub trait StakeFarmModule:
         original_caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
     ) -> EsdtTokenPayment {
+        self.require_not_closing();
+
         let caller = self.blockchain().get_caller();
         let guild_master = self.guild_master().get();
         if caller != guild_master {

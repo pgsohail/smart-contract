@@ -61,6 +61,7 @@ pub trait UnstakeFarmModule:
     + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(unstakeFarm)]
@@ -103,6 +104,8 @@ pub trait UnstakeFarmModule:
         payment: EsdtTokenPayment,
         opt_unbond_amount: Option<BigUint>,
     ) -> ExitFarmWithPartialPosResultType<Self::Api> {
+        self.require_not_closing();
+
         let unstake_result =
             self.unstake_farm_common_no_unbond_token_mint(original_caller.clone(), payment);
 

@@ -30,10 +30,13 @@ pub trait CompoundStakeFarmRewardsModule:
     + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(compoundRewards)]
     fn compound_rewards(&self) -> EsdtTokenPayment {
+        self.require_not_closing();
+
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();
         let compound_result =

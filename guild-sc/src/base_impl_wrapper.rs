@@ -101,6 +101,10 @@ where
 
         let extra_rewards_unbounded =
             Self::calculate_per_block_rewards(sc, current_block_nonce, last_reward_nonce);
+        if extra_rewards_unbounded == 0 {
+            return extra_rewards_unbounded;
+        }
+
         let extra_rewards_apr_bounded_per_block = sc.get_amount_apr_bounded();
 
         let block_nonce_diff = current_block_nonce - last_reward_nonce;
@@ -118,6 +122,8 @@ where
         let accumulated_rewards_mapper = sc.accumulated_rewards();
         let mut accumulated_rewards = accumulated_rewards_mapper.get();
         let reward_capacity = sc.reward_capacity().get();
+
+        // TODO: Request rewards if remaining < total_reward
         let remaining_rewards = &reward_capacity - &accumulated_rewards;
 
         let mut total_reward = Self::mint_per_block_rewards(sc, &storage_cache.reward_token_id);

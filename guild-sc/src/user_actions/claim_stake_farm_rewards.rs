@@ -34,6 +34,7 @@ pub trait ClaimStakeFarmRewardsModule:
     + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(claimRewards)]
@@ -65,6 +66,8 @@ pub trait ClaimStakeFarmRewardsModule:
         original_caller: ManagedAddress,
         opt_new_farming_amount: Option<BigUint>,
     ) -> ClaimRewardsResultType<Self::Api> {
+        self.require_not_closing();
+
         let current_epoch = self.blockchain().get_block_epoch();
         let first_week_start_epoch = self.first_week_start_epoch().get();
         require!(

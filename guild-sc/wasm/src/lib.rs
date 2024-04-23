@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           74
+// Endpoints:                           72
 // Async Callback:                       1
-// Total number of exported functions:  76
+// Total number of exported functions:  74
 
 #![no_std]
 #![allow(internal_features)]
@@ -22,12 +22,11 @@ multiversx_sc_wasm_adapter::endpoints! {
         init => init
         upgrade => upgrade
         mergeFarmTokens => merge_farm_tokens_endpoint
+        checkLocalRolesSet => check_local_roles_set
         calculateRewardsForGivenPosition => calculate_rewards_for_given_position
         topUpRewards => top_up_rewards
-        withdrawRewards => withdraw_rewards
-        endProduceRewards => end_produce_rewards
-        setPerBlockRewardAmount => set_per_block_rewards
         startProduceRewards => start_produce_rewards_endpoint
+        withdrawRewards => withdraw_rewards
         getAccumulatedRewards => accumulated_rewards
         getRewardCapacity => reward_capacity
         getRewardPerShare => reward_per_share
@@ -56,8 +55,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         removeAdmin => remove_admin_endpoint
         updateOwnerOrAdmin => update_owner_or_admin_endpoint
         getPermissions => permissions
-        setBurnRoleForAddress => set_burn_role_for_address
-        setTransferRoleForAddress => set_transfer_role_for_address
+        setTransferRoleFarmToken => set_transfer_role_farm_token
         stakeFarmThroughProxy => stake_farm_through_proxy
         stakeFarm => stake_farm_endpoint
         claimRewards => claim_rewards
