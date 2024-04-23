@@ -22,6 +22,8 @@ fn init(
 )
 ```
 
+Note: For the config SC, just use any SC address.
+
 ### Factory SC
 
 This SC will be used to deploy all the guilds by the users.
