@@ -109,7 +109,7 @@ pub trait TierModule {
         if mapper_len > 0 {
             let previous_entry = mapper.get(mapper_len);
             require!(
-                previous_entry.max_stake == &tier.min_stake + 1u32,
+                &previous_entry.max_stake + 1u32 == tier.min_stake,
                 "Invalid stake entry"
             );
         } else {
