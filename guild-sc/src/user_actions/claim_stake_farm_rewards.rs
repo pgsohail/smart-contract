@@ -47,7 +47,6 @@ pub trait ClaimStakeFarmRewardsModule:
         let base_rewards_payment =
             EsdtTokenPayment::new(reward_token_id, 0, claim_result.rewards.base);
 
-        let caller = self.blockchain().get_caller();
         self.send_payment_non_zero(&caller, &virtual_farm_token.payment);
         self.send_payment_non_zero(&caller, &base_rewards_payment);
 
