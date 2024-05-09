@@ -1,6 +1,5 @@
 #![allow(deprecated)]
 
-use farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactors;
 use guild_factory::config::ConfigModule;
 use guild_factory::factory::FactoryModule;
 use guild_factory::guild_interactions::GuildInteractionsModule;
@@ -10,15 +9,13 @@ use guild_sc_config::tiers::TierModule;
 use guild_sc_config::GuildScConfig;
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
-use multiversx_sc::types::{Address, BigInt, EsdtLocalRole, MultiValueEncoded};
+use multiversx_sc::types::{Address, EsdtLocalRole, MultiValueEncoded};
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_token_id, rust_biguint, whitebox_legacy::*, DebugApi,
 };
 
 pub type RustBigUint = num_bigint::BigUint;
 
-use energy_factory::energy::EnergyModule;
-use energy_query::{Energy, EnergyQueryModule};
 use farm_token::FarmTokenModule;
 use guild_sc::user_actions::stake_farm::StakeFarmModule;
 
@@ -35,20 +32,12 @@ pub const PER_BLOCK_REWARD_AMOUNT: u64 = 5_000;
 pub const TOTAL_REWARDS_AMOUNT: u64 = 1_000_000_000_000;
 
 pub const USER_TOTAL_RIDE_TOKENS: u64 = 5_000_000_000;
-
-pub const BOOSTED_YIELDS_PERCENTAGE: u64 = 2_500; // 25%
-pub const MAX_REWARDS_FACTOR: u64 = 10;
-pub const USER_REWARDS_ENERGY_CONST: u64 = 3;
-pub const USER_REWARDS_FARM_CONST: u64 = 2;
-pub const MIN_ENERGY_AMOUNT_FOR_BOOSTED_YIELDS: u64 = 1;
-pub const MIN_FARM_AMOUNT_FOR_BOOSTED_YIELDS: u64 = 1;
-pub const WITHDRAW_AMOUNT_TOO_HIGH: &str =
+pub static WITHDRAW_AMOUNT_TOO_HIGH: &str =
     "Withdraw amount is higher than the remaining uncollected rewards!";
 
-pub struct FarmStakingSetup<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder, FactoryBuilder>
+pub struct FarmStakingSetup<FarmObjBuilder, ConfigScBuilder, FactoryBuilder>
 where
     FarmObjBuilder: 'static + Copy + Fn() -> guild_sc::ContractObj<DebugApi>,
-    EnergyFactoryBuilder: 'static + Copy + Fn() -> energy_factory::ContractObj<DebugApi>,
     ConfigScBuilder: 'static + Copy + Fn() -> guild_sc_config::ContractObj<DebugApi>,
     FactoryBuilder: 'static + Copy + Fn() -> guild_factory::ContractObj<DebugApi>,
 {
@@ -58,23 +47,19 @@ where
     pub user_address: Address,
     pub first_farm_wrapper: ContractObjWrapper<guild_sc::ContractObj<DebugApi>, FarmObjBuilder>,
     pub second_farm_wrapper: ContractObjWrapper<guild_sc::ContractObj<DebugApi>, FarmObjBuilder>,
-    pub energy_factory_wrapper:
-        ContractObjWrapper<energy_factory::ContractObj<DebugApi>, EnergyFactoryBuilder>,
     pub config_wrapper: ContractObjWrapper<guild_sc_config::ContractObj<DebugApi>, ConfigScBuilder>,
     pub factory_wrapper: ContractObjWrapper<guild_factory::ContractObj<DebugApi>, FactoryBuilder>,
 }
 
-impl<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder, FactoryBuilder>
-    FarmStakingSetup<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder, FactoryBuilder>
+impl<FarmObjBuilder, ConfigScBuilder, FactoryBuilder>
+    FarmStakingSetup<FarmObjBuilder, ConfigScBuilder, FactoryBuilder>
 where
     FarmObjBuilder: 'static + Copy + Fn() -> guild_sc::ContractObj<DebugApi>,
-    EnergyFactoryBuilder: 'static + Copy + Fn() -> energy_factory::ContractObj<DebugApi>,
     ConfigScBuilder: 'static + Copy + Fn() -> guild_sc_config::ContractObj<DebugApi>,
     FactoryBuilder: 'static + Copy + Fn() -> guild_factory::ContractObj<DebugApi>,
 {
     pub fn new(
         farm_builder: FarmObjBuilder,
-        energy_factory_builder: EnergyFactoryBuilder,
         config_builder: ConfigScBuilder,
         factory_builder: FactoryBuilder,
     ) -> Self {
@@ -99,13 +84,6 @@ where
             Some(&first_owner_addr),
             farm_builder,
             "guilds source",
-        );
-
-        let energy_factory_wrapper = b_mock.create_sc_account(
-            &rust_zero,
-            Some(&first_owner_addr),
-            energy_factory_builder,
-            "energy_factory.wasm",
         );
 
         // init config SC
@@ -142,21 +120,12 @@ where
                 let mut admins = MultiValueEncoded::new();
                 admins.push(managed_address!(&first_owner_addr));
 
-                let factors = BoostedYieldsFactors {
-                    max_rewards_factor: managed_biguint!(MAX_REWARDS_FACTOR),
-                    user_rewards_energy_const: managed_biguint!(USER_REWARDS_ENERGY_CONST),
-                    user_rewards_farm_const: managed_biguint!(USER_REWARDS_FARM_CONST),
-                    min_energy_amount: managed_biguint!(MIN_ENERGY_AMOUNT_FOR_BOOSTED_YIELDS),
-                    min_farm_amount: managed_biguint!(MIN_FARM_AMOUNT_FOR_BOOSTED_YIELDS),
-                };
-
                 sc.init(
                     managed_address!(guild_source_wrapper.address_ref()),
                     2,
                     managed_token_id!(FARMING_TOKEN_ID),
                     managed_biguint!(DIVISION_SAFETY_CONSTANT),
                     managed_biguint!(PER_BLOCK_REWARD_AMOUNT),
-                    factors,
                     admins,
                 );
 
@@ -202,9 +171,6 @@ where
                     .set_token_id(managed_token_id!(FARM_TOKEN_ID));
                 sc.unbond_token()
                     .set_token_id(managed_token_id!(UNBOND_TOKEN_ID));
-
-                sc.energy_factory_address()
-                    .set(managed_address!(energy_factory_wrapper.address_ref()));
             })
             .assert_ok();
 
@@ -214,9 +180,6 @@ where
                     .set_token_id(managed_token_id!(OTHER_FARM_TOKEN_ID));
                 sc.unbond_token()
                     .set_token_id(managed_token_id!(OTHER_UNBOND_TOKEN_ID));
-
-                sc.energy_factory_address()
-                    .set(managed_address!(energy_factory_wrapper.address_ref()));
             })
             .assert_ok();
 
@@ -299,7 +262,6 @@ where
             user_address: user_addr,
             first_farm_wrapper,
             second_farm_wrapper,
-            energy_factory_wrapper,
             config_wrapper,
             factory_wrapper,
         };
@@ -341,31 +303,6 @@ where
             )
             .assert_ok();
 
-        setup.set_user_energy(&setup.user_address.clone(), 10_000, 0, 10);
-
         setup
-    }
-
-    pub fn set_user_energy(
-        &mut self,
-        user: &Address,
-        energy: u64,
-        last_update_epoch: u64,
-        locked_tokens: u64,
-    ) {
-        self.b_mock
-            .execute_tx(
-                &self.first_owner_address,
-                &self.energy_factory_wrapper,
-                &rust_biguint!(0),
-                |sc| {
-                    sc.user_energy(&managed_address!(user)).set(&Energy::new(
-                        BigInt::from(managed_biguint!(energy)),
-                        last_update_epoch,
-                        managed_biguint!(locked_tokens),
-                    ));
-                },
-            )
-            .assert_ok();
     }
 }

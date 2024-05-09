@@ -29,15 +29,6 @@ pub trait CustomRewardsModule:
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-    + farm_boosted_yields::FarmBoostedYieldsModule
-    + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
-    + week_timekeeping::WeekTimekeepingModule
-    + weekly_rewards_splitting::WeeklyRewardsSplittingModule
-    + weekly_rewards_splitting::events::WeeklyRewardsSplittingEventsModule
-    + weekly_rewards_splitting::global_info::WeeklyRewardsGlobalInfo
-    + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
-    + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
-    + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
 {

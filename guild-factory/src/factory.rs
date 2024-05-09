@@ -1,5 +1,3 @@
-use farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactors;
-use farm_boosted_yields::boosted_yields_factors::ProxyTrait as _;
 use guild_sc::custom_rewards::ProxyTrait as _;
 use pausable::ProxyTrait as _;
 
@@ -44,7 +42,6 @@ pub trait FactoryModule:
 
         let guild_config = self.guild_local_config().get();
         let config_sc_address = config_sc_mapper.get();
-        let current_epoch = self.blockchain().get_block_epoch();
         let source_address = self.guild_sc_source_address().get();
         let code_metadata = self.get_default_code_metadata();
         let (guild_address, _) = self
@@ -54,7 +51,6 @@ pub trait FactoryModule:
                 guild_config.division_safety_constant,
                 config_sc_address,
                 caller,
-                current_epoch,
                 guild_config.per_block_reward_amount,
                 MultiValueEncoded::new(),
             )
@@ -79,8 +75,6 @@ pub trait FactoryModule:
         self.require_guild_master_caller(guild_id, caller_id);
         self.require_guild_setup_complete(guild.clone());
 
-        let factors = self.boosted_yields_default_factors().get();
-        self.set_boosted_yields_factors(guild.clone(), factors);
         self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
     }
@@ -154,24 +148,6 @@ pub trait FactoryModule:
             .execute_on_dest_context();
     }
 
-    fn set_boosted_yields_factors(
-        &self,
-        guild: ManagedAddress,
-        factors: BoostedYieldsFactors<Self::Api>,
-    ) {
-        let _: IgnoreValue = self
-            .guild_proxy()
-            .contract(guild)
-            .set_boosted_yields_factors(
-                factors.max_rewards_factor,
-                factors.user_rewards_energy_const,
-                factors.user_rewards_farm_const,
-                factors.min_energy_amount,
-                factors.min_farm_amount,
-            )
-            .execute_on_dest_context();
-    }
-
     fn resume_guild(&self, guild: ManagedAddress) {
         let _: IgnoreValue = self
             .guild_proxy()
@@ -199,9 +175,6 @@ pub trait FactoryModule:
 
     #[storage_mapper("guildLocalConfig")]
     fn guild_local_config(&self) -> SingleValueMapper<GuildLocalConfig<Self::Api>>;
-
-    #[storage_mapper("boostedYieldsDefaultFactors")]
-    fn boosted_yields_default_factors(&self) -> SingleValueMapper<BoostedYieldsFactors<Self::Api>>;
 
     #[storage_mapper("deployedGuilds")]
     fn deployed_guilds(&self) -> UnorderedSetMapper<AddressId>;

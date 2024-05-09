@@ -5,7 +5,6 @@ multiversx_sc::imports!();
 #[multiversx_sc::module]
 pub trait CompoundStakeFarmRewardsModule:
     crate::custom_rewards::CustomRewardsModule
-    + super::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + rewards::RewardsModule
     + config::ConfigModule
     + events::EventsModule
@@ -19,15 +18,6 @@ pub trait CompoundStakeFarmRewardsModule:
     + farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + farm_base_impl::compound_rewards::BaseCompoundRewardsModule
     + utils::UtilsModule
-    + farm_boosted_yields::FarmBoostedYieldsModule
-    + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
-    + week_timekeeping::WeekTimekeepingModule
-    + weekly_rewards_splitting::WeeklyRewardsSplittingModule
-    + weekly_rewards_splitting::events::WeeklyRewardsSplittingEventsModule
-    + weekly_rewards_splitting::global_info::WeeklyRewardsGlobalInfo
-    + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
-    + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
-    + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::close_guild::CloseGuildModule
@@ -48,8 +38,6 @@ pub trait CompoundStakeFarmRewardsModule:
         self.user_tokens(&caller).update(|tokens_per_tier| {
             tokens_per_tier.compounded += &compound_result.compounded_rewards
         });
-
-        self.set_farm_supply_for_current_week(&compound_result.storage_cache.farm_token_supply);
 
         self.emit_compound_rewards_event(
             &caller,

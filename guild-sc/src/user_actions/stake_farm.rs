@@ -9,7 +9,6 @@ use crate::{
 #[multiversx_sc::module]
 pub trait StakeFarmModule:
     crate::custom_rewards::CustomRewardsModule
-    + super::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + rewards::RewardsModule
     + config::ConfigModule
     + events::EventsModule
@@ -23,15 +22,6 @@ pub trait StakeFarmModule:
     + farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + farm_base_impl::enter_farm::BaseEnterFarmModule
     + utils::UtilsModule
-    + farm_boosted_yields::FarmBoostedYieldsModule
-    + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
-    + week_timekeeping::WeekTimekeepingModule
-    + weekly_rewards_splitting::WeeklyRewardsSplittingModule
-    + weekly_rewards_splitting::events::WeeklyRewardsSplittingEventsModule
-    + weekly_rewards_splitting::global_info::WeeklyRewardsGlobalInfo
-    + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
-    + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
-    + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::close_guild::CloseGuildModule
@@ -86,9 +76,6 @@ pub trait StakeFarmModule:
             );
         }
 
-        let boosted_rewards = self.claim_only_boosted_payment(&original_caller);
-        self.add_boosted_rewards(&original_caller, &boosted_rewards);
-
         let enter_result =
             self.enter_farm_base::<FarmStakingWrapper<Self>>(original_caller.clone(), payments);
 
@@ -103,10 +90,6 @@ pub trait StakeFarmModule:
 
         let new_farm_token = enter_result.new_farm_token.payment.clone();
         self.send_payment_non_zero(&caller, &new_farm_token);
-
-        self.set_farm_supply_for_current_week(&enter_result.storage_cache.farm_token_supply);
-
-        self.update_energy_and_progress(&original_caller);
 
         self.emit_enter_farm_event(
             &caller,

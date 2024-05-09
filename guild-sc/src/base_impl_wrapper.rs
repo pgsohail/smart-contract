@@ -2,9 +2,8 @@ multiversx_sc::imports!();
 
 use core::marker::PhantomData;
 
-use common_structs::FarmToken;
 use contexts::storage_cache::StorageCache;
-use farm_base_impl::base_traits_impl::{FarmContract, RewardPair};
+use farm_base_impl::base_traits_impl::FarmContract;
 use multiversx_sc_modules::transfer_role_proxy::PaymentsVec;
 
 use crate::token_attributes::StakingFarmTokenAttributes;
@@ -17,7 +16,6 @@ pub trait FarmStakingTraits =
         + pausable::PausableModule
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-        + farm_boosted_yields::FarmBoostedYieldsModule
         + crate::tiered_rewards::read_config::ReadConfigModule
         + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule;
 
@@ -26,52 +24,6 @@ where
     T:,
 {
     _phantom: PhantomData<T>,
-}
-
-impl<T> FarmStakingWrapper<T>
-where
-    T: FarmStakingTraits,
-{
-    pub fn calculate_base_farm_rewards(
-        sc: &<Self as FarmContract>::FarmSc,
-        farm_token_amount: &BigUint<<<Self as FarmContract>::FarmSc as ContractBase>::Api>,
-        token_attributes: &<Self as FarmContract>::AttributesType,
-        storage_cache: &StorageCache<<Self as FarmContract>::FarmSc>,
-    ) -> BigUint<<<Self as FarmContract>::FarmSc as ContractBase>::Api> {
-        let current_epoch = sc.blockchain().get_block_epoch();
-        let first_week_start_epoch = sc.first_week_start_epoch().get();
-        if first_week_start_epoch > current_epoch {
-            return BigUint::zero();
-        }
-
-        let token_rps = token_attributes.get_reward_per_share();
-        if storage_cache.reward_per_share > token_rps {
-            let rps_diff = &storage_cache.reward_per_share - &token_rps;
-            farm_token_amount * &rps_diff / &storage_cache.division_safety_constant
-        } else {
-            BigUint::zero()
-        }
-    }
-
-    pub fn calculate_boosted_rewards(
-        sc: &<Self as FarmContract>::FarmSc,
-        caller: &ManagedAddress<<<Self as FarmContract>::FarmSc as ContractBase>::Api>,
-    ) -> BigUint<<<Self as FarmContract>::FarmSc as ContractBase>::Api> {
-        let current_epoch = sc.blockchain().get_block_epoch();
-        let first_week_start_epoch = sc.first_week_start_epoch().get();
-        if first_week_start_epoch > current_epoch {
-            return BigUint::zero();
-        }
-
-        let user_total_farm_position = sc.get_user_total_farm_position(caller);
-        let user_farm_position = user_total_farm_position.total_farm_position;
-
-        if user_farm_position > 0 {
-            sc.claim_boosted_yields_rewards(caller, user_farm_position)
-        } else {
-            BigUint::zero()
-        }
-    }
 }
 
 impl<T> FarmContract for FarmStakingWrapper<T>
@@ -106,7 +58,6 @@ where
         }
 
         let extra_rewards_apr_bounded_per_block = sc.get_amount_apr_bounded();
-
         let block_nonce_diff = current_block_nonce - last_reward_nonce;
         let extra_rewards_apr_bounded = extra_rewards_apr_bounded_per_block * block_nonce_diff;
 
@@ -139,30 +90,13 @@ where
         accumulated_rewards += &total_reward;
         accumulated_rewards_mapper.set(&accumulated_rewards);
 
-        let split_rewards = sc.take_reward_slice(total_reward);
-        if storage_cache.farm_token_supply > 0 {
-            let increase = (&split_rewards.base_farm * &storage_cache.division_safety_constant)
-                / &storage_cache.farm_token_supply;
-            storage_cache.reward_per_share += &increase;
+        if storage_cache.farm_token_supply == 0 {
+            return;
         }
-    }
 
-    fn calculate_rewards(
-        sc: &Self::FarmSc,
-        caller: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        farm_token_amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
-        token_attributes: &Self::AttributesType,
-        storage_cache: &StorageCache<Self::FarmSc>,
-    ) -> RewardPair<<Self::FarmSc as ContractBase>::Api> {
-        let base_farm_reward = Self::calculate_base_farm_rewards(
-            sc,
-            farm_token_amount,
-            token_attributes,
-            storage_cache,
-        );
-        let boosted_yield_rewards = Self::calculate_boosted_rewards(sc, caller);
-
-        RewardPair::new(base_farm_reward, boosted_yield_rewards)
+        let increase = (total_reward * &storage_cache.division_safety_constant)
+            / &storage_cache.farm_token_supply;
+        storage_cache.reward_per_share += &increase;
     }
 
     fn create_enter_farm_initial_attributes(
