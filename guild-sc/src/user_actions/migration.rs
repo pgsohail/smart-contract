@@ -72,11 +72,10 @@ pub trait MigrationModule:
             unbond_epochs,
         );
 
-        self.guild_closing().set(true);
-
         let mut storage_cache = StorageCache::new(self);
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
         self.produce_rewards_enabled().set(false);
+        self.guild_closing().set(true);
 
         let rewards_capacity = self.reward_capacity().get();
         let accumulated_rewards = self.accumulated_rewards().get();
