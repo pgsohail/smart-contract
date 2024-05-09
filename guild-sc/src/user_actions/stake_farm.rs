@@ -27,27 +27,6 @@ pub trait StakeFarmModule:
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
-    #[endpoint(stakeFarmThroughProxy)]
-    fn stake_farm_through_proxy(
-        &self,
-        staked_token_amount: BigUint,
-        original_caller: ManagedAddress,
-    ) -> EsdtTokenPayment {
-        let caller = self.blockchain().get_caller();
-        self.require_sc_address_whitelisted(&caller);
-
-        let staked_token_id = self.farming_token_id().get();
-        let staked_token_simulated_payment =
-            EsdtTokenPayment::new(staked_token_id, 0, staked_token_amount);
-
-        let farm_tokens = self.call_value().all_esdt_transfers().clone_value();
-        let mut payments = ManagedVec::from_single_item(staked_token_simulated_payment);
-        payments.append_vec(farm_tokens);
-
-        self.stake_farm_common(original_caller, payments)
-    }
-
-    #[payable("*")]
     #[endpoint(stakeFarm)]
     fn stake_farm_endpoint(
         &self,

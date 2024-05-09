@@ -41,7 +41,6 @@ pub trait UnstakeFarmModule:
     + events::EventsModule
     + token_send::TokenSendModule
     + farm_token::FarmTokenModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -55,56 +54,15 @@ pub trait UnstakeFarmModule:
 {
     #[payable("*")]
     #[endpoint(unstakeFarm)]
-    fn unstake_farm(
-        &self,
-        opt_original_caller: OptionalValue<ManagedAddress>,
-    ) -> ExitFarmWithPartialPosResultType<Self::Api> {
-        let caller = self.blockchain().get_caller();
-        let original_caller = self.get_orig_caller_from_opt(&caller, opt_original_caller);
-        let payment = self.call_value().single_esdt();
-
-        self.unstake_farm_common(original_caller, payment, None)
-    }
-
-    #[payable("*")]
-    #[endpoint(unstakeFarmThroughProxy)]
-    fn unstake_farm_through_proxy(
-        &self,
-        original_caller: ManagedAddress,
-    ) -> ExitFarmWithPartialPosResultType<Self::Api> {
-        let caller = self.blockchain().get_caller();
-        self.require_sc_address_whitelisted(&caller);
-
-        let [first_payment, second_payment] = self.call_value().multi_esdt();
-
-        // first payment are the staking tokens, taken from the liquidity pool
-        // they will be sent to the user on unbond
-        let staking_token_id = self.farming_token_id().get();
-        require!(
-            first_payment.token_identifier == staking_token_id,
-            "Invalid staking token received"
-        );
-
-        self.unstake_farm_common(original_caller, second_payment, Some(first_payment.amount))
-    }
-
-    fn unstake_farm_common(
-        &self,
-        original_caller: ManagedAddress,
-        payment: EsdtTokenPayment,
-        opt_unbond_amount: Option<BigUint>,
-    ) -> ExitFarmWithPartialPosResultType<Self::Api> {
+    fn unstake_farm(&self) -> ExitFarmWithPartialPosResultType<Self::Api> {
         self.require_not_closing();
 
-        let unstake_result =
-            self.unstake_farm_common_no_unbond_token_mint(original_caller.clone(), payment);
-
-        let unbond_token_amount =
-            opt_unbond_amount.unwrap_or(unstake_result.exit_result.farming_token_payment.amount);
-
         let caller = self.blockchain().get_caller();
+        let payment = self.call_value().single_esdt();
+        let unstake_result = self.unstake_farm_common_no_unbond_token_mint(caller.clone(), payment);
+        let unbond_token_amount = unstake_result.exit_result.farming_token_payment.amount;
 
-        self.require_over_min_stake(&original_caller);
+        self.require_over_min_stake(&caller);
 
         let min_unbond_epochs = self.get_min_unbond_epochs_user();
         let create_unbond_token_result = self.create_and_send_unbond_tokens(

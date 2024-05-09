@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           50
+// Endpoints:                           47
 // Async Callback:                       1
-// Total number of exported functions:  52
+// Total number of exported functions:  49
 
 #![no_std]
 #![allow(internal_features)]
@@ -56,13 +56,10 @@ multiversx_sc_wasm_adapter::endpoints! {
         updateOwnerOrAdmin => update_owner_or_admin_endpoint
         getPermissions => permissions
         setTransferRoleFarmToken => set_transfer_role_farm_token
-        stakeFarmThroughProxy => stake_farm_through_proxy
         stakeFarm => stake_farm_endpoint
         claimRewards => claim_rewards
-        claimRewardsWithNewValue => claim_rewards_with_new_value
         compoundRewards => compound_rewards
         unstakeFarm => unstake_farm
-        unstakeFarmThroughProxy => unstake_farm_through_proxy
         unbondFarm => unbond_farm
         cancelUnbond => cancel_unbond
         registerUnbondToken => register_unbond_token

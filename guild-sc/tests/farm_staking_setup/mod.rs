@@ -4,8 +4,8 @@ use guild_sc::unbond_token::UnbondTokenModule;
 use guild_sc::FarmStaking;
 use guild_sc_config::tiers::TierModule;
 use guild_sc_config::GuildScConfig;
-use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
+use multiversx_sc::imports::OptionalValue;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
 use multiversx_sc::types::{Address, EsdtLocalRole, MultiValueEncoded};
 use multiversx_sc_scenario::whitebox_legacy::TxTokenTransfer;
@@ -264,7 +264,7 @@ where
                 farm_token_nonce,
                 &rust_biguint!(farm_token_amount),
                 |sc| {
-                    let multi_result = sc.claim_rewards(OptionalValue::None);
+                    let multi_result = sc.claim_rewards();
                     let (first_result, second_result) = multi_result.into_tuple();
 
                     assert_eq!(
@@ -332,7 +332,7 @@ where
                 farm_token_nonce,
                 &rust_biguint!(farm_token_amount),
                 |sc| {
-                    let multi_result = sc.unstake_farm(OptionalValue::None);
+                    let multi_result = sc.unstake_farm();
 
                     let (first_result, second_result) = multi_result.into_tuple();
 
