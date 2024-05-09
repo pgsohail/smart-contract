@@ -31,6 +31,7 @@ pub trait CustomRewardsModule:
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(topUpRewards)]

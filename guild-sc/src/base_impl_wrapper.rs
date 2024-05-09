@@ -17,7 +17,8 @@ pub trait FarmStakingTraits =
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
         + crate::tiered_rewards::read_config::ReadConfigModule
-        + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule;
+        + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+        + crate::user_actions::close_guild::CloseGuildModule;
 
 pub struct FarmStakingWrapper<T>
 where
@@ -46,8 +47,7 @@ where
     ) -> BigUint<<Self::FarmSc as ContractBase>::Api> {
         let current_block_nonce = sc.blockchain().get_block_nonce();
         let last_reward_nonce = sc.last_reward_block_nonce().get();
-
-        if current_block_nonce <= last_reward_nonce {
+        if current_block_nonce <= last_reward_nonce || sc.guild_closing().get() {
             return BigUint::zero();
         }
 
