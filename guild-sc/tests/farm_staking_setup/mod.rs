@@ -1,14 +1,13 @@
 #![allow(deprecated)]
 
 use guild_sc::unbond_token::UnbondTokenModule;
-use guild_sc::user_actions::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule;
 use guild_sc::FarmStaking;
 use guild_sc_config::tiers::TierModule;
 use guild_sc_config::GuildScConfig;
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
-use multiversx_sc::types::{Address, BigInt, EsdtLocalRole, MultiValueEncoded};
+use multiversx_sc::types::{Address, EsdtLocalRole, MultiValueEncoded};
 use multiversx_sc_scenario::whitebox_legacy::TxTokenTransfer;
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_token_id, rust_biguint, whitebox_legacy::*, DebugApi,
@@ -17,10 +16,6 @@ use multiversx_sc_scenario::{
 pub type RustBigUint = num_bigint::BigUint;
 
 use config::*;
-use energy_factory::energy::EnergyModule;
-use energy_query::{Energy, EnergyQueryModule};
-use farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule;
-use farm_boosted_yields::FarmBoostedYieldsModule;
 use farm_token::FarmTokenModule;
 use guild_sc::custom_rewards::CustomRewardsModule;
 use guild_sc::token_attributes::StakingFarmTokenAttributes;
@@ -51,33 +46,24 @@ pub const MIN_FARM_AMOUNT_FOR_BOOSTED_YIELDS: u64 = 1;
 pub const WITHDRAW_AMOUNT_TOO_HIGH: &str =
     "Withdraw amount is higher than the remaining uncollected rewards!";
 
-pub struct FarmStakingSetup<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>
+pub struct FarmStakingSetup<FarmObjBuilder, ConfigScBuilder>
 where
     FarmObjBuilder: 'static + Copy + Fn() -> guild_sc::ContractObj<DebugApi>,
-    EnergyFactoryBuilder: 'static + Copy + Fn() -> energy_factory::ContractObj<DebugApi>,
     ConfigScBuilder: 'static + Copy + Fn() -> guild_sc_config::ContractObj<DebugApi>,
 {
     pub b_mock: BlockchainStateWrapper,
     pub owner_address: Address,
     pub user_address: Address,
     pub farm_wrapper: ContractObjWrapper<guild_sc::ContractObj<DebugApi>, FarmObjBuilder>,
-    pub energy_factory_wrapper:
-        ContractObjWrapper<energy_factory::ContractObj<DebugApi>, EnergyFactoryBuilder>,
     pub config_wrapper: ContractObjWrapper<guild_sc_config::ContractObj<DebugApi>, ConfigScBuilder>,
 }
 
-impl<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>
-    FarmStakingSetup<FarmObjBuilder, EnergyFactoryBuilder, ConfigScBuilder>
+impl<FarmObjBuilder, ConfigScBuilder> FarmStakingSetup<FarmObjBuilder, ConfigScBuilder>
 where
     FarmObjBuilder: 'static + Copy + Fn() -> guild_sc::ContractObj<DebugApi>,
-    EnergyFactoryBuilder: 'static + Copy + Fn() -> energy_factory::ContractObj<DebugApi>,
     ConfigScBuilder: 'static + Copy + Fn() -> guild_sc_config::ContractObj<DebugApi>,
 {
-    pub fn new(
-        farm_builder: FarmObjBuilder,
-        energy_factory_builder: EnergyFactoryBuilder,
-        config_builder: ConfigScBuilder,
-    ) -> Self {
+    pub fn new(farm_builder: FarmObjBuilder, config_builder: ConfigScBuilder) -> Self {
         let rust_zero = rust_biguint!(0u64);
         let mut b_mock = BlockchainStateWrapper::new();
         let owner_addr = b_mock.create_user_account(&rust_zero);
@@ -85,13 +71,6 @@ where
             b_mock.create_sc_account(&rust_zero, Some(&owner_addr), config_builder, "config");
         let farm_wrapper =
             b_mock.create_sc_account(&rust_zero, Some(&owner_addr), farm_builder, "farm-staking");
-
-        let energy_factory_wrapper = b_mock.create_sc_account(
-            &rust_zero,
-            Some(&owner_addr),
-            energy_factory_builder,
-            "energy_factory.wasm",
-        );
 
         // init config SC
 
@@ -132,7 +111,6 @@ where
                     division_safety_constant,
                     managed_address!(config_wrapper.address_ref()),
                     managed_address!(&owner_addr),
-                    0,
                     managed_biguint!(PER_BLOCK_REWARD_AMOUNT),
                     MultiValueEncoded::new(),
                 );
@@ -144,9 +122,6 @@ where
 
                 sc.state().set(State::Active);
                 sc.produce_rewards_enabled().set(true);
-
-                sc.energy_factory_address()
-                    .set(managed_address!(energy_factory_wrapper.address_ref()));
             })
             .assert_ok();
 
@@ -194,7 +169,6 @@ where
             owner_address: owner_addr,
             user_address: user_addr,
             farm_wrapper,
-            energy_factory_wrapper,
             config_wrapper,
         };
         setup
@@ -339,37 +313,6 @@ where
         );
     }
 
-    pub fn claim_boosted_rewards_for_user(
-        &mut self,
-        owner: &Address,
-        broker: &Address,
-        expected_reward_token_out: u64,
-        expected_user_reward_token_balance: &RustBigUint,
-    ) {
-        self.b_mock
-            .execute_tx(broker, &self.farm_wrapper, &rust_biguint!(0u64), |sc| {
-                let payment_result =
-                    sc.claim_boosted_rewards(OptionalValue::Some(managed_address!(owner)));
-
-                assert_eq!(
-                    payment_result.token_identifier,
-                    managed_token_id!(REWARD_TOKEN_ID)
-                );
-                assert_eq!(payment_result.token_nonce, 0);
-                assert_eq!(
-                    payment_result.amount,
-                    managed_biguint!(expected_reward_token_out)
-                );
-            })
-            .assert_ok();
-
-        self.b_mock.check_esdt_balance(
-            &self.user_address,
-            REWARD_TOKEN_ID,
-            expected_user_reward_token_balance,
-        );
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub fn unstake_farm(
         &mut self,
@@ -507,61 +450,6 @@ where
 
     pub fn set_block_epoch(&mut self, block_epoch: u64) {
         self.b_mock.set_block_epoch(block_epoch);
-    }
-
-    pub fn set_user_energy(
-        &mut self,
-        user: &Address,
-        energy: u64,
-        last_update_epoch: u64,
-        locked_tokens: u64,
-    ) {
-        self.b_mock
-            .execute_tx(
-                &self.owner_address,
-                &self.energy_factory_wrapper,
-                &rust_biguint!(0),
-                |sc| {
-                    sc.user_energy(&managed_address!(user)).set(&Energy::new(
-                        BigInt::from(managed_biguint!(energy)),
-                        last_update_epoch,
-                        managed_biguint!(locked_tokens),
-                    ));
-                },
-            )
-            .assert_ok();
-    }
-
-    pub fn set_boosted_yields_rewards_percentage(&mut self, percentage: u64) {
-        self.b_mock
-            .execute_tx(
-                &self.owner_address,
-                &self.farm_wrapper,
-                &rust_biguint!(0),
-                |sc| {
-                    sc.set_boosted_yields_rewards_percentage(percentage);
-                },
-            )
-            .assert_ok();
-    }
-
-    pub fn set_boosted_yields_factors(&mut self) {
-        self.b_mock
-            .execute_tx(
-                &self.owner_address,
-                &self.farm_wrapper,
-                &rust_biguint!(0),
-                |sc| {
-                    sc.set_boosted_yields_factors(
-                        managed_biguint!(MAX_REWARDS_FACTOR),
-                        managed_biguint!(USER_REWARDS_ENERGY_CONST),
-                        managed_biguint!(USER_REWARDS_FARM_CONST),
-                        managed_biguint!(MIN_ENERGY_AMOUNT_FOR_BOOSTED_YIELDS),
-                        managed_biguint!(MIN_FARM_AMOUNT_FOR_BOOSTED_YIELDS),
-                    );
-                },
-            )
-            .assert_ok();
     }
 
     pub fn withdraw_rewards(&mut self, withdraw_amount: &RustBigUint) {

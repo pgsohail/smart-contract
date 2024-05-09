@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           72
+// Endpoints:                           50
 // Async Callback:                       1
-// Total number of exported functions:  74
+// Total number of exported functions:  52
 
 #![no_std]
 #![allow(internal_features)]
@@ -65,31 +65,9 @@ multiversx_sc_wasm_adapter::endpoints! {
         unstakeFarmThroughProxy => unstake_farm_through_proxy
         unbondFarm => unbond_farm
         cancelUnbond => cancel_unbond
-        claimBoostedRewards => claim_boosted_rewards
         registerUnbondToken => register_unbond_token
         setTransferRoleUnbondToken => set_transfer_role_unbond_token
         getUnbondTokenId => unbond_token
-        setBoostedYieldsRewardsPercentage => set_boosted_yields_rewards_percentage
-        collectUndistributedBoostedRewards => collect_undistributed_boosted_rewards
-        getBoostedYieldsRewardsPercentage => boosted_yields_rewards_percentage
-        getAccumulatedRewardsForWeek => accumulated_rewards_for_week
-        getFarmSupplyForWeek => farm_supply_for_week
-        getRemainingBoostedRewardsToDistribute => remaining_boosted_rewards_to_distribute
-        getUndistributedBoostedRewards => undistributed_boosted_rewards
-        setBoostedYieldsFactors => set_boosted_yields_factors
-        getBoostedYieldsFactors => get_boosted_yields_factors
-        getCurrentWeek => get_current_week
-        getFirstWeekStartEpoch => first_week_start_epoch
-        getLastActiveWeekForUser => get_last_active_week_for_user_view
-        getUserEnergyForWeek => get_user_energy_for_week_view
-        getLastGlobalUpdateWeek => last_global_update_week
-        getTotalRewardsForWeek => total_rewards_for_week
-        getTotalEnergyForWeek => total_energy_for_week
-        getTotalLockedTokensForWeek => total_locked_tokens_for_week
-        updateEnergyForUser => update_energy_for_user
-        getCurrentClaimProgress => current_claim_progress
-        setEnergyFactoryAddress => set_energy_factory_address
-        getEnergyFactoryAddress => energy_factory_address
         closeGuild => close_guild
         migrateToOtherGuild => migrate_to_other_guild
     )

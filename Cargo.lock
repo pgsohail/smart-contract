@@ -815,10 +815,7 @@ version = "0.0.0"
 dependencies = [
  "common_structs",
  "config",
- "energy-factory",
- "energy-query",
  "farm",
- "farm-boosted-yields",
  "farm_token",
  "guild-sc",
  "guild-sc-config",
@@ -846,11 +843,8 @@ dependencies = [
  "common_structs",
  "config",
  "contexts",
- "energy-factory",
- "energy-query",
  "events",
  "farm",
- "farm-boosted-yields",
  "farm_base_impl",
  "farm_token",
  "fixed-supply-token",
@@ -868,8 +862,6 @@ dependencies = [
  "sc_whitelist_module",
  "token_send",
  "utils",
- "week-timekeeping",
- "weekly-rewards-splitting",
 ]
 
 [[package]]

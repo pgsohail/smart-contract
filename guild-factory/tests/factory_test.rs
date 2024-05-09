@@ -163,7 +163,7 @@ fn migrate_to_other_guild_test() {
             &setup.user_address,
             &setup.second_farm_wrapper,
             OTHER_FARM_TOKEN_ID,
-            3,
+            2,
             &rust_biguint!(farm_in_amount),
             |sc| {
                 let (_, rewards_payment) = sc.claim_rewards(OptionalValue::None).into_tuple();
