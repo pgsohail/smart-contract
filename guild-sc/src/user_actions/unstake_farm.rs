@@ -35,7 +35,6 @@ pub struct CreateUnbondTokenResult<M: ManagedTypeApi> {
 #[multiversx_sc::module]
 pub trait UnstakeFarmModule:
     crate::custom_rewards::CustomRewardsModule
-    + super::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + crate::unbond_token::UnbondTokenModule
     + rewards::RewardsModule
     + config::ConfigModule
@@ -50,15 +49,6 @@ pub trait UnstakeFarmModule:
     + farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
-    + farm_boosted_yields::FarmBoostedYieldsModule
-    + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
-    + week_timekeeping::WeekTimekeepingModule
-    + weekly_rewards_splitting::WeeklyRewardsSplittingModule
-    + weekly_rewards_splitting::events::WeeklyRewardsSplittingEventsModule
-    + weekly_rewards_splitting::global_info::WeeklyRewardsGlobalInfo
-    + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
-    + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
-    + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::close_guild::CloseGuildModule
@@ -147,7 +137,6 @@ pub trait UnstakeFarmModule:
     ) -> UnstakeCommonNoTokenMintResultType<Self, StakingFarmTokenAttributes<Self::Api>> {
         let exit_result =
             self.exit_farm_base::<FarmStakingWrapper<Self>>(original_caller.clone(), payment);
-        self.add_boosted_rewards(&original_caller, &exit_result.rewards.boosted);
 
         let original_attributes = exit_result
             .context
@@ -168,9 +157,6 @@ pub trait UnstakeFarmModule:
         let reward_token_id = self.reward_token_id().get();
         let base_rewards_payment =
             EsdtTokenPayment::new(reward_token_id, 0, exit_result.rewards.base.clone());
-
-        self.clear_user_energy_if_needed(&original_caller);
-        self.set_farm_supply_for_current_week(&exit_result.storage_cache.farm_token_supply);
 
         UnstakeCommonNoTokenMintResultType {
             base_rewards_payment,

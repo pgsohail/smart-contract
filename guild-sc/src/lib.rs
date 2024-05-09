@@ -6,7 +6,6 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use base_impl_wrapper::FarmStakingWrapper;
-use common_structs::Epoch;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmContract;
 use fixed_supply_token::FixedSupplyToken;
@@ -45,17 +44,7 @@ pub trait FarmStaking:
     + user_actions::compound_stake_farm_rewards::CompoundStakeFarmRewardsModule
     + user_actions::unstake_farm::UnstakeFarmModule
     + user_actions::unbond_farm::UnbondFarmModule
-    + user_actions::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + unbond_token::UnbondTokenModule
-    + farm_boosted_yields::FarmBoostedYieldsModule
-    + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
-    + week_timekeeping::WeekTimekeepingModule
-    + weekly_rewards_splitting::WeeklyRewardsSplittingModule
-    + weekly_rewards_splitting::events::WeeklyRewardsSplittingEventsModule
-    + weekly_rewards_splitting::global_info::WeeklyRewardsGlobalInfo
-    + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
-    + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
-    + energy_query::EnergyQueryModule
     + tiered_rewards::read_config::ReadConfigModule
     + tiered_rewards::tokens_per_tier::TokenPerTierModule
     + user_actions::migration::MigrationModule
@@ -69,7 +58,6 @@ pub trait FarmStaking:
         division_safety_constant: BigUint,
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,
-        first_week_start_epoch: Epoch,
         per_block_reward_amount: BigUint,
         mut admins: MultiValueEncoded<ManagedAddress>,
     ) {
@@ -86,14 +74,8 @@ pub trait FarmStaking:
             admins,
         );
 
-        let current_epoch = self.blockchain().get_block_epoch();
-        require!(
-            first_week_start_epoch >= current_epoch,
-            "Invalid start epoch"
-        );
         self.require_sc_address(&config_sc_address);
 
-        self.first_week_start_epoch().set(first_week_start_epoch);
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
         self.per_block_reward_amount().set(per_block_reward_amount);
@@ -108,9 +90,6 @@ pub trait FarmStaking:
     #[endpoint(mergeFarmTokens)]
     fn merge_farm_tokens_endpoint(&self) -> EsdtTokenPayment {
         let caller = self.blockchain().get_caller();
-        let boosted_rewards = self.claim_only_boosted_payment(&caller);
-        self.add_boosted_rewards(&caller, &boosted_rewards);
-
         let payments = self.get_non_empty_payments();
         let token_mapper = self.farm_token();
         let output_attributes: StakingFarmTokenAttributes<Self::Api> =

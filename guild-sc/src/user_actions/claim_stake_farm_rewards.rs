@@ -9,7 +9,6 @@ use crate::{
 #[multiversx_sc::module]
 pub trait ClaimStakeFarmRewardsModule:
     crate::custom_rewards::CustomRewardsModule
-    + super::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + rewards::RewardsModule
     + config::ConfigModule
     + events::EventsModule
@@ -23,15 +22,6 @@ pub trait ClaimStakeFarmRewardsModule:
     + farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + farm_base_impl::claim_rewards::BaseClaimRewardsModule
     + utils::UtilsModule
-    + farm_boosted_yields::FarmBoostedYieldsModule
-    + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
-    + week_timekeeping::WeekTimekeepingModule
-    + weekly_rewards_splitting::WeeklyRewardsSplittingModule
-    + weekly_rewards_splitting::events::WeeklyRewardsSplittingEventsModule
-    + weekly_rewards_splitting::global_info::WeeklyRewardsGlobalInfo
-    + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
-    + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
-    + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::close_guild::CloseGuildModule
@@ -68,13 +58,6 @@ pub trait ClaimStakeFarmRewardsModule:
     ) -> ClaimRewardsResultType<Self::Api> {
         self.require_not_closing();
 
-        let current_epoch = self.blockchain().get_block_epoch();
-        let first_week_start_epoch = self.first_week_start_epoch().get();
-        require!(
-            first_week_start_epoch <= current_epoch,
-            "Cannot claim rewards yet"
-        );
-
         let payment = self.call_value().single_esdt();
         let mut claim_result = self
             .claim_rewards_base_no_farm_token_mint::<FarmStakingWrapper<Self>>(
@@ -107,11 +90,7 @@ pub trait ClaimStakeFarmRewardsModule:
 
             virtual_farm_token.payment.amount = new_amount.clone();
             virtual_farm_token.attributes.current_farm_amount = new_amount;
-
-            self.set_farm_supply_for_current_week(&claim_result.storage_cache.farm_token_supply);
         }
-
-        self.update_energy_and_progress(&original_caller);
 
         let new_farm_token_nonce = self.send().esdt_nft_create_compact(
             &virtual_farm_token.payment.token_identifier,
@@ -119,8 +98,6 @@ pub trait ClaimStakeFarmRewardsModule:
             &virtual_farm_token.attributes,
         );
         virtual_farm_token.payment.token_nonce = new_farm_token_nonce;
-
-        self.add_boosted_rewards(&original_caller, &claim_result.rewards.boosted);
 
         let reward_token_id = self.reward_token_id().get();
         let base_rewards_payment =

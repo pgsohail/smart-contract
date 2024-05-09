@@ -12,22 +12,6 @@ path = "src/lib.rs"
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
 
-[dependencies.farm-boosted-yields]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.weekly-rewards-splitting]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.week-timekeeping]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.energy-query]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
 [dependencies.config]
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
@@ -73,10 +57,6 @@ git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
 
 [dependencies.math]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.energy-factory]
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
 

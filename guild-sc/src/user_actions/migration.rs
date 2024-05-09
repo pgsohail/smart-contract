@@ -24,7 +24,6 @@ multiversx_sc::imports!();
 pub trait MigrationModule:
     super::unstake_farm::UnstakeFarmModule
     + crate::custom_rewards::CustomRewardsModule
-    + super::claim_only_boosted_staking_rewards::ClaimOnlyBoostedStakingRewardsModule
     + crate::unbond_token::UnbondTokenModule
     + rewards::RewardsModule
     + config::ConfigModule
@@ -39,15 +38,6 @@ pub trait MigrationModule:
     + farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
-    + farm_boosted_yields::FarmBoostedYieldsModule
-    + farm_boosted_yields::boosted_yields_factors::BoostedYieldsFactorsModule
-    + week_timekeeping::WeekTimekeepingModule
-    + weekly_rewards_splitting::WeeklyRewardsSplittingModule
-    + weekly_rewards_splitting::events::WeeklyRewardsSplittingEventsModule
-    + weekly_rewards_splitting::global_info::WeeklyRewardsGlobalInfo
-    + weekly_rewards_splitting::locked_token_buckets::WeeklyRewardsLockedTokenBucketsModule
-    + weekly_rewards_splitting::update_claim_progress_energy::UpdateClaimProgressEnergyModule
-    + energy_query::EnergyQueryModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
     + super::custom_events::CustomEventsModule
