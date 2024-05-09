@@ -166,7 +166,7 @@ fn migrate_to_other_guild_test() {
             2,
             &rust_biguint!(farm_in_amount),
             |sc| {
-                let (_, rewards_payment) = sc.claim_rewards(OptionalValue::None).into_tuple();
+                let (_, rewards_payment) = sc.claim_rewards().into_tuple();
                 assert_eq!(rewards_payment.amount, expected_reward_token_out);
             },
         )
