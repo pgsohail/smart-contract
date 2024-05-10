@@ -1,5 +1,7 @@
-use common_structs::Epoch;
-use guild_sc_config::tiers::{RewardTier, TIER_NOT_FOUND_ERR_MSG};
+use common_structs::{Epoch, Percent};
+use guild_sc_config::tiers::{
+    GuildMasterRewardTier, RewardTier, UserRewardTier, TIER_NOT_FOUND_ERR_MSG,
+};
 use multiversx_sc::storage::StorageKey;
 
 multiversx_sc::imports!();
@@ -14,38 +16,44 @@ static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
-    fn find_any_user_tier(
+    fn find_any_user_tier_apr(
         &self,
         user: &ManagedAddress,
         base_farming_amount: &BigUint,
-    ) -> RewardTier<Self::Api> {
+        percentage_staked: Percent,
+    ) -> Percent {
         let guild_master = self.guild_master().get();
         if user != &guild_master {
-            self.find_user_tier(base_farming_amount)
+            self.find_user_tier_apr(percentage_staked)
         } else {
-            self.find_guild_master_tier(base_farming_amount)
+            self.find_guild_master_tier_apr(base_farming_amount)
         }
     }
 
-    fn find_guild_master_tier(&self, base_farming_amount: &BigUint) -> RewardTier<Self::Api> {
+    // percentage_staked unused
+    fn find_guild_master_tier_apr(&self, base_farming_amount: &BigUint) -> Percent {
         let mapper = self.get_guild_master_tiers_mapper();
-        self.find_tier_common(base_farming_amount, &mapper)
+        let tier = self.find_tier_common(base_farming_amount, Percent::default(), &mapper);
+
+        tier.apr
     }
 
-    fn find_user_tier(&self, base_farming_amount: &BigUint) -> RewardTier<Self::Api> {
+    // base_farming_amount unused
+    fn find_user_tier_apr(&self, percentage_staked: Percent) -> Percent {
         let mapper = self.get_user_tiers_mapper();
-        self.find_tier_common(base_farming_amount, &mapper)
+        let tier = self.find_tier_common(&BigUint::default(), percentage_staked, &mapper);
+
+        tier.apr
     }
 
-    fn find_tier_common(
+    fn find_tier_common<T: TopEncode + TopDecode + RewardTier<Self::Api>>(
         &self,
         base_farming_amount: &BigUint,
-        mapper: &VecMapper<RewardTier<Self::Api>, ManagedAddress>,
-    ) -> RewardTier<Self::Api> {
+        percentage_staked: Percent,
+        mapper: &VecMapper<T, ManagedAddress>,
+    ) -> T {
         for reward_tier in mapper.iter() {
-            if &reward_tier.min_stake <= base_farming_amount
-                && base_farming_amount <= &reward_tier.max_stake
-            {
+            if reward_tier.is_in_range(base_farming_amount, percentage_staked) {
                 return reward_tier;
             }
         }
@@ -53,7 +61,9 @@ pub trait ReadConfigModule {
         sc_panic!(TIER_NOT_FOUND_ERR_MSG);
     }
 
-    fn get_guild_master_tiers_mapper(&self) -> VecMapper<RewardTier<Self::Api>, ManagedAddress> {
+    fn get_guild_master_tiers_mapper(
+        &self,
+    ) -> VecMapper<GuildMasterRewardTier<Self::Api>, ManagedAddress> {
         let config_addr = self.config_sc_address().get();
 
         VecMapper::<_, _, ManagedAddress>::new_from_address(
@@ -62,7 +72,7 @@ pub trait ReadConfigModule {
         )
     }
 
-    fn get_user_tiers_mapper(&self) -> VecMapper<RewardTier<Self::Api>, ManagedAddress> {
+    fn get_user_tiers_mapper(&self) -> VecMapper<UserRewardTier, ManagedAddress> {
         let config_addr = self.config_sc_address().get();
 
         VecMapper::<_, _, ManagedAddress>::new_from_address(

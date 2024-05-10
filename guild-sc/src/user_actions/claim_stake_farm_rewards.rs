@@ -20,7 +20,7 @@ pub trait ClaimStakeFarmRewardsModule:
     + farm_base_impl::claim_rewards::BaseClaimRewardsModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]

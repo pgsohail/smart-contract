@@ -38,7 +38,7 @@ pub trait MigrationModule:
     + farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + super::custom_events::CustomEventsModule
     + super::close_guild::CloseGuildModule
 {
@@ -93,6 +93,7 @@ pub trait MigrationModule:
         self.emit_guild_closing_event(&caller, &create_unbond_token_result.attributes);
     }
 
+    // TODO: Remember to handle the total staked value, i.e. decrease manually when migrating
     #[payable("*")]
     #[endpoint(migrateToOtherGuild)]
     fn migrate_to_other_guild(&self, guild_address: ManagedAddress) {

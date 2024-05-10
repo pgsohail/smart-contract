@@ -46,7 +46,7 @@ pub trait FarmStaking:
     + user_actions::unbond_farm::UnbondFarmModule
     + unbond_token::UnbondTokenModule
     + tiered_rewards::read_config::ReadConfigModule
-    + tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + tiered_rewards::total_tokens::TokenPerTierModule
     + user_actions::migration::MigrationModule
     + user_actions::custom_events::CustomEventsModule
     + user_actions::close_guild::CloseGuildModule

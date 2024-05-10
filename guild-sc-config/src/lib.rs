@@ -18,11 +18,12 @@ pub trait GuildScConfig: tiers::TierModule + global_config::GlobalConfigModule {
         min_stake_user: BigUint,
         min_stake_guild_master: BigUint,
     ) {
-        self.set_max_staked_tokens(max_staked_tokens);
         self.set_min_unbond_epochs_user(user_unbond_epochs);
         self.set_min_unbond_epochs_guild_master(guild_master_unbond_epochs);
         self.set_min_stake_user(min_stake_user);
         self.set_min_stake_guild_master(min_stake_guild_master);
+
+        self.max_staked_tokens().set(max_staked_tokens);
     }
 
     #[upgrade]

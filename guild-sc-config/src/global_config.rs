@@ -9,12 +9,6 @@ pub const MAX_MIN_UNBOND_EPOCHS: Epoch = 30;
 #[multiversx_sc::module]
 pub trait GlobalConfigModule {
     #[only_owner]
-    #[endpoint(setMaxStakedTokens)]
-    fn set_max_staked_tokens(&self, max_stake: BigUint) {
-        self.max_staked_tokens().set(max_stake);
-    }
-
-    #[only_owner]
     #[endpoint(setMinUnbondEpochsUser)]
     fn set_min_unbond_epochs_user(&self, min_unbond_epochs: Epoch) {
         self.require_valid_unbond_epochs(min_unbond_epochs);

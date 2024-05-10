@@ -4,7 +4,7 @@ use contexts::storage_cache::StorageCache;
 use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
-    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::tokens_per_tier::TokensPerTier,
+    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens,
     token_attributes::UnbondSftAttributes,
 };
 
@@ -25,7 +25,7 @@ pub trait UnbondFarmModule:
     + farm_base_impl::enter_farm::BaseEnterFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + super::custom_events::CustomEventsModule
     + super::close_guild::CloseGuildModule
 {
@@ -99,9 +99,9 @@ pub trait UnbondFarmModule:
         new_attributes.original_owner = caller.clone();
 
         self.add_total_staked_tokens(&new_attributes.current_farm_amount);
-        self.add_and_update_tokens_per_tier(
+        self.add_tokens(
             &caller,
-            &TokensPerTier::new(
+            &TotalTokens::new(
                 new_attributes.current_farm_amount.clone(),
                 new_attributes.compounded_reward.clone(),
             ),

@@ -8,7 +8,7 @@ use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
     base_impl_wrapper::FarmStakingWrapper,
-    tiered_rewards::tokens_per_tier::TokensPerTier,
+    tiered_rewards::total_tokens::TotalTokens,
     token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes},
 };
 
@@ -49,7 +49,7 @@ pub trait UnstakeFarmModule:
     + farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
@@ -104,9 +104,9 @@ pub trait UnstakeFarmModule:
             .into_part(&exit_result.context.farm_token.payment.amount);
 
         self.remove_total_staked_tokens(&original_attributes.current_farm_amount);
-        self.remove_and_update_tokens_per_tier(
+        self.remove_tokens(
             &original_caller,
-            &TokensPerTier::new(
+            &TotalTokens::new(
                 original_attributes.current_farm_amount.clone(),
                 original_attributes.compounded_reward.clone(),
             ),

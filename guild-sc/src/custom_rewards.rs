@@ -1,12 +1,13 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+use common_structs::Percent;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmContract;
 
 use crate::base_impl_wrapper::FarmStakingWrapper;
 
-pub const MAX_PERCENT: u64 = 10_000;
+pub const MAX_PERCENT: Percent = 10_000;
 pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
 
 mod guild_factory_proxy {
@@ -30,7 +31,7 @@ pub trait CustomRewardsModule:
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + crate::user_actions::close_guild::CloseGuildModule
 {
     #[payable("*")]
@@ -83,6 +84,7 @@ pub trait CustomRewardsModule:
         reward_capacity_mapper.set(rewards_capacity);
     }
 
+    // TODO: Fix after changing stuff
     fn get_amount_apr_bounded(&self) -> BigUint {
         let mut total = BigUint::zero();
 

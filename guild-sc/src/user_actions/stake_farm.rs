@@ -2,9 +2,7 @@ multiversx_sc::imports!();
 
 use common_structs::PaymentsVec;
 
-use crate::{
-    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::tokens_per_tier::TokensPerTier,
-};
+use crate::{base_impl_wrapper::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens};
 
 #[multiversx_sc::module]
 pub trait StakeFarmModule:
@@ -23,7 +21,7 @@ pub trait StakeFarmModule:
     + farm_base_impl::enter_farm::BaseEnterFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
@@ -60,10 +58,7 @@ pub trait StakeFarmModule:
 
         let enter_farm_amount = enter_result.context.farming_token_payment.amount.clone();
         self.add_total_staked_tokens(&enter_farm_amount);
-        self.add_and_update_tokens_per_tier(
-            &original_caller,
-            &TokensPerTier::new_base(enter_farm_amount),
-        );
+        self.add_tokens(&original_caller, &TotalTokens::new_base(enter_farm_amount));
 
         self.require_over_min_stake(&original_caller);
 

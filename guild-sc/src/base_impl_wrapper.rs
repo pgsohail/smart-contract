@@ -17,7 +17,7 @@ pub trait FarmStakingTraits =
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
         + crate::tiered_rewards::read_config::ReadConfigModule
-        + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+        + crate::tiered_rewards::total_tokens::TokenPerTierModule
         + crate::user_actions::close_guild::CloseGuildModule;
 
 pub struct FarmStakingWrapper<T>
