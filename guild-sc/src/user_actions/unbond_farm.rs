@@ -106,6 +106,8 @@ pub trait UnbondFarmModule:
                 new_attributes.compounded_reward.clone(),
             ),
         );
+        self.total_compounded_tokens()
+            .update(|total| *total += &new_attributes.compounded_reward);
 
         let total_farm_tokens = new_attributes.get_total_supply();
         let new_farm_token =

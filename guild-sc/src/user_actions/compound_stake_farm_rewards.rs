@@ -37,6 +37,8 @@ pub trait CompoundStakeFarmRewardsModule:
         self.user_tokens(&caller).update(|tokens_per_tier| {
             tokens_per_tier.compounded += &compound_result.compounded_rewards
         });
+        self.total_compounded_tokens()
+            .update(|total| *total += &compound_result.compounded_rewards);
 
         self.emit_compound_rewards_event(
             &caller,

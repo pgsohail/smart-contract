@@ -111,6 +111,8 @@ pub trait UnstakeFarmModule:
                 original_attributes.compounded_reward.clone(),
             ),
         );
+        self.total_compounded_tokens()
+            .update(|total| *total -= &original_attributes.compounded_reward);
 
         let reward_token_id = self.reward_token_id().get();
         let base_rewards_payment =

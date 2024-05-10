@@ -133,6 +133,9 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     #[storage_mapper("totalStakedTokens")]
     fn total_staked_tokens(&self) -> SingleValueMapper<BigUint>;
 
+    #[storage_mapper("totalCompoundedTokens")]
+    fn total_compounded_tokens(&self) -> SingleValueMapper<BigUint>;
+
     #[storage_mapper("guildMasterTokens")]
     fn guild_master_tokens(&self) -> SingleValueMapper<TotalTokens<Self::Api>>;
 

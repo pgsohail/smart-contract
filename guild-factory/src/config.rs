@@ -8,6 +8,7 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
     #[endpoint(deployConfigSc)]
     fn deploy_config_sc(
         &self,
+        total_staking_tokens_minted: BigUint,
         max_staked_tokens: BigUint,
         user_unbond_epochs: Epoch,
         guild_master_unbond_epochs: Epoch,
@@ -22,6 +23,7 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
         let (config_address, _) = self
             .config_proxy()
             .init(
+                total_staking_tokens_minted,
                 max_staked_tokens,
                 user_unbond_epochs,
                 guild_master_unbond_epochs,

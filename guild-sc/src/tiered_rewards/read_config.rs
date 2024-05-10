@@ -1,6 +1,7 @@
 use common_structs::{Epoch, Percent};
-use guild_sc_config::tiers::{
-    GuildMasterRewardTier, RewardTier, UserRewardTier, TIER_NOT_FOUND_ERR_MSG,
+use guild_sc_config::{
+    global_config::ProxyTrait as _,
+    tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier, TIER_NOT_FOUND_ERR_MSG},
 };
 use multiversx_sc::storage::StorageKey;
 
@@ -139,6 +140,16 @@ pub trait ReadConfigModule {
             self.get_min_stake_guild_master()
         }
     }
+
+    fn get_total_staked_percent(&self) -> Percent {
+        let config_sc_address = self.config_sc_address().get();
+        self.config_proxy(config_sc_address)
+            .get_total_staked_percent()
+            .execute_on_dest_context()
+    }
+
+    #[proxy]
+    fn config_proxy(&self, sc_address: ManagedAddress) -> guild_sc_config::Proxy<Self::Api>;
 
     #[storage_mapper("configScAddress")]
     fn config_sc_address(&self) -> SingleValueMapper<ManagedAddress>;
