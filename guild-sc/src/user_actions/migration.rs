@@ -60,7 +60,7 @@ pub trait MigrationModule:
 
         let total_guild_master_tokens = self.guild_master_tokens().get();
         require!(
-            total_payment == total_guild_master_tokens.base,
+            total_payment == total_guild_master_tokens.base + total_guild_master_tokens.compounded,
             "Must send all tokens when closing guild"
         );
 
@@ -94,7 +94,6 @@ pub trait MigrationModule:
         self.emit_guild_closing_event(&caller, &create_unbond_token_result.attributes);
     }
 
-    // TODO: Remember to handle the total staked value, i.e. decrease manually when migrating
     #[payable("*")]
     #[endpoint(migrateToOtherGuild)]
     fn migrate_to_other_guild(&self, guild_address: ManagedAddress) {

@@ -19,7 +19,6 @@ fn all_setup_test() {
     );
 }
 
-// TODO: FIX!!!
 #[test]
 fn close_guild_test() {
     let mut setup = FarmStakingSetup::new(

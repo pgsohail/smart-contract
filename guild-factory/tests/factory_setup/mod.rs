@@ -5,7 +5,7 @@ use guild_factory::factory::FactoryModule;
 use guild_factory::guild_interactions::GuildInteractionsModule;
 use guild_factory::GuildFactory;
 use guild_sc::unbond_token::UnbondTokenModule;
-use guild_sc_config::tiers::TierModule;
+use guild_sc_config::tiers::{TierModule, MAX_PERCENT};
 use guild_sc_config::GuildScConfig;
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
@@ -30,6 +30,7 @@ pub const MIN_UNBOND_EPOCHS: u64 = 5;
 pub const MAX_APR: u64 = 2_500; // 25%
 pub const PER_BLOCK_REWARD_AMOUNT: u64 = 5_000;
 pub const TOTAL_REWARDS_AMOUNT: u64 = 1_000_000_000_000;
+pub const TOTAL_STAKING_TOKENS_MINTED: u64 = 1_000_000_000_000_000_000;
 
 pub const USER_TOTAL_RIDE_TOKENS: u64 = 5_000_000_000;
 pub static WITHDRAW_AMOUNT_TOO_HIGH: &str =
@@ -67,17 +68,17 @@ where
         let mut b_mock = BlockchainStateWrapper::new();
         let first_owner_addr = b_mock.create_user_account(&rust_zero);
         let second_owner_addr = b_mock.create_user_account(&rust_zero);
-        let config_wrapper = b_mock.create_sc_account(
-            &rust_zero,
-            Some(&first_owner_addr),
-            config_builder,
-            "config",
-        );
         let factory_wrapper = b_mock.create_sc_account(
             &rust_zero,
             Some(&first_owner_addr),
             factory_builder,
             "factory",
+        );
+        let config_wrapper = b_mock.create_sc_account(
+            &rust_zero,
+            Some(factory_wrapper.address_ref()),
+            config_builder,
+            "config",
         );
         let guild_source_wrapper = b_mock.create_sc_account(
             &rust_zero,
@@ -91,6 +92,7 @@ where
         b_mock
             .execute_tx(&first_owner_addr, &config_wrapper, &rust_zero, |sc| {
                 sc.init(
+                    managed_biguint!(TOTAL_STAKING_TOKENS_MINTED),
                     managed_biguint!(i64::MAX),
                     MIN_UNBOND_EPOCHS,
                     MIN_UNBOND_EPOCHS,
@@ -98,18 +100,13 @@ where
                     managed_biguint!(0),
                 );
 
-                let mut tiers = MultiValueEncoded::new();
-                tiers.push(
-                    (
-                        managed_biguint!(0),
-                        managed_biguint!(USER_TOTAL_RIDE_TOKENS),
-                        managed_biguint!(MAX_APR),
-                        managed_biguint!(MAX_APR),
-                    )
-                        .into(),
-                );
-                sc.add_user_tiers(tiers.clone());
-                sc.add_guild_master_tiers(tiers);
+                let mut user_tiers = MultiValueEncoded::new();
+                user_tiers.push((MAX_PERCENT, MAX_APR).into());
+                sc.add_user_tiers(user_tiers);
+
+                let mut guild_master_tiers = MultiValueEncoded::new();
+                guild_master_tiers.push((managed_biguint!(i64::MAX), MAX_APR).into());
+                sc.add_guild_master_tiers(guild_master_tiers);
             })
             .assert_ok();
 
