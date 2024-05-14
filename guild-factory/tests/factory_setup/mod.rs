@@ -1,13 +1,20 @@
 #![allow(deprecated)]
 
-use guild_factory::config::ConfigModule;
+use config::ConfigModule;
+use guild_factory::config::ConfigModule as _;
 use guild_factory::factory::FactoryModule;
 use guild_factory::guild_interactions::GuildInteractionsModule;
 use guild_factory::GuildFactory;
+use guild_sc::custom_rewards::CustomRewardsModule;
+use guild_sc::token_attributes::StakingFarmTokenAttributes;
 use guild_sc::unbond_token::UnbondTokenModule;
+use guild_sc::user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModule;
+use guild_sc::user_actions::unbond_farm::UnbondFarmModule;
+use guild_sc::user_actions::unstake_farm::UnstakeFarmModule;
 use guild_sc_config::tiers::{TierModule, MAX_PERCENT};
 use guild_sc_config::GuildScConfig;
 use multiversx_sc::codec::multi_types::OptionalValue;
+use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
 use multiversx_sc::types::{Address, EsdtLocalRole, MultiValueEncoded};
 use multiversx_sc_scenario::{
@@ -301,5 +308,297 @@ where
             .assert_ok();
 
         setup
+    }
+
+    pub fn stake_farm(
+        &mut self,
+        farm_in_amount: u64,
+        additional_farm_tokens: &[TxTokenTransfer],
+        expected_farm_token_nonce: u64,
+        expected_reward_per_share: u64,
+        expected_compounded_reward: u64,
+    ) {
+        let mut payments = Vec::with_capacity(1 + additional_farm_tokens.len());
+        payments.push(TxTokenTransfer {
+            token_identifier: FARMING_TOKEN_ID.to_vec(),
+            nonce: 0,
+            value: rust_biguint!(farm_in_amount),
+        });
+        payments.extend_from_slice(additional_farm_tokens);
+
+        let mut expected_total_out_amount = 0;
+        for payment in payments.iter() {
+            expected_total_out_amount += payment.value.to_u64_digits()[0];
+        }
+
+        self.b_mock
+            .execute_esdt_multi_transfer(
+                &self.user_address,
+                &self.first_farm_wrapper,
+                &payments,
+                |sc| {
+                    let new_farm_token_payment = sc.stake_farm_endpoint(OptionalValue::None);
+                    assert_eq!(
+                        new_farm_token_payment.token_identifier,
+                        managed_token_id!(FARM_TOKEN_ID)
+                    );
+                    assert_eq!(
+                        new_farm_token_payment.token_nonce,
+                        expected_farm_token_nonce
+                    );
+                    assert_eq!(
+                        new_farm_token_payment.amount,
+                        managed_biguint!(expected_total_out_amount)
+                    );
+                },
+            )
+            .assert_ok();
+
+        let expected_attributes = StakingFarmTokenAttributes::<DebugApi> {
+            reward_per_share: managed_biguint!(expected_reward_per_share),
+            compounded_reward: managed_biguint!(expected_compounded_reward),
+            current_farm_amount: managed_biguint!(expected_total_out_amount),
+        };
+        self.b_mock.check_nft_balance(
+            &self.user_address,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce,
+            &rust_biguint!(expected_total_out_amount),
+            Some(&expected_attributes),
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn claim_rewards(
+        &mut self,
+        farm_token_amount: u64,
+        farm_token_nonce: u64,
+        expected_reward_token_out: u64,
+        expected_user_reward_token_balance: &RustBigUint,
+        expected_user_farming_token_balance: &RustBigUint,
+        expected_farm_token_nonce_out: u64,
+        expected_reward_per_share: u64,
+    ) {
+        self.b_mock
+            .execute_esdt_transfer(
+                &self.user_address,
+                &self.first_farm_wrapper,
+                FARM_TOKEN_ID,
+                farm_token_nonce,
+                &rust_biguint!(farm_token_amount),
+                |sc| {
+                    let multi_result = sc.claim_rewards();
+                    let (first_result, second_result) = multi_result.into_tuple();
+
+                    assert_eq!(
+                        first_result.token_identifier,
+                        managed_token_id!(FARM_TOKEN_ID)
+                    );
+                    assert_eq!(first_result.token_nonce, expected_farm_token_nonce_out);
+                    assert_eq!(first_result.amount, managed_biguint!(farm_token_amount));
+
+                    assert_eq!(
+                        second_result.token_identifier,
+                        managed_token_id!(REWARD_TOKEN_ID)
+                    );
+                    assert_eq!(second_result.token_nonce, 0);
+                    assert_eq!(
+                        second_result.amount,
+                        managed_biguint!(expected_reward_token_out)
+                    );
+                },
+            )
+            .assert_ok();
+
+        let expected_attributes = StakingFarmTokenAttributes::<DebugApi> {
+            reward_per_share: managed_biguint!(expected_reward_per_share),
+            compounded_reward: managed_biguint!(0),
+            current_farm_amount: managed_biguint!(farm_token_amount),
+        };
+
+        self.b_mock.check_nft_balance(
+            &self.user_address,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce_out,
+            &rust_biguint!(farm_token_amount),
+            Some(&expected_attributes),
+        );
+        self.b_mock.check_esdt_balance(
+            &self.user_address,
+            REWARD_TOKEN_ID,
+            expected_user_reward_token_balance,
+        );
+        self.b_mock.check_esdt_balance(
+            &self.user_address,
+            FARMING_TOKEN_ID,
+            expected_user_farming_token_balance,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn unstake_farm(
+        &mut self,
+        farm_token_amount: u64,
+        farm_token_nonce: u64,
+        expected_rewards_out: u64,
+        expected_user_reward_token_balance: &RustBigUint,
+        expected_user_farming_token_balance: &RustBigUint,
+        expected_unbond_token_nonce: u64,
+        expected_unbond_token_amount: u64,
+    ) {
+        self.b_mock
+            .execute_esdt_transfer(
+                &self.user_address,
+                &self.first_farm_wrapper,
+                FARM_TOKEN_ID,
+                farm_token_nonce,
+                &rust_biguint!(farm_token_amount),
+                |sc| {
+                    let multi_result = sc.unstake_farm();
+
+                    let (first_result, second_result) = multi_result.into_tuple();
+
+                    assert_eq!(
+                        first_result.token_identifier,
+                        managed_token_id!(UNBOND_TOKEN_ID)
+                    );
+                    assert_eq!(first_result.token_nonce, expected_unbond_token_nonce);
+                    assert_eq!(
+                        first_result.amount,
+                        managed_biguint!(expected_unbond_token_amount)
+                    );
+
+                    assert_eq!(
+                        second_result.token_identifier,
+                        managed_token_id!(REWARD_TOKEN_ID)
+                    );
+                    assert_eq!(second_result.token_nonce, 0);
+                    assert_eq!(second_result.amount, managed_biguint!(expected_rewards_out));
+                },
+            )
+            .assert_ok();
+
+        self.b_mock.check_nft_balance::<Empty>(
+            &self.user_address,
+            UNBOND_TOKEN_ID,
+            expected_unbond_token_nonce,
+            &rust_biguint!(expected_unbond_token_amount),
+            None,
+        );
+        self.b_mock.check_esdt_balance(
+            &self.user_address,
+            REWARD_TOKEN_ID,
+            expected_user_reward_token_balance,
+        );
+        self.b_mock.check_esdt_balance(
+            &self.user_address,
+            FARMING_TOKEN_ID,
+            expected_user_farming_token_balance,
+        );
+    }
+
+    pub fn unbond_farm(
+        &mut self,
+        farm_token_nonce: u64,
+        farm_tokem_amount: u64,
+        expected_farming_token_out: u64,
+        expected_user_farming_token_balance: u64,
+    ) {
+        self.b_mock
+            .execute_esdt_transfer(
+                &self.user_address,
+                &self.first_farm_wrapper,
+                UNBOND_TOKEN_ID,
+                farm_token_nonce,
+                &rust_biguint!(farm_tokem_amount),
+                |sc| {
+                    let payment = sc.unbond_farm();
+                    assert_eq!(
+                        payment.token_identifier,
+                        managed_token_id!(FARMING_TOKEN_ID)
+                    );
+                    assert_eq!(payment.token_nonce, 0);
+                    assert_eq!(payment.amount, managed_biguint!(expected_farming_token_out));
+                },
+            )
+            .assert_ok();
+
+        self.b_mock.check_esdt_balance(
+            &self.user_address,
+            FARMING_TOKEN_ID,
+            &rust_biguint!(expected_user_farming_token_balance),
+        );
+    }
+
+    pub fn check_farm_token_supply(&mut self, expected_farm_token_supply: u64) {
+        self.b_mock
+            .execute_query(&self.first_farm_wrapper, |sc| {
+                let actual_farm_supply = sc.farm_token_supply().get();
+                assert_eq!(
+                    managed_biguint!(expected_farm_token_supply),
+                    actual_farm_supply
+                );
+            })
+            .assert_ok();
+    }
+
+    pub fn check_rewards_capacity(&mut self, expected_rewards_capacity: u64) {
+        self.b_mock
+            .execute_query(&self.first_farm_wrapper, |sc| {
+                let actual_capacity = sc.reward_capacity().get();
+                assert_eq!(managed_biguint!(expected_rewards_capacity), actual_capacity);
+            })
+            .assert_ok();
+    }
+
+    pub fn allow_external_claim_rewards(&mut self, user: &Address) {
+        self.b_mock
+            .execute_tx(user, &self.first_farm_wrapper, &rust_biguint!(0), |sc| {
+                sc.user_total_farm_position(&managed_address!(user)).update(
+                    |user_total_farm_position| {
+                        user_total_farm_position.allow_external_claim_boosted_rewards = true;
+                    },
+                );
+            })
+            .assert_ok();
+    }
+
+    pub fn set_block_nonce(&mut self, block_nonce: u64) {
+        self.b_mock.set_block_nonce(block_nonce);
+    }
+
+    pub fn set_block_epoch(&mut self, block_epoch: u64) {
+        self.b_mock.set_block_epoch(block_epoch);
+    }
+
+    pub fn withdraw_rewards(&mut self, withdraw_amount: &RustBigUint) {
+        self.b_mock
+            .execute_tx(
+                &self.first_owner_address,
+                &self.first_farm_wrapper,
+                &rust_biguint!(0),
+                |sc| {
+                    sc.withdraw_rewards(withdraw_amount.into());
+                },
+            )
+            .assert_ok();
+    }
+
+    pub fn withdraw_rewards_with_error(
+        &mut self,
+        withdraw_amount: &RustBigUint,
+        expected_status: u64,
+        expected_message: &str,
+    ) {
+        self.b_mock
+            .execute_tx(
+                &self.first_owner_address,
+                &self.first_farm_wrapper,
+                &rust_biguint!(0),
+                |sc| {
+                    sc.withdraw_rewards(withdraw_amount.into());
+                },
+            )
+            .assert_error(expected_status, expected_message)
     }
 }

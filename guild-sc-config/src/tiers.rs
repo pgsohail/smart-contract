@@ -175,7 +175,7 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         if mapper_len > 0 {
             let previous_entry = mapper.get(mapper_len);
             require!(
-                previous_entry.is_below_or_equal(&tier),
+                previous_entry.is_below_or_equal(tier),
                 "Invalid stake entry"
             );
         }
