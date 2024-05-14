@@ -129,7 +129,6 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         require!(total_stake >= min_stake, "Not enough stake");
     }
 
-    // TODO: Update when user stakes/unstakes and signal to the factory SC
     #[storage_mapper("totalStakedTokens")]
     fn total_staked_tokens(&self) -> SingleValueMapper<BigUint>;
 

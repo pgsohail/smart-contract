@@ -26,6 +26,7 @@ pub trait UnbondFarmModule:
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::custom_events::CustomEventsModule
     + super::close_guild::CloseGuildModule
 {
@@ -95,8 +96,7 @@ pub trait UnbondFarmModule:
         );
 
         let mut new_attributes = enter_result.new_farm_token.attributes;
-        new_attributes.compounded_reward = original_attributes.compounded_reward.clone();
-        new_attributes.original_owner = caller.clone();
+        new_attributes.compounded_reward = original_attributes.compounded_reward;
 
         self.add_total_staked_tokens(&new_attributes.current_farm_amount);
         self.add_tokens(
@@ -106,6 +106,8 @@ pub trait UnbondFarmModule:
                 new_attributes.compounded_reward.clone(),
             ),
         );
+        self.call_increase_total_staked_tokens(new_attributes.current_farm_amount.clone());
+
         self.total_compounded_tokens()
             .update(|total| *total += &new_attributes.compounded_reward);
 

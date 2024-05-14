@@ -50,6 +50,7 @@ pub trait UnstakeFarmModule:
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
@@ -63,6 +64,8 @@ pub trait UnstakeFarmModule:
         let unbond_token_amount = unstake_result.exit_result.farming_token_payment.amount;
 
         self.require_over_min_stake(&caller);
+
+        self.call_decrease_total_staked_tokens(unbond_token_amount.clone());
 
         let min_unbond_epochs = self.get_min_unbond_epochs_user();
         let create_unbond_token_result = self.create_and_send_unbond_tokens(

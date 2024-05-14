@@ -101,7 +101,7 @@ where
 
     fn create_enter_farm_initial_attributes(
         _sc: &Self::FarmSc,
-        caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
+        _caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         farming_token_amount: BigUint<<Self::FarmSc as ContractBase>::Api>,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
     ) -> Self::AttributesType {
@@ -109,13 +109,12 @@ where
             reward_per_share: current_reward_per_share,
             compounded_reward: BigUint::zero(),
             current_farm_amount: farming_token_amount,
-            original_owner: caller,
         }
     }
 
     fn create_claim_rewards_initial_attributes(
         _sc: &Self::FarmSc,
-        caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
+        _caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         first_token_attributes: Self::AttributesType,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
     ) -> Self::AttributesType {
@@ -123,13 +122,12 @@ where
             reward_per_share: current_reward_per_share,
             compounded_reward: first_token_attributes.compounded_reward,
             current_farm_amount: first_token_attributes.current_farm_amount,
-            original_owner: caller,
         }
     }
 
     fn create_compound_rewards_initial_attributes(
         _sc: &Self::FarmSc,
-        caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
+        _caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         first_token_attributes: Self::AttributesType,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
         reward: &BigUint<<Self::FarmSc as ContractBase>::Api>,
@@ -140,31 +138,14 @@ where
             reward_per_share: current_reward_per_share,
             compounded_reward: new_pos_compounded_reward,
             current_farm_amount: new_pos_current_farm_amount,
-            original_owner: caller,
         }
     }
 
     fn check_and_update_user_farm_position(
-        sc: &Self::FarmSc,
-        user: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        farm_positions: &PaymentsVec<<Self::FarmSc as ContractBase>::Api>,
+        _sc: &Self::FarmSc,
+        _user: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
+        _farm_positions: &PaymentsVec<<Self::FarmSc as ContractBase>::Api>,
     ) {
-        let farm_token_mapper = sc.farm_token();
-        for farm_position in farm_positions {
-            if sc.is_old_farm_position(farm_position.token_nonce) {
-                continue;
-            }
-
-            farm_token_mapper.require_same_token(&farm_position.token_identifier);
-
-            let token_attributes: StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api> =
-                farm_token_mapper.get_token_attributes(farm_position.token_nonce);
-
-            if &token_attributes.original_owner != user {
-                Self::decrease_user_farm_position(sc, &farm_position);
-                Self::increase_user_farm_position(sc, user, &farm_position.amount);
-            }
-        }
     }
 
     fn increase_user_farm_position(
@@ -186,11 +167,8 @@ where
             return;
         }
 
-        let farm_token_mapper = sc.farm_token();
-        let token_attributes: StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api> =
-            farm_token_mapper.get_token_attributes(farm_position.token_nonce);
-
-        sc.user_total_farm_position(&token_attributes.original_owner)
+        let caller = sc.blockchain().get_caller();
+        sc.user_total_farm_position(&caller)
             .update(|user_total_farm_position| {
                 if user_total_farm_position.total_farm_position > farm_position.amount {
                     user_total_farm_position.total_farm_position -= &farm_position.amount;

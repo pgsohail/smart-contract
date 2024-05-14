@@ -39,6 +39,7 @@ pub trait MigrationModule:
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::custom_events::CustomEventsModule
     + super::close_guild::CloseGuildModule
 {
@@ -109,6 +110,8 @@ pub trait MigrationModule:
         let payments = self.get_non_empty_payments();
         let multi_unstake_result = self.multi_unstake(&caller, &payments);
         let total_farming_tokens = multi_unstake_result.farming_tokens_payment.amount.clone();
+
+        self.call_decrease_total_staked_tokens(total_farming_tokens.clone());
 
         let guild_factory = self.blockchain().get_owner_address();
         let _: IgnoreValue = self

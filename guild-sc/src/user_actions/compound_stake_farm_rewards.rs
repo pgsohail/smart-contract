@@ -19,6 +19,7 @@ pub trait CompoundStakeFarmRewardsModule:
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
@@ -39,6 +40,7 @@ pub trait CompoundStakeFarmRewardsModule:
         });
         self.total_compounded_tokens()
             .update(|total| *total += &compound_result.compounded_rewards);
+        self.call_increase_total_staked_tokens(compound_result.compounded_rewards.clone());
 
         self.emit_compound_rewards_event(
             &caller,

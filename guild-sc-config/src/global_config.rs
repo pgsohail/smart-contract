@@ -1,14 +1,16 @@
 use common_structs::{Epoch, Percent};
 use multiversx_sc::storage::StorageKey;
 
+use crate::tiers::MAX_PERCENT;
+
 multiversx_sc::imports!();
 
 pub static INVALID_MIN_UNBOND_EPOCHS_ERR_MSG: &[u8] = b"Invalid min unbond epochs";
 static GUILD_SC_ID_STORAGE_KEY: &[u8] = b"deployedGuilds";
 static GUILD_ADDRESS_TO_ID_MAPPER_STORAGE_KEY: &[u8] = b"guildIds";
+static CLOSED_GUILDS_MAPPER_STORAGE_KEY: &[u8] = b"closedGuilds";
 
 pub const MAX_MIN_UNBOND_EPOCHS: Epoch = 30;
-pub const UTK_DECIMALS: usize = 8;
 
 #[multiversx_sc::module]
 pub trait GlobalConfigModule {
@@ -46,7 +48,6 @@ pub trait GlobalConfigModule {
         self.total_staking_token_minted().set(total_minted);
     }
 
-    // TODO: Call the following functions from guild SC
     #[endpoint(increaseStakedTokens)]
     fn increase_staked_tokens(&self, amount: BigUint) {
         self.require_guild_sc_caller();
@@ -63,15 +64,15 @@ pub trait GlobalConfigModule {
             .update(|total| *total -= amount);
     }
 
-    // TODO: Fix precision
     #[view(getTotalStakedPercent)]
     fn get_total_staked_percent(&self) -> Percent {
         let total_minted = self.total_staking_token_minted().get();
         let total_staked = self.total_staking_token_staked().get();
 
-        0
+        let opt_result = (total_staked * MAX_PERCENT / total_minted).to_u64();
+        require!(opt_result.is_some(), "Math failure");
 
-        // total_minted / total_staked
+        unsafe { opt_result.unwrap_unchecked() }
     }
 
     fn require_valid_unbond_epochs(&self, unbond_epochs: Epoch) {
@@ -84,6 +85,11 @@ pub trait GlobalConfigModule {
     fn require_guild_sc_caller(&self) {
         let caller = self.blockchain().get_caller();
         let factory_sc = self.blockchain().get_owner_address();
+        let closed_guilds_mapper = self.get_closed_guilds_mapper(factory_sc.clone());
+        if closed_guilds_mapper.contains(&caller) {
+            return;
+        }
+
         let deployed_guilds_mapper = self.get_deployed_guilds_mapper(factory_sc.clone());
         let address_to_id_mapper = self.get_guild_address_to_id_mapper(factory_sc);
         let guild_id = address_to_id_mapper.get_id_non_zero(&caller);
@@ -91,6 +97,16 @@ pub trait GlobalConfigModule {
             deployed_guilds_mapper.contains(&guild_id),
             "Only guilds may call this endpoint"
         );
+    }
+
+    fn get_closed_guilds_mapper(
+        &self,
+        factory_sc: ManagedAddress,
+    ) -> UnorderedSetMapper<ManagedAddress, ManagedAddress> {
+        UnorderedSetMapper::<_, _, ManagedAddress>::new_from_address(
+            factory_sc,
+            StorageKey::new(CLOSED_GUILDS_MAPPER_STORAGE_KEY),
+        )
     }
 
     fn get_deployed_guilds_mapper(

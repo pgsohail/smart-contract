@@ -22,6 +22,7 @@ pub trait StakeFarmModule:
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
@@ -58,7 +59,11 @@ pub trait StakeFarmModule:
 
         let enter_farm_amount = enter_result.context.farming_token_payment.amount.clone();
         self.add_total_staked_tokens(&enter_farm_amount);
-        self.add_tokens(&original_caller, &TotalTokens::new_base(enter_farm_amount));
+        self.add_tokens(
+            &original_caller,
+            &TotalTokens::new_base(enter_farm_amount.clone()),
+        );
+        self.call_increase_total_staked_tokens(enter_farm_amount);
 
         self.require_over_min_stake(&original_caller);
 
