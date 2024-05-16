@@ -31,9 +31,22 @@ pub trait UnbondTokenModule:
         self.require_caller_has_owner_or_admin_permissions();
 
         let address = self.blockchain().get_sc_address();
-        self.unbond_token()
-            .set_local_roles_for_address(&address, &[EsdtLocalRole::Transfer], None);
+        self.unbond_token().set_local_roles_for_address(
+            &address,
+            &[EsdtLocalRole::Transfer],
+            Some(<Self as UnbondTokenModule>::callbacks(self).t_role_unbond_token_callback()),
+        );
     }
+
+    #[callback]
+    fn t_role_unbond_token_callback(&self, #[call_result] result: ManagedAsyncCallResult<()>) {
+        if let ManagedAsyncCallResult::Ok(()) = result {
+            self.unbond_token_transfer_role_set().set(true);
+        }
+    }
+
+    #[storage_mapper("unbondTokenTransferRoleSet")]
+    fn unbond_token_transfer_role_set(&self) -> SingleValueMapper<bool>;
 
     #[view(getUnbondTokenId)]
     #[storage_mapper("unbondTokenId")]

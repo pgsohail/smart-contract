@@ -6,6 +6,7 @@ use guild_factory::factory::FactoryModule;
 use guild_factory::guild_interactions::GuildInteractionsModule;
 use guild_factory::GuildFactory;
 use guild_sc::custom_rewards::CustomRewardsModule;
+use guild_sc::farm_token_roles::FarmTokenRolesModule;
 use guild_sc::token_attributes::StakingFarmTokenAttributes;
 use guild_sc::unbond_token::UnbondTokenModule;
 use guild_sc::user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModule;
@@ -175,6 +176,8 @@ where
                     .set_token_id(managed_token_id!(FARM_TOKEN_ID));
                 sc.unbond_token()
                     .set_token_id(managed_token_id!(UNBOND_TOKEN_ID));
+                sc.farm_token_transfer_role_set().set(true);
+                sc.unbond_token_transfer_role_set().set(true);
             })
             .assert_ok();
 
@@ -184,6 +187,8 @@ where
                     .set_token_id(managed_token_id!(OTHER_FARM_TOKEN_ID));
                 sc.unbond_token()
                     .set_token_id(managed_token_id!(OTHER_UNBOND_TOKEN_ID));
+                sc.farm_token_transfer_role_set().set(true);
+                sc.unbond_token_transfer_role_set().set(true);
             })
             .assert_ok();
 
