@@ -1,10 +1,12 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
+use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
+static FARM_TOKEN_SUPPLY_STORAGE_KEY: &[u8] = b"farm_token_supply";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
@@ -83,18 +85,14 @@ pub trait FactoryModule:
     #[only_admin]
     #[endpoint(removeGuild)]
     fn remove_guild(&self, guild: ManagedAddress, user: ManagedAddress) {
-        let guild_id = self.guild_ids().remove_by_address(&guild);
-        let user_id = self.user_ids().remove_by_address(&user);
+        let supply_mapper = SingleValueMapper::<_, BigUint, ManagedAddress>::new_from_address(
+            guild.clone(),
+            StorageKey::new(FARM_TOKEN_SUPPLY_STORAGE_KEY),
+        );
+        let supply = supply_mapper.get();
+        require!(supply == 0, "Guild is not empty");
 
-        let removed = self.deployed_guilds().swap_remove(&guild_id);
-        require!(removed, UNKNOWN_GUILD_ERR_MSG);
-
-        let mapper = self.guild_sc_for_user(user_id);
-        require!(!mapper.is_empty(), "Unknown guild master");
-
-        mapper.clear();
-
-        self.guild_master_for_guild(guild_id).clear();
+        self.remove_guild_common(guild, user);
     }
 
     #[view(getAllGuilds)]
@@ -123,6 +121,21 @@ pub trait FactoryModule:
     #[view(getGuildId)]
     fn get_guild_id(&self, guild_address: ManagedAddress) -> AddressId {
         self.guild_ids().get_id_non_zero(&guild_address)
+    }
+
+    fn remove_guild_common(&self, guild: ManagedAddress, user: ManagedAddress) {
+        let guild_id = self.guild_ids().remove_by_address(&guild);
+        let user_id = self.user_ids().remove_by_address(&user);
+
+        let removed = self.deployed_guilds().swap_remove(&guild_id);
+        require!(removed, UNKNOWN_GUILD_ERR_MSG);
+
+        let mapper = self.guild_sc_for_user(user_id);
+        require!(!mapper.is_empty(), "Unknown guild master");
+
+        mapper.clear();
+
+        self.guild_master_for_guild(guild_id).clear();
     }
 
     fn require_known_guild(&self, guild_id: AddressId) {

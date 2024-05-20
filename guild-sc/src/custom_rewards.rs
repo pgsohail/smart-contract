@@ -1,12 +1,13 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+use common_structs::Percent;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmContract;
 
 use crate::base_impl_wrapper::FarmStakingWrapper;
 
-pub const MAX_PERCENT: u64 = 10_000;
+pub const MAX_PERCENT: Percent = 10_000;
 pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
 
 mod guild_factory_proxy {
@@ -30,7 +31,8 @@ pub trait CustomRewardsModule:
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
 {
     #[payable("*")]
     #[endpoint(topUpRewards)]
@@ -84,40 +86,40 @@ pub trait CustomRewardsModule:
 
     fn get_amount_apr_bounded(&self) -> BigUint {
         let mut total = BigUint::zero();
+        let mut guild_master_tokens_total = BigUint::zero();
+        let mut guild_master_compounded_total = BigUint::zero();
 
         if !self.guild_master_tokens().is_empty() {
             let guild_master_tokens = self.guild_master_tokens().get();
-            let guild_master_tier = self.find_guild_master_tier(&guild_master_tokens.base);
+            let guild_master_apr = self.find_guild_master_tier_apr(&guild_master_tokens.base);
             let base_amount_bounded_guild_master =
-                self.bound_amount_by_apr(&guild_master_tokens.base, &guild_master_tier.apr);
-            let compounded_amount_bounded_guild_master = self.bound_amount_by_apr(
-                &guild_master_tokens.compounded,
-                &guild_master_tier.compounded_apr,
-            );
+                self.bound_amount_by_apr(&guild_master_tokens.base, guild_master_apr);
+            let compounded_amount_bounded_guild_master =
+                self.bound_amount_by_apr(&guild_master_tokens.compounded, guild_master_apr);
             total += base_amount_bounded_guild_master;
             total += compounded_amount_bounded_guild_master;
+
+            guild_master_tokens_total = guild_master_tokens.base;
+            guild_master_compounded_total = guild_master_tokens.compounded;
         }
 
-        let tiers_mapper = self.get_user_tiers_mapper();
-        for tier in tiers_mapper.iter() {
-            let tokens_mapper = self.tokens_per_tier(&tier.min_stake, &tier.max_stake);
-            if tokens_mapper.is_empty() {
-                continue;
-            }
+        let mut total_user_tokens = self.total_staked_tokens().get();
+        total_user_tokens -= guild_master_tokens_total;
 
-            let user_tokens_for_tier = tokens_mapper.get();
-            let base_amount_users = self.bound_amount_by_apr(&user_tokens_for_tier.base, &tier.apr);
-            let compounded_amount_users =
-                self.bound_amount_by_apr(&user_tokens_for_tier.compounded, &tier.compounded_apr);
+        let mut total_user_compounded = self.total_compounded_tokens().get();
+        total_user_compounded -= guild_master_compounded_total;
 
-            total += base_amount_users;
-            total += compounded_amount_users;
-        }
+        let staked_percent = self.get_total_staked_percent();
+        let user_apr = self.find_user_tier_apr(staked_percent);
+        let base_amount_bounded = self.bound_amount_by_apr(&total_user_tokens, user_apr);
+        let compounded_amount_bounded = self.bound_amount_by_apr(&total_user_compounded, user_apr);
+        total += base_amount_bounded;
+        total += compounded_amount_bounded;
 
         total
     }
 
-    fn bound_amount_by_apr(&self, amount: &BigUint, apr: &BigUint) -> BigUint {
+    fn bound_amount_by_apr(&self, amount: &BigUint, apr: Percent) -> BigUint {
         amount * apr / MAX_PERCENT / BLOCKS_IN_YEAR
     }
 

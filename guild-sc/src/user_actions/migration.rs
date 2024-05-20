@@ -30,7 +30,6 @@ pub trait MigrationModule:
     + events::EventsModule
     + token_send::TokenSendModule
     + farm_token::FarmTokenModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -39,7 +38,8 @@ pub trait MigrationModule:
     + farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::custom_events::CustomEventsModule
     + super::close_guild::CloseGuildModule
 {
@@ -60,7 +60,7 @@ pub trait MigrationModule:
 
         let total_guild_master_tokens = self.guild_master_tokens().get();
         require!(
-            total_payment == total_guild_master_tokens.base,
+            total_payment == total_guild_master_tokens.base + total_guild_master_tokens.compounded,
             "Must send all tokens when closing guild"
         );
 
@@ -73,11 +73,10 @@ pub trait MigrationModule:
             unbond_epochs,
         );
 
-        self.guild_closing().set(true);
-
         let mut storage_cache = StorageCache::new(self);
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
         self.produce_rewards_enabled().set(false);
+        self.guild_closing().set(true);
 
         let rewards_capacity = self.reward_capacity().get();
         let accumulated_rewards = self.accumulated_rewards().get();
@@ -110,6 +109,8 @@ pub trait MigrationModule:
         let payments = self.get_non_empty_payments();
         let multi_unstake_result = self.multi_unstake(&caller, &payments);
         let total_farming_tokens = multi_unstake_result.farming_tokens_payment.amount.clone();
+
+        self.call_decrease_total_staked_tokens(total_farming_tokens.clone());
 
         let guild_factory = self.blockchain().get_owner_address();
         let _: IgnoreValue = self

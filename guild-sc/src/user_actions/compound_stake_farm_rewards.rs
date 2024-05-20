@@ -10,7 +10,6 @@ pub trait CompoundStakeFarmRewardsModule:
     + events::EventsModule
     + token_send::TokenSendModule
     + farm_token::FarmTokenModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -19,7 +18,8 @@ pub trait CompoundStakeFarmRewardsModule:
     + farm_base_impl::compound_rewards::BaseCompoundRewardsModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::close_guild::CloseGuildModule
 {
     #[payable("*")]
@@ -38,6 +38,9 @@ pub trait CompoundStakeFarmRewardsModule:
         self.user_tokens(&caller).update(|tokens_per_tier| {
             tokens_per_tier.compounded += &compound_result.compounded_rewards
         });
+        self.total_compounded_tokens()
+            .update(|total| *total += &compound_result.compounded_rewards);
+        self.call_increase_total_staked_tokens(compound_result.compounded_rewards.clone());
 
         self.emit_compound_rewards_event(
             &caller,

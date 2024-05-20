@@ -46,7 +46,8 @@ pub trait FarmStaking:
     + user_actions::unbond_farm::UnbondFarmModule
     + unbond_token::UnbondTokenModule
     + tiered_rewards::read_config::ReadConfigModule
-    + tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + tiered_rewards::total_tokens::TokenPerTierModule
+    + tiered_rewards::call_config::CallConfigModule
     + user_actions::migration::MigrationModule
     + user_actions::custom_events::CustomEventsModule
     + user_actions::close_guild::CloseGuildModule
@@ -105,18 +106,15 @@ pub trait FarmStaking:
     #[endpoint(checkLocalRolesSet)]
     fn check_local_roles_set(&self) {
         // Will fail if tokens were not issued yet
-        let farm_token_id = self.farm_token().get_token_id();
-        let unbond_token_id = self.unbond_token().get_token_id();
+        let _ = self.farm_token().get_token_id();
+        let _ = self.unbond_token().get_token_id();
 
-        let farm_token_roles = self.blockchain().get_esdt_local_roles(&farm_token_id);
         require!(
-            farm_token_roles.has_role(&EsdtLocalRole::Transfer),
+            self.farm_token_transfer_role_set().get(),
             "Transfer role not set for farm token"
         );
-
-        let unbond_token_roles = self.blockchain().get_esdt_local_roles(&unbond_token_id);
         require!(
-            unbond_token_roles.has_role(&EsdtLocalRole::Transfer),
+            self.unbond_token_transfer_role_set().get(),
             "Transfer role not set for unbond token"
         );
     }

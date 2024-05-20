@@ -4,7 +4,7 @@ use contexts::storage_cache::StorageCache;
 use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
-    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::tokens_per_tier::TokensPerTier,
+    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens,
     token_attributes::UnbondSftAttributes,
 };
 
@@ -17,7 +17,6 @@ pub trait UnbondFarmModule:
     + events::EventsModule
     + token_send::TokenSendModule
     + farm_token::FarmTokenModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -26,7 +25,8 @@ pub trait UnbondFarmModule:
     + farm_base_impl::enter_farm::BaseEnterFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::custom_events::CustomEventsModule
     + super::close_guild::CloseGuildModule
 {
@@ -96,17 +96,20 @@ pub trait UnbondFarmModule:
         );
 
         let mut new_attributes = enter_result.new_farm_token.attributes;
-        new_attributes.compounded_reward = original_attributes.compounded_reward.clone();
-        new_attributes.original_owner = caller.clone();
+        new_attributes.compounded_reward = original_attributes.compounded_reward;
 
         self.add_total_staked_tokens(&new_attributes.current_farm_amount);
-        self.add_and_update_tokens_per_tier(
+        self.add_tokens(
             &caller,
-            &TokensPerTier::new(
+            &TotalTokens::new(
                 new_attributes.current_farm_amount.clone(),
                 new_attributes.compounded_reward.clone(),
             ),
         );
+        self.call_increase_total_staked_tokens(new_attributes.current_farm_amount.clone());
+
+        self.total_compounded_tokens()
+            .update(|total| *total += &new_attributes.compounded_reward);
 
         let total_farm_tokens = new_attributes.get_total_supply();
         let new_farm_token =

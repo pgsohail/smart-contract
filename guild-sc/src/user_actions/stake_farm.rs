@@ -2,9 +2,7 @@ multiversx_sc::imports!();
 
 use common_structs::PaymentsVec;
 
-use crate::{
-    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::tokens_per_tier::TokensPerTier,
-};
+use crate::{base_impl_wrapper::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens};
 
 #[multiversx_sc::module]
 pub trait StakeFarmModule:
@@ -23,30 +21,10 @@ pub trait StakeFarmModule:
     + farm_base_impl::enter_farm::BaseEnterFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + crate::tiered_rewards::tokens_per_tier::TokenPerTierModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::tiered_rewards::call_config::CallConfigModule
     + super::close_guild::CloseGuildModule
 {
-    #[payable("*")]
-    #[endpoint(stakeFarmThroughProxy)]
-    fn stake_farm_through_proxy(
-        &self,
-        staked_token_amount: BigUint,
-        original_caller: ManagedAddress,
-    ) -> EsdtTokenPayment {
-        let caller = self.blockchain().get_caller();
-        self.require_sc_address_whitelisted(&caller);
-
-        let staked_token_id = self.farming_token_id().get();
-        let staked_token_simulated_payment =
-            EsdtTokenPayment::new(staked_token_id, 0, staked_token_amount);
-
-        let farm_tokens = self.call_value().all_esdt_transfers().clone_value();
-        let mut payments = ManagedVec::from_single_item(staked_token_simulated_payment);
-        payments.append_vec(farm_tokens);
-
-        self.stake_farm_common(original_caller, payments)
-    }
-
     #[payable("*")]
     #[endpoint(stakeFarm)]
     fn stake_farm_endpoint(
@@ -81,10 +59,11 @@ pub trait StakeFarmModule:
 
         let enter_farm_amount = enter_result.context.farming_token_payment.amount.clone();
         self.add_total_staked_tokens(&enter_farm_amount);
-        self.add_and_update_tokens_per_tier(
+        self.add_tokens(
             &original_caller,
-            &TokensPerTier::new_base(enter_farm_amount),
+            &TotalTokens::new_base(enter_farm_amount.clone()),
         );
+        self.call_increase_total_staked_tokens(enter_farm_amount);
 
         self.require_over_min_stake(&original_caller);
 

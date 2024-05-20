@@ -64,7 +64,7 @@ pub trait GuildInteractionsModule:
 
         self.deposit_rewards_common();
 
-        self.remove_guild(caller.clone(), guild_master);
+        self.remove_guild_common(caller.clone(), guild_master);
         self.closed_guilds().insert(caller);
     }
 
