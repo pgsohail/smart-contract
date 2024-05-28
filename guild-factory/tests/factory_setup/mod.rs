@@ -4,7 +4,6 @@ use guild_factory::config::ConfigModule as _;
 use guild_factory::factory::FactoryModule;
 use guild_factory::guild_interactions::GuildInteractionsModule;
 use guild_factory::GuildFactory;
-use guild_sc::config::ConfigModule;
 use guild_sc::custom_rewards::CustomRewardsModule;
 use guild_sc::tokens::farm_token::FarmTokenModule;
 use guild_sc::tokens::token_attributes::StakingFarmTokenAttributes;
@@ -551,18 +550,6 @@ where
             .execute_query(&self.first_farm_wrapper, |sc| {
                 let actual_capacity = sc.reward_capacity().get();
                 assert_eq!(managed_biguint!(expected_rewards_capacity), actual_capacity);
-            })
-            .assert_ok();
-    }
-
-    pub fn allow_external_claim_rewards(&mut self, user: &Address) {
-        self.b_mock
-            .execute_tx(user, &self.first_farm_wrapper, &rust_biguint!(0), |sc| {
-                sc.user_total_farm_position(&managed_address!(user)).update(
-                    |user_total_farm_position| {
-                        user_total_farm_position.allow_external_claim_boosted_rewards = true;
-                    },
-                );
             })
             .assert_ok();
     }
