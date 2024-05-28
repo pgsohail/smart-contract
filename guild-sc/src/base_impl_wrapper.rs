@@ -4,7 +4,6 @@ use core::marker::PhantomData;
 
 use crate::contexts::storage_cache::StorageCache;
 use crate::farm_base_impl::base_traits_impl::FarmContract;
-use multiversx_sc_modules::transfer_role_proxy::PaymentsVec;
 
 use crate::tokens::token_attributes::StakingFarmTokenAttributes;
 
@@ -139,42 +138,5 @@ where
             compounded_reward: new_pos_compounded_reward,
             current_farm_amount: new_pos_current_farm_amount,
         }
-    }
-
-    fn check_and_update_user_farm_position(
-        _sc: &Self::FarmSc,
-        _user: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        _farm_positions: &PaymentsVec<<Self::FarmSc as ContractBase>::Api>,
-    ) {
-    }
-
-    fn increase_user_farm_position(
-        sc: &Self::FarmSc,
-        user: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        increase_farm_position_amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
-    ) {
-        let mut user_total_farm_position = sc.get_user_total_farm_position(user);
-        user_total_farm_position.total_farm_position += increase_farm_position_amount;
-        sc.user_total_farm_position(user)
-            .set(user_total_farm_position);
-    }
-
-    fn decrease_user_farm_position(
-        sc: &Self::FarmSc,
-        farm_position: &EsdtTokenPayment<<Self::FarmSc as ContractBase>::Api>,
-    ) {
-        if sc.is_old_farm_position(farm_position.token_nonce) {
-            return;
-        }
-
-        let caller = sc.blockchain().get_caller();
-        sc.user_total_farm_position(&caller)
-            .update(|user_total_farm_position| {
-                if user_total_farm_position.total_farm_position > farm_position.amount {
-                    user_total_farm_position.total_farm_position -= &farm_position.amount;
-                } else {
-                    user_total_farm_position.total_farm_position = BigUint::zero();
-                }
-            });
     }
 }

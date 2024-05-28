@@ -2,7 +2,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use common_errors::{ERROR_BAD_PAYMENTS, ERROR_EMPTY_PAYMENTS};
-use common_structs::PaymentAttributesPair;
+use common_structs::{PaymentAttributesPair, PaymentsVec};
 use multiversx_sc::api::BlockchainApi;
 use multiversx_sc::contract_base::BlockchainWrapper;
 
@@ -12,7 +12,7 @@ where
     T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode,
 {
     pub first_farm_token: PaymentAttributesPair<M, T>,
-    pub additional_payments: ManagedVec<M, EsdtTokenPayment<M>>,
+    pub additional_payments: PaymentsVec<M>,
 }
 
 impl<M, T> ClaimRewardsContext<M, T>
@@ -21,7 +21,7 @@ where
     T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode,
 {
     pub fn new(
-        mut payments: ManagedVec<M, EsdtTokenPayment<M>>,
+        mut payments: PaymentsVec<M>,
         farm_token_id: &TokenIdentifier<M>,
         api_wrapper: BlockchainWrapper<M>,
     ) -> Self {

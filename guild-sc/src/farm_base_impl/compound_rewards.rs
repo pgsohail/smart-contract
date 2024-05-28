@@ -71,8 +71,6 @@ pub trait BaseCompoundRewardsModule:
         storage_cache.reward_reserve -= &total_rewards;
         storage_cache.farm_token_supply += &total_rewards;
 
-        FC::check_and_update_user_farm_position(self, &caller, &payments);
-
         let farm_token_mapper = self.farm_token();
         let base_attributes = FC::create_compound_rewards_initial_attributes(
             self,
@@ -86,8 +84,6 @@ pub trait BaseCompoundRewardsModule:
             &compound_rewards_context.additional_payments,
             &farm_token_mapper,
         );
-
-        FC::increase_user_farm_position(self, &caller, &total_rewards);
 
         let first_farm_token = &compound_rewards_context.first_farm_token.payment;
         farm_token_mapper.nft_burn(first_farm_token.token_nonce, &first_farm_token.amount);
