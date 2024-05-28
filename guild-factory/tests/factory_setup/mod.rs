@@ -18,7 +18,8 @@ use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
 use multiversx_sc::types::{Address, EsdtLocalRole, MultiValueEncoded};
 use multiversx_sc_scenario::{
-    managed_address, managed_biguint, managed_token_id, rust_biguint, whitebox_legacy::*, DebugApi,
+    managed_address, managed_biguint, managed_buffer, managed_token_id, rust_biguint,
+    whitebox_legacy::*, DebugApi,
 };
 
 pub type RustBigUint = num_bigint::BigUint;
@@ -104,6 +105,9 @@ where
                     MIN_UNBOND_EPOCHS,
                     managed_biguint!(0),
                     managed_biguint!(0),
+                    managed_buffer!(b"FARM"),
+                    managed_buffer!(b"UNBOND"),
+                    0,
                 );
 
                 let mut user_tiers = MultiValueEncoded::new();

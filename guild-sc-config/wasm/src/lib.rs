@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           22
+// Endpoints:                           25
 // Async Callback (empty):               1
-// Total number of exported functions:  24
+// Total number of exported functions:  27
 
 #![no_std]
 #![allow(internal_features)]
@@ -42,6 +42,9 @@ multiversx_sc_wasm_adapter::endpoints! {
         getMinStakeGuildMaster => min_stake_guild_master
         getTotalStakingTokenMinted => total_staking_token_minted
         getTotalStakingTokenStaked => total_staking_token_staked
+        getBaseFarmTokenId => base_farm_token_id
+        getBaseUnbondTokenId => base_unbond_token_id
+        getTokenDecimals => tokens_decimals
     )
 }
 
