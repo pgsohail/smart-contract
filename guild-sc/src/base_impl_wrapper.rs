@@ -2,17 +2,17 @@ multiversx_sc::imports!();
 
 use core::marker::PhantomData;
 
-use contexts::storage_cache::StorageCache;
-use farm_base_impl::base_traits_impl::FarmContract;
+use crate::contexts::storage_cache::StorageCache;
+use crate::farm_base_impl::base_traits_impl::FarmContract;
 use multiversx_sc_modules::transfer_role_proxy::PaymentsVec;
 
-use crate::token_attributes::StakingFarmTokenAttributes;
+use crate::tokens::token_attributes::StakingFarmTokenAttributes;
 
 pub trait FarmStakingTraits =
     crate::custom_rewards::CustomRewardsModule
-        + rewards::RewardsModule
-        + config::ConfigModule
-        + farm_token::FarmTokenModule
+        + crate::rewards::RewardsModule
+        + crate::config::ConfigModule
+        + crate::tokens::farm_token::FarmTokenModule
         + pausable::PausableModule
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule

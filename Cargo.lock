@@ -814,9 +814,7 @@ name = "guild-factory"
 version = "0.0.0"
 dependencies = [
  "common_structs",
- "config",
  "farm",
- "farm_token",
  "guild-sc",
  "guild-sc-config",
  "multiversx-sc",
@@ -841,12 +839,7 @@ version = "0.0.0"
 dependencies = [
  "common_errors",
  "common_structs",
- "config",
- "contexts",
- "events",
  "farm",
- "farm_base_impl",
- "farm_token",
  "fixed-supply-token",
  "guild-sc-config",
  "math",
@@ -858,7 +851,6 @@ dependencies = [
  "pair",
  "pausable",
  "permissions_module",
- "rewards",
  "sc_whitelist_module",
  "token_send",
  "utils",

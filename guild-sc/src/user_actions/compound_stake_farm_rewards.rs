@@ -5,17 +5,17 @@ multiversx_sc::imports!();
 #[multiversx_sc::module]
 pub trait CompoundStakeFarmRewardsModule:
     crate::custom_rewards::CustomRewardsModule
-    + rewards::RewardsModule
-    + config::ConfigModule
-    + events::EventsModule
+    + crate::rewards::RewardsModule
+    + crate::config::ConfigModule
+    + crate::events::EventsModule
     + token_send::TokenSendModule
-    + farm_token::FarmTokenModule
+    + crate::tokens::farm_token::FarmTokenModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-    + farm_base_impl::base_farm_init::BaseFarmInitModule
-    + farm_base_impl::base_farm_validation::BaseFarmValidationModule
-    + farm_base_impl::compound_rewards::BaseCompoundRewardsModule
+    + crate::farm_base_impl::base_farm_init::BaseFarmInitModule
+    + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule
+    + crate::farm_base_impl::compound_rewards::BaseCompoundRewardsModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
