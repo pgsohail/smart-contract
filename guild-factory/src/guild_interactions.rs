@@ -103,6 +103,7 @@ pub trait GuildInteractionsModule:
     #[proxy]
     fn guild_sc_proxy(&self, sc_address: ManagedAddress) -> guild_sc::Proxy<Self::Api>;
 
+    #[view(getClosedGuilds)]
     #[storage_mapper("closedGuilds")]
     fn closed_guilds(&self) -> UnorderedSetMapper<ManagedAddress>;
 }
