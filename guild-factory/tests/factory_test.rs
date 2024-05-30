@@ -269,6 +269,74 @@ fn test_claim_rewards() {
     farm_setup.check_farm_token_supply(farm_in_amount + 1);
 }
 
+#[test]
+fn claim_rewards_multi_test() {
+    DebugApi::dummy();
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 2;
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce + 1, 0, 0);
+    farm_setup.check_farm_token_supply(farm_in_amount + farm_in_amount + 1);
+
+    farm_setup.set_block_epoch(5);
+    farm_setup.set_block_nonce(10);
+
+    // value taken from the "test_unstake_farm" test
+    let expected_reward_token_out = 39;
+
+    // Not sure why the +10 difference here. Likely rounding errors.
+    let expected_farming_token_balance = rust_biguint!(
+        USER_TOTAL_RIDE_TOKENS - farm_in_amount - farm_in_amount
+            + expected_reward_token_out * 2
+            + 10
+    );
+
+    let all_farm_tokens = [
+        TxTokenTransfer {
+            token_identifier: FARM_TOKEN_ID.to_vec(),
+            nonce: expected_farm_token_nonce,
+            value: rust_biguint!(farm_in_amount),
+        },
+        TxTokenTransfer {
+            token_identifier: FARM_TOKEN_ID.to_vec(),
+            nonce: expected_farm_token_nonce + 1,
+            value: rust_biguint!(farm_in_amount),
+        },
+    ];
+    farm_setup
+        .b_mock
+        .execute_esdt_multi_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            &all_farm_tokens,
+            |sc| {
+                let _ = sc.claim_rewards();
+            },
+        )
+        .assert_ok();
+
+    farm_setup.b_mock.check_nft_balance::<Empty>(
+        &farm_setup.user_address,
+        FARM_TOKEN_ID,
+        expected_farm_token_nonce + 2,
+        &rust_biguint!(farm_in_amount + farm_in_amount),
+        None,
+    );
+    farm_setup.b_mock.check_esdt_balance(
+        &farm_setup.user_address,
+        REWARD_TOKEN_ID,
+        &expected_farming_token_balance,
+    );
+
+    farm_setup.check_farm_token_supply(farm_in_amount + farm_in_amount + 1);
+}
+
 fn steps_enter_farm_twice<FarmObjBuilder, ConfigScBuilder, FactoryBuilder>(
     farm_builder: FarmObjBuilder,
     config_sc_builder: ConfigScBuilder,
