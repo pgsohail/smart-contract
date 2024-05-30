@@ -33,7 +33,7 @@ pub trait RequestIdModule {
         guild_id: AddressId,
         opt_prefix: Option<ManagedBuffer>,
     ) -> ManagedBuffer {
-        let mut display_name = opt_prefix.unwrap_or_else(ManagedBuffer::new);
+        let mut display_name = opt_prefix.unwrap_or_default();
         display_name.append(&base_display_name);
 
         let mut encoded_id = ManagedBuffer::new();
