@@ -26,6 +26,7 @@ pub trait CustomRewardsModule:
     + crate::config::ConfigModule
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
+    + crate::tokens::request_id::RequestIdModule
     + utils::UtilsModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule

@@ -7,14 +7,20 @@ use common_structs::Nonce;
 pub trait FarmTokenModule:
     permissions_module::PermissionsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
+    + super::request_id::RequestIdModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
 {
     #[payable("EGLD")]
     #[endpoint(registerFarmToken)]
-    fn register_farm_token(&self, token_display_name: ManagedBuffer) {
+    fn register_farm_token(&self) {
         self.require_caller_has_owner_or_admin_permissions();
 
         let payment_amount = self.call_value().egld_value().clone_value();
+
+        let guild_id = self.get_guild_id();
+        let base_display_name = self.get_base_display_name();
+        let token_display_name = self.build_token_display_name(base_display_name, guild_id, None);
+
         let token_ticker = self.get_base_farm_token_id();
         let num_decimals = self.get_token_decimals();
         self.farm_token().issue_and_set_all_roles(

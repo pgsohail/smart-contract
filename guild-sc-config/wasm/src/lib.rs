@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           25
+// Endpoints:                           26
 // Async Callback (empty):               1
-// Total number of exported functions:  27
+// Total number of exported functions:  28
 
 #![no_std]
 #![allow(internal_features)]
@@ -44,6 +44,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getTotalStakingTokenStaked => total_staking_token_staked
         getBaseFarmTokenId => base_farm_token_id
         getBaseUnbondTokenId => base_unbond_token_id
+        getBaseTokenDisplayName => base_token_display_name
         getTokenDecimals => tokens_decimals
     )
 }

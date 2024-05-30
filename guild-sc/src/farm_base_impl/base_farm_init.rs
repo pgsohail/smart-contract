@@ -8,6 +8,7 @@ use permissions_module::Permissions;
 pub trait BaseFarmInitModule:
     crate::config::ConfigModule
     + crate::tokens::farm_token::FarmTokenModule
+    + crate::tokens::request_id::RequestIdModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + permissions_module::PermissionsModule
     + pausable::PausableModule
