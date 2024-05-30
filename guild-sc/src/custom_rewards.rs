@@ -1,9 +1,9 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+use crate::contexts::storage_cache::StorageCache;
+use crate::farm_base_impl::base_traits_impl::FarmContract;
 use common_structs::Percent;
-use contexts::storage_cache::StorageCache;
-use farm_base_impl::base_traits_impl::FarmContract;
 
 use crate::base_impl_wrapper::FarmStakingWrapper;
 
@@ -22,10 +22,10 @@ mod guild_factory_proxy {
 
 #[multiversx_sc::module]
 pub trait CustomRewardsModule:
-    rewards::RewardsModule
-    + config::ConfigModule
+    crate::rewards::RewardsModule
+    + crate::config::ConfigModule
     + token_send::TokenSendModule
-    + farm_token::FarmTokenModule
+    + crate::tokens::farm_token::FarmTokenModule
     + utils::UtilsModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule

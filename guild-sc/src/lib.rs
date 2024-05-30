@@ -1,6 +1,9 @@
 #![no_std]
 #![allow(clippy::from_over_into)]
+#![allow(clippy::too_many_arguments)]
+#![feature(exact_size_is_empty)]
 #![feature(trait_alias)]
+#![feature(associated_type_defaults)]
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -9,14 +12,17 @@ use base_impl_wrapper::FarmStakingWrapper;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmContract;
 use fixed_supply_token::FixedSupplyToken;
-use token_attributes::StakingFarmTokenAttributes;
+use tokens::token_attributes::StakingFarmTokenAttributes;
 
 pub mod base_impl_wrapper;
+pub mod config;
+pub mod contexts;
 pub mod custom_rewards;
-pub mod farm_token_roles;
+pub mod events;
+pub mod farm_base_impl;
+pub mod rewards;
 pub mod tiered_rewards;
-pub mod token_attributes;
-pub mod unbond_token;
+pub mod tokens;
 pub mod user_actions;
 
 #[multiversx_sc::contract]
@@ -26,7 +32,7 @@ pub trait FarmStaking:
     + config::ConfigModule
     + events::EventsModule
     + token_send::TokenSendModule
-    + farm_token::FarmTokenModule
+    + crate::tokens::farm_token::FarmTokenModule
     + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
@@ -38,13 +44,12 @@ pub trait FarmStaking:
     + farm_base_impl::compound_rewards::BaseCompoundRewardsModule
     + farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
-    + farm_token_roles::FarmTokenRolesModule
     + user_actions::stake_farm::StakeFarmModule
     + user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModule
     + user_actions::compound_stake_farm_rewards::CompoundStakeFarmRewardsModule
     + user_actions::unstake_farm::UnstakeFarmModule
     + user_actions::unbond_farm::UnbondFarmModule
-    + unbond_token::UnbondTokenModule
+    + crate::tokens::unbond_token::UnbondTokenModule
     + tiered_rewards::read_config::ReadConfigModule
     + tiered_rewards::total_tokens::TokenPerTierModule
     + tiered_rewards::call_config::CallConfigModule

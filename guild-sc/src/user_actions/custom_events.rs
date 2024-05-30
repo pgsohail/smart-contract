@@ -1,4 +1,4 @@
-use crate::token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes};
+use crate::tokens::token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();

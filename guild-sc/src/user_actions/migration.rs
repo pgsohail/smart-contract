@@ -1,5 +1,5 @@
-use contexts::storage_cache::StorageCache;
-use farm_base_impl::base_traits_impl::FarmContract;
+use crate::contexts::storage_cache::StorageCache;
+use crate::farm_base_impl::base_traits_impl::FarmContract;
 
 use crate::base_impl_wrapper::FarmStakingWrapper;
 
@@ -24,18 +24,18 @@ multiversx_sc::imports!();
 pub trait MigrationModule:
     super::unstake_farm::UnstakeFarmModule
     + crate::custom_rewards::CustomRewardsModule
-    + crate::unbond_token::UnbondTokenModule
-    + rewards::RewardsModule
-    + config::ConfigModule
-    + events::EventsModule
+    + crate::tokens::unbond_token::UnbondTokenModule
+    + crate::rewards::RewardsModule
+    + crate::config::ConfigModule
+    + crate::events::EventsModule
     + token_send::TokenSendModule
-    + farm_token::FarmTokenModule
+    + crate::tokens::farm_token::FarmTokenModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-    + farm_base_impl::base_farm_init::BaseFarmInitModule
-    + farm_base_impl::base_farm_validation::BaseFarmValidationModule
-    + farm_base_impl::exit_farm::BaseExitFarmModule
+    + crate::farm_base_impl::base_farm_init::BaseFarmInitModule
+    + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule
+    + crate::farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule

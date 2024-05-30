@@ -1,15 +1,15 @@
 multiversx_sc::imports!();
 
+use crate::contexts::storage_cache::FarmContracTraitBounds;
+use crate::farm_base_impl::exit_farm::InternalExitFarmResult;
 use common_structs::{Epoch, PaymentsVec};
-use contexts::storage_cache::FarmContracTraitBounds;
 use farm::ExitFarmWithPartialPosResultType;
-use farm_base_impl::exit_farm::InternalExitFarmResult;
 use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
     base_impl_wrapper::FarmStakingWrapper,
     tiered_rewards::total_tokens::TotalTokens,
-    token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes},
+    tokens::token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes},
 };
 
 pub struct UnstakeCommonNoTokenMintResultType<'a, C, T>
@@ -35,18 +35,18 @@ pub struct CreateUnbondTokenResult<M: ManagedTypeApi> {
 #[multiversx_sc::module]
 pub trait UnstakeFarmModule:
     crate::custom_rewards::CustomRewardsModule
-    + crate::unbond_token::UnbondTokenModule
-    + rewards::RewardsModule
-    + config::ConfigModule
-    + events::EventsModule
+    + crate::tokens::unbond_token::UnbondTokenModule
+    + crate::rewards::RewardsModule
+    + crate::config::ConfigModule
+    + crate::events::EventsModule
     + token_send::TokenSendModule
-    + farm_token::FarmTokenModule
+    + crate::tokens::farm_token::FarmTokenModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-    + farm_base_impl::base_farm_init::BaseFarmInitModule
-    + farm_base_impl::base_farm_validation::BaseFarmValidationModule
-    + farm_base_impl::exit_farm::BaseExitFarmModule
+    + crate::farm_base_impl::base_farm_init::BaseFarmInitModule
+    + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule
+    + crate::farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tiered_rewards::total_tokens::TokenPerTierModule

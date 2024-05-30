@@ -1,14 +1,14 @@
 #![allow(deprecated)]
 
-use config::ConfigModule;
 use guild_factory::config::ConfigModule as _;
 use guild_factory::factory::FactoryModule;
 use guild_factory::guild_interactions::GuildInteractionsModule;
 use guild_factory::GuildFactory;
+use guild_sc::config::ConfigModule;
 use guild_sc::custom_rewards::CustomRewardsModule;
-use guild_sc::farm_token_roles::FarmTokenRolesModule;
-use guild_sc::token_attributes::StakingFarmTokenAttributes;
-use guild_sc::unbond_token::UnbondTokenModule;
+use guild_sc::tokens::farm_token::FarmTokenModule;
+use guild_sc::tokens::token_attributes::StakingFarmTokenAttributes;
+use guild_sc::tokens::unbond_token::UnbondTokenModule;
 use guild_sc::user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModule;
 use guild_sc::user_actions::unbond_farm::UnbondFarmModule;
 use guild_sc::user_actions::unstake_farm::UnstakeFarmModule;
@@ -24,7 +24,6 @@ use multiversx_sc_scenario::{
 
 pub type RustBigUint = num_bigint::BigUint;
 
-use farm_token::FarmTokenModule;
 use guild_sc::user_actions::stake_farm::StakeFarmModule;
 
 pub static REWARD_TOKEN_ID: &[u8] = b"RIDE-abcdef"; // reward token ID

@@ -12,30 +12,6 @@ path = "src/lib.rs"
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
 
-[dependencies.config]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.farm_base_impl]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.farm_token]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.rewards]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.events]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
-[dependencies.contexts]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
 [dependencies.utils]
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"

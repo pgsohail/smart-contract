@@ -41,6 +41,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getUserTotalFarmPosition => user_total_farm_position
         getFarmPositionMigrationNonce => farm_position_migration_nonce
         registerFarmToken => register_farm_token
+        setTransferRoleFarmToken => set_transfer_role_farm_token
         getFarmTokenId => farm_token
         getFarmTokenSupply => farm_token_supply
         addSCAddressToWhitelist => add_sc_address_to_whitelist
@@ -55,7 +56,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         removeAdmin => remove_admin_endpoint
         updateOwnerOrAdmin => update_owner_or_admin_endpoint
         getPermissions => permissions
-        setTransferRoleFarmToken => set_transfer_role_farm_token
         stakeFarm => stake_farm_endpoint
         claimRewards => claim_rewards
         compoundRewards => compound_rewards
