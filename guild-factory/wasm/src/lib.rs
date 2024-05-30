@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           18
+// Endpoints:                           19
 // Async Callback (empty):               1
-// Total number of exported functions:  20
+// Total number of exported functions:  21
 
 #![no_std]
 #![allow(internal_features)]
@@ -32,6 +32,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         requestRewards => request_rewards
         migrateToOtherGuild => migrate_to_other_guild
         depositRewardsGuild => deposit_rewards_guild
+        closeGuildNoRewardsRemaining => close_guild_no_rewards_remaining
         depositRewardsAdmins => deposit_rewards_admins
         getClosedGuilds => closed_guilds
         isAdmin => is_admin

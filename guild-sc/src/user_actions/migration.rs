@@ -12,6 +12,9 @@ mod guild_factory_proxy {
         #[endpoint(depositRewardsGuild)]
         fn deposit_rewards_guild(&self, guild_master: ManagedAddress);
 
+        #[endpoint(closeGuildNoRewardsRemaining)]
+        fn close_guild_no_rewards_remaining(&self, guild_master: ManagedAddress);
+
         #[payable("*")]
         #[endpoint(migrateToOtherGuild)]
         fn migrate_to_other_guild(&self, guild: ManagedAddress, original_caller: ManagedAddress);
@@ -86,11 +89,18 @@ pub trait MigrationModule:
 
         let reward_token_id = self.reward_token_id().get();
         let guild_factory = self.blockchain().get_owner_address();
-        let _: IgnoreValue = self
-            .factory_proxy(guild_factory)
-            .deposit_rewards_guild(guild_master)
-            .with_esdt_transfer((reward_token_id, 0, remaining_rewards))
-            .execute_on_dest_context();
+        if remaining_rewards > 0 {
+            let _: IgnoreValue = self
+                .factory_proxy(guild_factory)
+                .deposit_rewards_guild(guild_master)
+                .with_esdt_transfer((reward_token_id, 0, remaining_rewards))
+                .execute_on_dest_context();
+        } else {
+            let _: IgnoreValue = self
+                .factory_proxy(guild_factory)
+                .close_guild_no_rewards_remaining(guild_master)
+                .execute_on_dest_context();
+        }
 
         self.emit_guild_closing_event(&caller, &create_unbond_token_result.attributes);
     }
