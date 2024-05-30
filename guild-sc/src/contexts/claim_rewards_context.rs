@@ -11,9 +11,9 @@ where
     M: ManagedTypeApi,
     T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode + ManagedVecItem,
 {
+    pub first_farm_token: PaymentAttributesPair<M, T>,
     pub additional_payments: PaymentsVec<M>,
     pub additional_token_attributes: ManagedVec<M, T>,
-    pub first_farm_token: PaymentAttributesPair<M, T>,
 }
 
 impl<M, T> ClaimRewardsContext<M, T>
@@ -59,12 +59,12 @@ where
         }
 
         ClaimRewardsContext {
-            additional_payments: payments,
-            additional_token_attributes,
             first_farm_token: PaymentAttributesPair {
                 payment: first_payment,
                 attributes: first_token_attributes,
             },
+            additional_payments: payments,
+            additional_token_attributes,
         }
     }
 }
