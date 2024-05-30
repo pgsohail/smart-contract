@@ -16,7 +16,9 @@ pub trait GuildInteractionsModule:
     fn request_rewards(&self, amount: BigUint) -> BigUint {
         let caller = self.blockchain().get_caller();
         let caller_id = self.guild_ids().get_id_non_zero(&caller);
-        self.require_known_guild(caller_id);
+        if !self.deployed_guilds().contains(&caller_id) {
+            return BigUint::zero();
+        }
 
         let mut total_request = amount * BASE_REWARD_MULTIPLIER;
         self.remaining_rewards().update(|rew| {
