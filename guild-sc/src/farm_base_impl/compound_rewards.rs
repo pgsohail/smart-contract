@@ -12,7 +12,7 @@ use fixed_supply_token::FixedSupplyToken;
 pub struct InternalCompoundRewardsResult<'a, C, T>
 where
     C: FarmContracTraitBounds,
-    T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode,
+    T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode + ManagedVecItem,
 {
     pub context: CompoundRewardsContext<C::Api, T>,
     pub storage_cache: StorageCache<'a, C>,
@@ -68,9 +68,8 @@ pub trait BaseCompoundRewardsModule:
             &token_attributes,
             &storage_cache,
         );
-        let total_rewards = rewards.total_rewards();
-        storage_cache.reward_reserve -= &total_rewards;
-        storage_cache.farm_token_supply += &total_rewards;
+        storage_cache.reward_reserve -= &rewards;
+        storage_cache.farm_token_supply += &rewards;
 
         let farm_token_mapper = self.farm_token();
         let base_attributes = FC::create_compound_rewards_initial_attributes(
@@ -78,7 +77,7 @@ pub trait BaseCompoundRewardsModule:
             caller.clone(),
             token_attributes,
             storage_cache.reward_per_share.clone(),
-            &total_rewards,
+            &rewards,
         );
         let new_farm_token = self.merge_and_create_token(
             base_attributes,
@@ -95,7 +94,7 @@ pub trait BaseCompoundRewardsModule:
             created_with_merge: !compound_rewards_context.additional_payments.is_empty(),
             context: compound_rewards_context,
             new_farm_token,
-            compounded_rewards: total_rewards,
+            compounded_rewards: rewards,
             storage_cache,
         }
     }

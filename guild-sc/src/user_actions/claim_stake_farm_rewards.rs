@@ -29,36 +29,25 @@ pub trait ClaimStakeFarmRewardsModule:
         self.require_not_closing();
 
         let caller = self.blockchain().get_caller();
-        let payment = self.call_value().single_esdt();
-        let claim_result = self.claim_rewards_base_no_farm_token_mint::<FarmStakingWrapper<Self>>(
-            caller.clone(),
-            ManagedVec::from_single_item(payment),
-        );
-
-        let mut virtual_farm_token = claim_result.new_farm_token.clone();
-        let new_farm_token_nonce = self.send().esdt_nft_create_compact(
-            &virtual_farm_token.payment.token_identifier,
-            &virtual_farm_token.payment.amount,
-            &virtual_farm_token.attributes,
-        );
-        virtual_farm_token.payment.token_nonce = new_farm_token_nonce;
+        let payments = self.get_non_empty_payments();
+        let claim_result =
+            self.claim_rewards_base::<FarmStakingWrapper<Self>>(caller.clone(), payments);
 
         let reward_token_id = self.reward_token_id().get();
-        let base_rewards_payment =
-            EsdtTokenPayment::new(reward_token_id, 0, claim_result.rewards.base);
+        let base_rewards_payment = EsdtTokenPayment::new(reward_token_id, 0, claim_result.rewards);
 
-        self.send_payment_non_zero(&caller, &virtual_farm_token.payment);
+        self.send_payment_non_zero(&caller, &claim_result.new_farm_token.payment);
         self.send_payment_non_zero(&caller, &base_rewards_payment);
 
         self.emit_claim_rewards_event(
             &caller,
             claim_result.context,
-            virtual_farm_token.clone(),
+            claim_result.new_farm_token.clone(),
             base_rewards_payment.clone(),
             claim_result.created_with_merge,
             claim_result.storage_cache,
         );
 
-        (virtual_farm_token.payment, base_rewards_payment).into()
+        (claim_result.new_farm_token.payment, base_rewards_payment).into()
     }
 }
