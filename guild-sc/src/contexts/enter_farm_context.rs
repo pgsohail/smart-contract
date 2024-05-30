@@ -2,15 +2,16 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use common_errors::{ERROR_BAD_PAYMENTS, ERROR_EMPTY_PAYMENTS};
+use common_structs::PaymentsVec;
 
 pub struct EnterFarmContext<M: ManagedTypeApi> {
     pub farming_token_payment: EsdtTokenPayment<M>,
-    pub additional_farm_tokens: ManagedVec<M, EsdtTokenPayment<M>>,
+    pub additional_farm_tokens: PaymentsVec<M>,
 }
 
 impl<M: ManagedTypeApi> EnterFarmContext<M> {
     pub fn new(
-        mut payments: ManagedVec<M, EsdtTokenPayment<M>>,
+        mut payments: PaymentsVec<M>,
         farming_token_id: &TokenIdentifier<M>,
         farm_token_id: &TokenIdentifier<M>,
     ) -> Self {

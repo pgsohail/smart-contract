@@ -24,6 +24,7 @@ pub trait BaseExitFarmModule:
     + crate::config::ConfigModule
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
+    + crate::tiered_rewards::read_config::ReadConfigModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -61,8 +62,6 @@ pub trait BaseExitFarmModule:
             &storage_cache,
         );
         storage_cache.reward_reserve -= rewards.total_rewards();
-
-        FC::decrease_user_farm_position(self, &payment);
 
         let farming_token_amount = token_attributes.get_total_supply();
         let farming_token_payment = EsdtTokenPayment::new(

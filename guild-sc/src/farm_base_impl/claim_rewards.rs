@@ -26,6 +26,7 @@ pub trait BaseClaimRewardsModule:
     + crate::config::ConfigModule
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
+    + crate::tiered_rewards::read_config::ReadConfigModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -80,8 +81,6 @@ pub trait BaseClaimRewardsModule:
             &storage_cache,
         );
         storage_cache.reward_reserve -= rewards.total_rewards();
-
-        FC::check_and_update_user_farm_position(self, &caller, &payments);
 
         let farm_token_mapper = self.farm_token();
         let base_attributes = FC::create_claim_rewards_initial_attributes(

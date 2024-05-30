@@ -156,4 +156,16 @@ pub trait GlobalConfigModule {
     #[view(getTotalStakingTokenStaked)]
     #[storage_mapper("totalStakingTokenStaked")]
     fn total_staking_token_staked(&self) -> SingleValueMapper<BigUint>;
+
+    #[view(getBaseFarmTokenId)]
+    #[storage_mapper("baseFarmTokenId")]
+    fn base_farm_token_id(&self) -> SingleValueMapper<ManagedBuffer>;
+
+    #[view(getBaseUnbondTokenId)]
+    #[storage_mapper("baseUnbondTokenId")]
+    fn base_unbond_token_id(&self) -> SingleValueMapper<ManagedBuffer>;
+
+    #[view(getTokenDecimals)]
+    #[storage_mapper("tokensDecimals")]
+    fn tokens_decimals(&self) -> SingleValueMapper<usize>;
 }
