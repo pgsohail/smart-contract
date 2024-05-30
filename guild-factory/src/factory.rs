@@ -1,10 +1,12 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
+use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
+static FARM_TOKEN_SUPPLY_STORAGE_KEY: &[u8] = b"farm_token_supply";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
@@ -79,11 +81,17 @@ pub trait FactoryModule:
         self.start_produce_rewards(guild);
     }
 
-    /// To be used by admins when guild was created, but no further action was taken for it.
-    /// Or if the guild breaks TOS.
+    /// To be used by admins when guild was created, but no further action was taken for it
     #[only_admin]
     #[endpoint(removeGuild)]
     fn remove_guild(&self, guild: ManagedAddress, user: ManagedAddress) {
+        let supply_mapper = SingleValueMapper::<_, BigUint, ManagedAddress>::new_from_address(
+            guild.clone(),
+            StorageKey::new(FARM_TOKEN_SUPPLY_STORAGE_KEY),
+        );
+        let supply = supply_mapper.get();
+        require!(supply == 0, "Guild is not empty");
+
         self.remove_guild_common(guild, user);
     }
 
