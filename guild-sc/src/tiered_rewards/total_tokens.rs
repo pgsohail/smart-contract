@@ -40,6 +40,22 @@ impl<M: ManagedTypeApi> TotalTokens<M> {
 
 #[multiversx_sc::module]
 pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
+    #[view(getUserStakedTokens)]
+    fn get_user_staked_tokens(&self, user: ManagedAddress) -> TotalTokens<Self::Api> {
+        let guild_master = self.guild_master().get();
+        let mapper = if user != guild_master {
+            self.user_tokens(&user)
+        } else {
+            self.guild_master_tokens()
+        };
+
+        if !mapper.is_empty() {
+            mapper.get()
+        } else {
+            TotalTokens::default()
+        }
+    }
+
     fn add_total_staked_tokens(&self, amount: &BigUint) {
         let max_staked_tokens = self.get_max_staked_tokens();
         self.total_staked_tokens().update(|total| {
