@@ -41,18 +41,11 @@ pub trait GuildInteractionsModule:
         self.require_known_guild(guild_id);
 
         let payment = self.check_payment_is_farming_token();
-        let farm_token: EsdtTokenPayment = self
+        let _: EsdtTokenPayment = self
             .guild_sc_proxy(guild)
             .stake_farm_endpoint(original_caller.clone())
             .with_esdt_transfer(payment)
             .execute_on_dest_context();
-
-        self.send().direct_esdt(
-            &original_caller,
-            &farm_token.token_identifier,
-            farm_token.token_nonce,
-            &farm_token.amount,
-        );
     }
 
     #[payable("*")]
