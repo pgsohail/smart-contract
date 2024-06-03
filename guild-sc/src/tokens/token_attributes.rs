@@ -1,12 +1,10 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-use common_structs::{Epoch, FarmToken, FarmTokenAttributes};
+use common_structs::{Epoch, FarmToken};
 use fixed_supply_token::FixedSupplyToken;
 use math::weighted_average_round_up;
 use mergeable::Mergeable;
-
-static NOT_IMPLEMENTED_ERR_MSG: &[u8] = b"Conversion not implemented";
 
 #[derive(
     ManagedVecItem,
@@ -29,18 +27,6 @@ pub struct StakingFarmTokenAttributes<M: ManagedTypeApi> {
 pub struct StakingFarmToken<M: ManagedTypeApi> {
     pub payment: EsdtTokenPayment<M>,
     pub attributes: StakingFarmTokenAttributes<M>,
-}
-
-impl<M: ManagedTypeApi> From<FarmTokenAttributes<M>> for StakingFarmTokenAttributes<M> {
-    fn from(_value: FarmTokenAttributes<M>) -> Self {
-        M::error_api_impl().signal_error(NOT_IMPLEMENTED_ERR_MSG);
-    }
-}
-
-impl<M: ManagedTypeApi> Into<FarmTokenAttributes<M>> for StakingFarmTokenAttributes<M> {
-    fn into(self) -> FarmTokenAttributes<M> {
-        M::error_api_impl().signal_error(NOT_IMPLEMENTED_ERR_MSG);
-    }
 }
 
 impl<M: ManagedTypeApi> FarmToken<M> for StakingFarmTokenAttributes<M> {
