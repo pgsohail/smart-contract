@@ -26,6 +26,7 @@ pub trait BaseClaimRewardsModule:
     + crate::config::ConfigModule
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
+    + crate::tokens::request_id::RequestIdModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule

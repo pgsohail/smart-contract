@@ -17,6 +17,7 @@ pub trait UnbondFarmModule:
     + crate::events::EventsModule
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
+    + crate::tokens::request_id::RequestIdModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule

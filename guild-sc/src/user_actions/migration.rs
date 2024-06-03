@@ -25,6 +25,7 @@ pub trait MigrationModule:
     super::unstake_farm::UnstakeFarmModule
     + crate::custom_rewards::CustomRewardsModule
     + crate::tokens::unbond_token::UnbondTokenModule
+    + crate::tokens::request_id::RequestIdModule
     + crate::rewards::RewardsModule
     + crate::config::ConfigModule
     + crate::events::EventsModule

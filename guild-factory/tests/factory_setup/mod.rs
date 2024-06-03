@@ -12,7 +12,7 @@ use guild_sc::user_actions::claim_stake_farm_rewards::ClaimStakeFarmRewardsModul
 use guild_sc::user_actions::unbond_farm::UnbondFarmModule;
 use guild_sc::user_actions::unstake_farm::UnstakeFarmModule;
 use guild_sc_config::tiers::{TierModule, MAX_PERCENT};
-use guild_sc_config::GuildScConfig;
+use guild_sc_config::{GuildScConfig, InitArgs};
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageTokenWrapper;
@@ -98,17 +98,18 @@ where
 
         b_mock
             .execute_tx(&first_owner_addr, &config_wrapper, &rust_zero, |sc| {
-                sc.init(
-                    managed_biguint!(TOTAL_STAKING_TOKENS_MINTED),
-                    managed_biguint!(i64::MAX),
-                    MIN_UNBOND_EPOCHS,
-                    MIN_UNBOND_EPOCHS,
-                    managed_biguint!(0),
-                    managed_biguint!(0),
-                    managed_buffer!(b"FARM"),
-                    managed_buffer!(b"UNBOND"),
-                    0,
-                );
+                sc.init(InitArgs {
+                    total_staking_tokens_minted: managed_biguint!(TOTAL_STAKING_TOKENS_MINTED),
+                    max_staked_tokens: managed_biguint!(i64::MAX),
+                    user_unbond_epochs: MIN_UNBOND_EPOCHS,
+                    guild_master_unbond_epochs: MIN_UNBOND_EPOCHS,
+                    min_stake_user: managed_biguint!(0),
+                    min_stake_guild_master: managed_biguint!(0),
+                    base_farm_token_id: managed_buffer!(b"FARM"),
+                    base_unbond_token_id: managed_buffer!(b"UNBOND"),
+                    base_token_display_name: managed_buffer!(b"DISPLAY"),
+                    tokens_decimals: 0,
+                });
 
                 let mut user_tiers = MultiValueEncoded::new();
                 user_tiers.push((MAX_PERCENT, MAX_APR).into());

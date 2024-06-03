@@ -16,6 +16,7 @@ static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
 static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
 static BASE_FARM_TOKEN_ID_KEY: &[u8] = b"baseFarmTokenId";
 static BASE_UNBOND_TOKEN_ID_KEY: &[u8] = b"baseUnbondTokenId";
+static BASE_DISPLAY_NAME_KEY: &[u8] = b"baseTokenDisplayName";
 static TOKEN_DECIMALS_KEY: &[u8] = b"tokensDecimals";
 
 #[multiversx_sc::module]
@@ -166,6 +167,16 @@ pub trait ReadConfigModule {
         let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
             config_addr,
             StorageKey::new(BASE_UNBOND_TOKEN_ID_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_base_display_name(&self) -> ManagedBuffer {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(BASE_DISPLAY_NAME_KEY),
         );
 
         mapper.get()

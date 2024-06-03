@@ -33,6 +33,7 @@ pub trait FarmStaking:
     + events::EventsModule
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
+    + crate::tokens::request_id::RequestIdModule
     + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule

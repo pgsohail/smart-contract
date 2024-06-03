@@ -165,6 +165,10 @@ pub trait GlobalConfigModule {
     #[storage_mapper("baseUnbondTokenId")]
     fn base_unbond_token_id(&self) -> SingleValueMapper<ManagedBuffer>;
 
+    #[view(getBaseTokenDisplayName)]
+    #[storage_mapper("baseTokenDisplayName")]
+    fn base_token_display_name(&self) -> SingleValueMapper<ManagedBuffer>;
+
     #[view(getTokenDecimals)]
     #[storage_mapper("tokensDecimals")]
     fn tokens_decimals(&self) -> SingleValueMapper<usize>;
