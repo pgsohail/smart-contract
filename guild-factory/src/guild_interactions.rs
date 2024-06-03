@@ -68,6 +68,16 @@ pub trait GuildInteractionsModule:
         self.closed_guilds().insert(caller);
     }
 
+    #[endpoint(closeGuildNoRewardsRemaining)]
+    fn close_guild_no_rewards_remaining(&self, guild_master: ManagedAddress) {
+        let caller = self.blockchain().get_caller();
+        let caller_id = self.guild_ids().get_id_non_zero(&caller);
+        self.require_known_guild(caller_id);
+
+        self.remove_guild_common(caller.clone(), guild_master);
+        self.closed_guilds().insert(caller);
+    }
+
     #[only_admin]
     #[payable("*")]
     #[endpoint(depositRewardsAdmins)]

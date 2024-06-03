@@ -68,6 +68,10 @@ pub trait CustomRewardsModule:
         let mut storage_cache = StorageCache::new(self);
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
 
+        if withdraw_amount == &0 {
+            return;
+        }
+
         let reward_capacity_mapper = self.reward_capacity();
         let mut rewards_capacity = reward_capacity_mapper.get();
         let accumulated_rewards = self.accumulated_rewards().get();
