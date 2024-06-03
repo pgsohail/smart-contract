@@ -119,7 +119,7 @@ pub trait UnstakeFarmModule:
 
         let reward_token_id = self.reward_token_id().get();
         let base_rewards_payment =
-            EsdtTokenPayment::new(reward_token_id, 0, exit_result.rewards.base.clone());
+            EsdtTokenPayment::new(reward_token_id, 0, exit_result.rewards.clone());
 
         UnstakeCommonNoTokenMintResultType {
             base_rewards_payment,

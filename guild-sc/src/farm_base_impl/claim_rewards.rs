@@ -1,6 +1,6 @@
 multiversx_sc::imports!();
 
-use super::base_traits_impl::{FarmContract, RewardPair};
+use super::base_traits_impl::FarmContract;
 use crate::contexts::{
     claim_rewards_context::ClaimRewardsContext,
     storage_cache::{FarmContracTraitBounds, StorageCache},
@@ -11,11 +11,11 @@ use fixed_supply_token::FixedSupplyToken;
 pub struct InternalClaimRewardsResult<'a, C, T>
 where
     C: FarmContracTraitBounds,
-    T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode,
+    T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode + ManagedVecItem,
 {
     pub context: ClaimRewardsContext<C::Api, T>,
     pub storage_cache: StorageCache<'a, C>,
-    pub rewards: RewardPair<C::Api>,
+    pub rewards: BigUint<C::Api>,
     pub new_farm_token: PaymentAttributesPair<C::Api, T>,
     pub created_with_merge: bool,
 }
@@ -66,27 +66,46 @@ pub trait BaseClaimRewardsModule:
 
         FC::generate_aggregated_rewards(self, &mut storage_cache);
 
-        let farm_token_amount = &claim_rewards_context.first_farm_token.payment.amount;
-        let token_attributes = claim_rewards_context
+        let mut total_rewards = BigUint::zero();
+        let first_farm_token_amount = &claim_rewards_context.first_farm_token.payment.amount;
+        let first_token_attributes = claim_rewards_context
             .first_farm_token
             .attributes
             .clone()
-            .into_part(farm_token_amount);
-
-        let rewards = FC::calculate_rewards(
+            .into_part(first_farm_token_amount);
+        let first_rewards = FC::calculate_rewards(
             self,
             &caller,
-            farm_token_amount,
-            &token_attributes,
+            first_farm_token_amount,
+            &first_token_attributes,
             &storage_cache,
         );
-        storage_cache.reward_reserve -= rewards.total_rewards();
+        total_rewards += first_rewards;
+
+        for (payment, attributes) in claim_rewards_context.additional_payments.iter().zip(
+            claim_rewards_context
+                .additional_token_attributes
+                .into_iter(),
+        ) {
+            let farm_token_amount = &payment.amount;
+            let token_attributes = attributes.clone().into_part(farm_token_amount);
+            let rewards = FC::calculate_rewards(
+                self,
+                &caller,
+                farm_token_amount,
+                &token_attributes,
+                &storage_cache,
+            );
+            total_rewards += rewards;
+        }
+
+        storage_cache.reward_reserve -= &total_rewards;
 
         let farm_token_mapper = self.farm_token();
         let base_attributes = FC::create_claim_rewards_initial_attributes(
             self,
             caller,
-            token_attributes,
+            claim_rewards_context.first_farm_token.attributes.clone(),
             storage_cache.reward_per_share.clone(),
         );
         let new_token_attributes = self.merge_attributes_from_payments(
@@ -111,7 +130,7 @@ pub trait BaseClaimRewardsModule:
         InternalClaimRewardsResult {
             created_with_merge: !claim_rewards_context.additional_payments.is_empty(),
             context: claim_rewards_context,
-            rewards,
+            rewards: total_rewards,
             new_farm_token,
             storage_cache,
         }

@@ -8,28 +8,6 @@ use core::marker::PhantomData;
 use fixed_supply_token::FixedSupplyToken;
 use mergeable::Mergeable;
 
-pub struct RewardPair<M: ManagedTypeApi> {
-    pub base: BigUint<M>,
-    pub boosted: BigUint<M>,
-}
-
-impl<M: ManagedTypeApi> RewardPair<M> {
-    #[inline]
-    pub fn new(base: BigUint<M>, boosted: BigUint<M>) -> Self {
-        Self { base, boosted }
-    }
-
-    #[inline]
-    pub fn new_zero() -> Self {
-        Self::new(BigUint::zero(), BigUint::zero())
-    }
-
-    #[inline]
-    pub fn total_rewards(&self) -> BigUint<M> {
-        &self.base + &self.boosted
-    }
-}
-
 pub trait AllBaseFarmImplTraits =
     crate::rewards::RewardsModule
         + crate::config::ConfigModule
@@ -51,8 +29,8 @@ pub trait FarmContract {
         + FixedSupplyToken<<Self::FarmSc as ContractBase>::Api>
         + FarmToken<<Self::FarmSc as ContractBase>::Api>
         + From<FarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>>
-        + Into<FarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>> =
-        FarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>;
+        + Into<FarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>>
+        + ManagedVecItem = FarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>;
 
     #[inline]
     fn mint_rewards(
@@ -122,16 +100,14 @@ pub trait FarmContract {
         farm_token_amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
         token_attributes: &Self::AttributesType,
         storage_cache: &StorageCache<Self::FarmSc>,
-    ) -> RewardPair<<Self::FarmSc as ContractBase>::Api> {
+    ) -> BigUint<<Self::FarmSc as ContractBase>::Api> {
         let token_rps = token_attributes.get_reward_per_share();
         if storage_cache.reward_per_share <= token_rps {
-            return RewardPair::new_zero();
+            return BigUint::zero();
         }
 
         let rps_diff = &storage_cache.reward_per_share - &token_rps;
-        let base_rewards = farm_token_amount * &rps_diff / &storage_cache.division_safety_constant;
-
-        RewardPair::new(base_rewards, BigUint::zero())
+        farm_token_amount * &rps_diff / &storage_cache.division_safety_constant
     }
 
     fn create_enter_farm_initial_attributes(

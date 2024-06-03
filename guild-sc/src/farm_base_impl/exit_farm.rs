@@ -1,6 +1,6 @@
 multiversx_sc::imports!();
 
-use super::base_traits_impl::{FarmContract, RewardPair};
+use super::base_traits_impl::FarmContract;
 use crate::contexts::{
     exit_farm_context::ExitFarmContext,
     storage_cache::{FarmContracTraitBounds, StorageCache},
@@ -15,7 +15,7 @@ where
     pub context: ExitFarmContext<C::Api, T>,
     pub storage_cache: StorageCache<'a, C>,
     pub farming_token_payment: EsdtTokenPayment<C::Api>,
-    pub rewards: RewardPair<C::Api>,
+    pub rewards: BigUint<C::Api>,
 }
 
 #[multiversx_sc::module]
@@ -61,7 +61,7 @@ pub trait BaseExitFarmModule:
             &token_attributes,
             &storage_cache,
         );
-        storage_cache.reward_reserve -= rewards.total_rewards();
+        storage_cache.reward_reserve -= &rewards;
 
         let farming_token_amount = token_attributes.get_total_supply();
         let farming_token_payment = EsdtTokenPayment::new(
