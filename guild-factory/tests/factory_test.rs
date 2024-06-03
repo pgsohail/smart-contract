@@ -5,6 +5,7 @@ pub mod factory_setup;
 use factory_setup::*;
 use guild_sc::{
     custom_rewards::{CustomRewardsModule, BLOCKS_IN_YEAR},
+    tokens::request_id::RequestIdModule,
     user_actions::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule, migration::MigrationModule,
         stake_farm::StakeFarmModule, unbond_farm::UnbondFarmModule,
@@ -13,7 +14,8 @@ use guild_sc::{
 use guild_sc_config::tiers::MAX_PERCENT;
 use multiversx_sc::{codec::Empty, imports::OptionalValue};
 use multiversx_sc_scenario::{
-    managed_address, managed_token_id, rust_biguint, whitebox_legacy::TxTokenTransfer, DebugApi,
+    managed_address, managed_buffer, managed_token_id, rust_biguint,
+    whitebox_legacy::TxTokenTransfer, DebugApi,
 };
 
 #[test]
@@ -660,5 +662,32 @@ fn close_guild_test_2() {
                 sc.close_guild();
             },
         )
+        .assert_ok();
+}
+
+#[test]
+fn id_to_human_readable_test() {
+    DebugApi::dummy();
+
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+    farm_setup
+        .b_mock
+        .execute_query(&farm_setup.first_farm_wrapper, |sc| {
+            let id_str = sc.id_to_human_readable(12345);
+            assert_eq!(id_str, managed_buffer!(b"12345"));
+
+            let id_str = sc.id_to_human_readable(0);
+            assert_eq!(id_str, managed_buffer!(b"0"));
+
+            let id_str = sc.id_to_human_readable(1);
+            assert_eq!(id_str, managed_buffer!(b"1"));
+
+            let id_str = sc.id_to_human_readable(10);
+            assert_eq!(id_str, managed_buffer!(b"10"));
+        })
         .assert_ok();
 }

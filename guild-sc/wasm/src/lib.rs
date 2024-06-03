@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           43
+// Endpoints:                           44
 // Async Callback:                       1
-// Total number of exported functions:  45
+// Total number of exported functions:  46
 
 #![no_std]
 #![allow(internal_features)]
@@ -61,6 +61,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         registerUnbondToken => register_unbond_token
         setTransferRoleUnbondToken => set_transfer_role_unbond_token
         getUnbondTokenId => unbond_token
+        getUserStakedTokens => get_user_staked_tokens
         closeGuild => close_guild
         migrateToOtherGuild => migrate_to_other_guild
     )

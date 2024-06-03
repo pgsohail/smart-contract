@@ -69,10 +69,10 @@ pub trait StakeFarmModule:
         self.require_over_min_stake(&original_caller);
 
         let new_farm_token = enter_result.new_farm_token.payment.clone();
-        self.send_payment_non_zero(&caller, &new_farm_token);
+        self.send_payment_non_zero(&original_caller, &new_farm_token);
 
         self.emit_enter_farm_event(
-            &caller,
+            &original_caller,
             enter_result.context.farming_token_payment,
             enter_result.new_farm_token,
             enter_result.created_with_merge,
