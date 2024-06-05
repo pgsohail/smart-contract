@@ -12,6 +12,7 @@ pub trait CloseGuildModule {
         require!(closing, "Guild not closing");
     }
 
+    #[view(isGuildClosing)]
     #[storage_mapper("guildClosing")]
     fn guild_closing(&self) -> SingleValueMapper<bool>;
 }
