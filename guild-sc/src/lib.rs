@@ -96,6 +96,8 @@ pub trait FarmStaking:
     #[payable("*")]
     #[endpoint(mergeFarmTokens)]
     fn merge_farm_tokens_endpoint(&self) -> EsdtTokenPayment {
+        self.require_not_closing();
+
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();
         let token_mapper = self.farm_token();

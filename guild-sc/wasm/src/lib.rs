@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           44
+// Endpoints:                           45
 // Async Callback:                       1
-// Total number of exported functions:  46
+// Total number of exported functions:  47
 
 #![no_std]
 #![allow(internal_features)]
@@ -64,6 +64,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getUserStakedTokens => get_user_staked_tokens
         closeGuild => close_guild
         migrateToOtherGuild => migrate_to_other_guild
+        isGuildClosing => guild_closing
     )
 }
 
