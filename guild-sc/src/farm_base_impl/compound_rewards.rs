@@ -48,37 +48,56 @@ pub trait BaseCompoundRewardsModule:
         );
 
         let compound_rewards_context = CompoundRewardsContext::<Self::Api, FC::AttributesType>::new(
-            payments.clone(),
+            payments,
             &storage_cache.farm_token_id,
             self.blockchain(),
         );
 
         FC::generate_aggregated_rewards(self, &mut storage_cache);
 
-        let farm_token_amount = &compound_rewards_context.first_farm_token.payment.amount;
-        let token_attributes = compound_rewards_context
+        let mut total_rewards = BigUint::zero();
+        let first_farm_token_amount = &compound_rewards_context.first_farm_token.payment.amount;
+        let first_token_attributes = compound_rewards_context
             .first_farm_token
             .attributes
             .clone()
-            .into_part(farm_token_amount);
-
-        let rewards = FC::calculate_rewards(
+            .into_part(first_farm_token_amount);
+        let first_rewards = FC::calculate_rewards(
             self,
             &caller,
-            farm_token_amount,
-            &token_attributes,
+            first_farm_token_amount,
+            &first_token_attributes,
             &storage_cache,
         );
-        storage_cache.reward_reserve -= &rewards;
-        storage_cache.farm_token_supply += &rewards;
+        total_rewards += first_rewards;
+
+        for (payment, attributes) in compound_rewards_context.additional_payments.iter().zip(
+            compound_rewards_context
+                .additional_token_attributes
+                .into_iter(),
+        ) {
+            let farm_token_amount = &payment.amount;
+            let token_attributes = attributes.clone().into_part(farm_token_amount);
+            let rewards = FC::calculate_rewards(
+                self,
+                &caller,
+                farm_token_amount,
+                &token_attributes,
+                &storage_cache,
+            );
+            total_rewards += rewards;
+        }
+
+        storage_cache.reward_reserve -= &total_rewards;
+        storage_cache.farm_token_supply += &total_rewards;
 
         let farm_token_mapper = self.farm_token();
         let base_attributes = FC::create_compound_rewards_initial_attributes(
             self,
             caller.clone(),
-            token_attributes,
+            compound_rewards_context.first_farm_token.attributes.clone(),
             storage_cache.reward_per_share.clone(),
-            &rewards,
+            &total_rewards,
         );
         let new_farm_token = self.merge_and_create_token(
             base_attributes,
@@ -95,7 +114,7 @@ pub trait BaseCompoundRewardsModule:
             created_with_merge: !compound_rewards_context.additional_payments.is_empty(),
             context: compound_rewards_context,
             new_farm_token,
-            compounded_rewards: rewards,
+            compounded_rewards: total_rewards,
             storage_cache,
         }
     }

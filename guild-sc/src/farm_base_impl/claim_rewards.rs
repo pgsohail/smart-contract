@@ -60,7 +60,7 @@ pub trait BaseClaimRewardsModule:
         self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
 
         let claim_rewards_context = ClaimRewardsContext::<Self::Api, FC::AttributesType>::new(
-            payments.clone(),
+            payments,
             &storage_cache.farm_token_id,
             self.blockchain(),
         );

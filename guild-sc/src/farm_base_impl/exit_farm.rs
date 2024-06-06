@@ -41,7 +41,7 @@ pub trait BaseExitFarmModule:
         self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
 
         let exit_farm_context = ExitFarmContext::<Self::Api, FC::AttributesType>::new(
-            payment.clone(),
+            payment,
             &storage_cache.farm_token_id,
             self.blockchain(),
         );
