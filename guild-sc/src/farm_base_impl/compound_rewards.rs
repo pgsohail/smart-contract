@@ -47,13 +47,21 @@ pub trait BaseCompoundRewardsModule:
             ERROR_DIFFERENT_TOKEN_IDS
         );
 
+        self.before_context_creation_event();
+
         let compound_rewards_context = CompoundRewardsContext::<Self::Api, FC::AttributesType>::new(
             payments,
             &storage_cache.farm_token_id,
             self.blockchain(),
         );
 
+        self.after_context_creation_event();
+
+        self.before_rev_agg_event();
+
         FC::generate_aggregated_rewards(self, &mut storage_cache);
+
+        self.after_rev_agg_event();
 
         let mut total_rewards = BigUint::zero();
         let first_farm_token_amount = &compound_rewards_context.first_farm_token.payment.amount;
@@ -118,4 +126,16 @@ pub trait BaseCompoundRewardsModule:
             storage_cache,
         }
     }
+
+    #[event("beforeContextCreationEvent")]
+    fn before_context_creation_event(&self);
+
+    #[event("afterContextCreationEvent")]
+    fn after_context_creation_event(&self);
+
+    #[event("beforeRevAggEvent")]
+    fn before_rev_agg_event(&self);
+
+    #[event("afterRevAggEnvent")]
+    fn after_rev_agg_event(&self);
 }
