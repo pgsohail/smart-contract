@@ -5,16 +5,17 @@ pub mod factory_setup;
 use factory_setup::*;
 use guild_sc::{
     custom_rewards::{CustomRewardsModule, BLOCKS_IN_YEAR},
-    tokens::request_id::RequestIdModule,
+    tokens::{request_id::RequestIdModule, token_attributes::StakingFarmTokenAttributes},
     user_actions::{
-        claim_stake_farm_rewards::ClaimStakeFarmRewardsModule, migration::MigrationModule,
+        claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
+        compound_stake_farm_rewards::CompoundStakeFarmRewardsModule, migration::MigrationModule,
         stake_farm::StakeFarmModule, unbond_farm::UnbondFarmModule,
     },
 };
 use guild_sc_config::tiers::MAX_PERCENT;
 use multiversx_sc::{codec::Empty, imports::OptionalValue};
 use multiversx_sc_scenario::{
-    managed_address, managed_buffer, managed_token_id, rust_biguint,
+    managed_address, managed_biguint, managed_buffer, managed_token_id, rust_biguint,
     whitebox_legacy::TxTokenTransfer, DebugApi,
 };
 
@@ -269,6 +270,59 @@ fn test_claim_rewards() {
         expected_reward_per_share,
     );
     farm_setup.check_farm_token_supply(farm_in_amount + 1);
+}
+
+#[test]
+fn compound_rewards_test() {
+    DebugApi::dummy();
+
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 2;
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
+
+    farm_setup.set_block_epoch(5);
+    farm_setup.set_block_nonce(10);
+
+    // value taken from the "test_unstake_farm" test
+    let expected_reward_token_out = 39;
+    let expected_reward_per_share = 399_999;
+
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce,
+            &rust_biguint!(farm_in_amount),
+            |sc| {
+                let _ = sc.compound_rewards();
+            },
+        )
+        .assert_ok();
+
+    let expected_attributes = StakingFarmTokenAttributes::<DebugApi> {
+        reward_per_share: managed_biguint!(expected_reward_per_share),
+        compounded_reward: managed_biguint!(expected_reward_token_out),
+        current_farm_amount: managed_biguint!(farm_in_amount + expected_reward_token_out),
+    };
+
+    farm_setup.b_mock.check_nft_balance(
+        &farm_setup.user_address,
+        FARM_TOKEN_ID,
+        expected_farm_token_nonce + 1,
+        &rust_biguint!(farm_in_amount + expected_reward_token_out),
+        Some(&expected_attributes),
+    );
+
+    farm_setup.check_farm_token_supply(farm_in_amount + expected_reward_token_out + 1);
 }
 
 #[test]
