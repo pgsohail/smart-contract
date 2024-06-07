@@ -95,7 +95,7 @@ pub trait BaseCompoundRewardsModule:
         let base_attributes = FC::create_compound_rewards_initial_attributes(
             self,
             caller.clone(),
-            compound_rewards_context.first_farm_token.attributes.clone(),
+            first_token_attributes.clone(),
             storage_cache.reward_per_share.clone(),
             &total_rewards,
         );

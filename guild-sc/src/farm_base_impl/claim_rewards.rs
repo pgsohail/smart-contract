@@ -106,7 +106,7 @@ pub trait BaseClaimRewardsModule:
         let base_attributes = FC::create_claim_rewards_initial_attributes(
             self,
             caller,
-            claim_rewards_context.first_farm_token.attributes.clone(),
+            first_token_attributes.clone(),
             storage_cache.reward_per_share.clone(),
         );
         let new_token_attributes = self.merge_attributes_from_payments(
