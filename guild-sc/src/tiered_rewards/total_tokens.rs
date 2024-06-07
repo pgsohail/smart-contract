@@ -31,6 +31,13 @@ impl<M: ManagedTypeApi> TotalTokens<M> {
         }
     }
 
+    pub fn new_compounded(compounded_amount: BigUint<M>) -> Self {
+        Self {
+            base: BigUint::zero(),
+            compounded: compounded_amount,
+        }
+    }
+
     pub fn is_default(&self) -> bool {
         let big_zero = BigUint::zero();
 

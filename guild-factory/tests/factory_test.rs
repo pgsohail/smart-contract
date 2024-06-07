@@ -326,6 +326,78 @@ fn compound_rewards_test() {
 }
 
 #[test]
+fn compound_rewards_guild_master_test() {
+    DebugApi::dummy();
+
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 2;
+
+    farm_setup.b_mock.set_esdt_balance(
+        &farm_setup.first_owner_address,
+        FARMING_TOKEN_ID,
+        &rust_biguint!(farm_in_amount),
+    );
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.first_owner_address,
+            &farm_setup.first_farm_wrapper,
+            FARMING_TOKEN_ID,
+            0,
+            &rust_biguint!(farm_in_amount),
+            |sc| {
+                let _ = sc.stake_farm_endpoint(OptionalValue::None);
+            },
+        )
+        .assert_ok();
+
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
+
+    farm_setup.set_block_epoch(5);
+    farm_setup.set_block_nonce(10);
+
+    // value taken from the "test_unstake_farm" test
+    let expected_reward_token_out = 39;
+    let expected_reward_per_share = 399_999;
+
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.first_owner_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce,
+            &rust_biguint!(farm_in_amount),
+            |sc| {
+                let _ = sc.compound_rewards();
+            },
+        )
+        .assert_ok();
+
+    let expected_attributes = StakingFarmTokenAttributes::<DebugApi> {
+        reward_per_share: managed_biguint!(expected_reward_per_share),
+        compounded_reward: managed_biguint!(expected_reward_token_out),
+        current_farm_amount: managed_biguint!(farm_in_amount + expected_reward_token_out),
+    };
+
+    farm_setup.b_mock.check_nft_balance(
+        &farm_setup.first_owner_address,
+        FARM_TOKEN_ID,
+        expected_farm_token_nonce + 1,
+        &rust_biguint!(farm_in_amount + expected_reward_token_out),
+        Some(&expected_attributes),
+    );
+
+    farm_setup.check_farm_token_supply(farm_in_amount + expected_reward_token_out + 1);
+}
+
+#[test]
 fn claim_rewards_multi_test() {
     DebugApi::dummy();
     let mut farm_setup = FarmStakingSetup::new(
