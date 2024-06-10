@@ -1,4 +1,4 @@
-use crate::base_impl_wrapper::FarmStakingWrapper;
+use crate::{base_impl_wrapper::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens};
 
 multiversx_sc::imports!();
 
@@ -36,11 +36,13 @@ pub trait CompoundStakeFarmRewardsModule:
         let new_farm_token = compound_result.new_farm_token.payment.clone();
         self.send_payment_non_zero(&caller, &new_farm_token);
 
-        self.user_tokens(&caller).update(|tokens_per_tier| {
-            tokens_per_tier.compounded += &compound_result.compounded_rewards
-        });
+        self.add_tokens(
+            &caller,
+            &TotalTokens::new_compounded(compound_result.compounded_rewards.clone()),
+        );
         self.total_compounded_tokens()
             .update(|total| *total += &compound_result.compounded_rewards);
+
         self.call_increase_total_staked_tokens(compound_result.compounded_rewards.clone());
 
         self.emit_compound_rewards_event(
