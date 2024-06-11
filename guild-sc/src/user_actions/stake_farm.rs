@@ -46,9 +46,8 @@ pub trait StakeFarmModule:
     ) -> EsdtTokenPayment {
         self.require_not_closing();
 
-        let caller = self.blockchain().get_caller();
         let guild_master = self.guild_master().get();
-        if caller != guild_master {
+        if original_caller != guild_master {
             require!(
                 !self.guild_master_tokens().is_empty(),
                 "Guild master must stake first"
