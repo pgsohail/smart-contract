@@ -142,7 +142,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
             self.guild_master_tokens().get()
         };
 
-        tokens_per_tier.base
+        tokens_per_tier.total()
     }
 
     fn require_over_min_stake(&self, user: &ManagedAddress) {
