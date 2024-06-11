@@ -21,29 +21,15 @@ static TOKEN_DECIMALS_KEY: &[u8] = b"tokensDecimals";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
-    fn find_any_user_tier_apr(
-        &self,
-        user: &ManagedAddress,
-        base_farming_amount: &BigUint,
-        percentage_staked: Percent,
-    ) -> Percent {
-        let guild_master = self.guild_master().get();
-        if user != &guild_master {
-            self.find_user_tier_apr(percentage_staked)
-        } else {
-            self.find_guild_master_tier_apr(base_farming_amount)
-        }
-    }
-
     // percentage_staked unused
-    fn find_guild_master_tier_apr(&self, base_farming_amount: &BigUint) -> Percent {
+    fn find_guild_master_tier_apr(&self, total_farming_tokens: &BigUint) -> Percent {
         let mapper = self.get_guild_master_tiers_mapper();
-        let tier = self.find_tier_common(base_farming_amount, Percent::default(), &mapper);
+        let tier = self.find_tier_common(total_farming_tokens, Percent::default(), &mapper);
 
         tier.apr
     }
 
-    // base_farming_amount unused
+    // total_farming_tokens unused
     fn find_user_tier_apr(&self, percentage_staked: Percent) -> Percent {
         let mapper = self.get_user_tiers_mapper();
         let tier = self.find_tier_common(&BigUint::default(), percentage_staked, &mapper);
@@ -53,12 +39,12 @@ pub trait ReadConfigModule {
 
     fn find_tier_common<T: TopEncode + TopDecode + RewardTier<Self::Api>>(
         &self,
-        base_farming_amount: &BigUint,
+        total_farming_tokens: &BigUint,
         percentage_staked: Percent,
         mapper: &VecMapper<T, ManagedAddress>,
     ) -> T {
         for reward_tier in mapper.iter() {
-            if reward_tier.is_in_range(base_farming_amount, percentage_staked) {
+            if reward_tier.is_in_range(total_farming_tokens, percentage_staked) {
                 return reward_tier;
             }
         }
