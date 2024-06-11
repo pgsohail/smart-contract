@@ -10,6 +10,7 @@ use guild_sc::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
         compound_stake_farm_rewards::CompoundStakeFarmRewardsModule, migration::MigrationModule,
         stake_farm::StakeFarmModule, unbond_farm::UnbondFarmModule,
+        unstake_farm::UnstakeFarmModule,
     },
 };
 use guild_sc_config::tiers::MAX_PERCENT;
@@ -323,6 +324,22 @@ fn compound_rewards_test() {
     );
 
     farm_setup.check_farm_token_supply(farm_in_amount + expected_reward_token_out + 1);
+
+    // try unstake full amount
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce + 1,
+            &rust_biguint!(farm_in_amount + expected_reward_token_out),
+            |sc| {
+                let _ = sc.unstake_farm();
+            },
+        )
+        .assert_ok();
+    farm_setup.check_farm_token_supply(1);
 }
 
 #[test]
