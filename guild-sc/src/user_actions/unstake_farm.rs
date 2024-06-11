@@ -57,8 +57,6 @@ pub trait UnstakeFarmModule:
     #[payable("*")]
     #[endpoint(unstakeFarm)]
     fn unstake_farm(&self) -> ExitFarmWithPartialPosResultType<Self::Api> {
-        self.require_not_closing();
-
         let caller = self.blockchain().get_caller();
         let payment = self.call_value().single_esdt();
         let unstake_result = self.unstake_farm_common_no_unbond_token_mint(caller.clone(), payment);
