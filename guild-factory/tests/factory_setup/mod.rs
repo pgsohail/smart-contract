@@ -566,35 +566,4 @@ where
     pub fn set_block_epoch(&mut self, block_epoch: u64) {
         self.b_mock.set_block_epoch(block_epoch);
     }
-
-    pub fn withdraw_rewards(&mut self, withdraw_amount: &RustBigUint) {
-        self.b_mock
-            .execute_tx(
-                &self.first_owner_address,
-                &self.first_farm_wrapper,
-                &rust_biguint!(0),
-                |sc| {
-                    sc.withdraw_rewards(withdraw_amount.into());
-                },
-            )
-            .assert_ok();
-    }
-
-    pub fn withdraw_rewards_with_error(
-        &mut self,
-        withdraw_amount: &RustBigUint,
-        expected_status: u64,
-        expected_message: &str,
-    ) {
-        self.b_mock
-            .execute_tx(
-                &self.first_owner_address,
-                &self.first_farm_wrapper,
-                &rust_biguint!(0),
-                |sc| {
-                    sc.withdraw_rewards(withdraw_amount.into());
-                },
-            )
-            .assert_error(expected_status, expected_message)
-    }
 }

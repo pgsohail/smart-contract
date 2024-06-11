@@ -59,17 +59,6 @@ pub trait CustomRewardsModule:
         self.start_produce_rewards();
     }
 
-    #[only_owner]
-    #[payable("*")]
-    #[endpoint(withdrawRewards)]
-    fn withdraw_rewards(&self, withdraw_amount: BigUint) {
-        self.withdraw_rewards_common(&withdraw_amount);
-
-        let caller = self.blockchain().get_caller();
-        let reward_token_id = self.reward_token_id().get();
-        self.send_tokens_non_zero(&caller, &reward_token_id, 0, &withdraw_amount);
-    }
-
     fn withdraw_rewards_common(&self, withdraw_amount: &BigUint) {
         let mut storage_cache = StorageCache::new(self);
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);

@@ -4,7 +4,7 @@ pub mod factory_setup;
 
 use factory_setup::*;
 use guild_sc::{
-    custom_rewards::{CustomRewardsModule, BLOCKS_IN_YEAR},
+    custom_rewards::BLOCKS_IN_YEAR,
     tokens::{request_id::RequestIdModule, token_attributes::StakingFarmTokenAttributes},
     user_actions::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
@@ -619,97 +619,6 @@ fn test_unbond() {
         farm_in_amount,
         USER_TOTAL_RIDE_TOKENS + expected_rewards,
     );
-}
-
-#[test]
-fn test_withdraw_rewards() {
-    DebugApi::dummy();
-    let mut farm_setup = FarmStakingSetup::new(
-        guild_sc::contract_obj,
-        guild_sc_config::contract_obj,
-        guild_factory::contract_obj,
-    );
-
-    farm_setup.b_mock.set_esdt_balance(
-        &farm_setup.first_owner_address,
-        REWARD_TOKEN_ID,
-        &TOTAL_REWARDS_AMOUNT.into(),
-    );
-    farm_setup
-        .b_mock
-        .execute_esdt_transfer(
-            &farm_setup.first_owner_address,
-            &farm_setup.first_farm_wrapper,
-            REWARD_TOKEN_ID,
-            0,
-            &TOTAL_REWARDS_AMOUNT.into(),
-            |sc| {
-                sc.top_up_rewards();
-            },
-        )
-        .assert_ok();
-
-    let initial_rewards_capacity = TOTAL_REWARDS_AMOUNT;
-    farm_setup.check_rewards_capacity(initial_rewards_capacity);
-
-    let withdraw_amount = rust_biguint!(TOTAL_REWARDS_AMOUNT);
-    farm_setup.withdraw_rewards(&withdraw_amount);
-
-    let final_rewards_capacity = 0u64;
-    farm_setup.check_rewards_capacity(final_rewards_capacity);
-}
-
-#[test]
-fn test_withdraw_after_produced_rewards() {
-    DebugApi::dummy();
-    let mut farm_setup = FarmStakingSetup::new(
-        guild_sc::contract_obj,
-        guild_sc_config::contract_obj,
-        guild_factory::contract_obj,
-    );
-
-    farm_setup.b_mock.set_esdt_balance(
-        &farm_setup.first_owner_address,
-        REWARD_TOKEN_ID,
-        &TOTAL_REWARDS_AMOUNT.into(),
-    );
-    farm_setup
-        .b_mock
-        .execute_esdt_transfer(
-            &farm_setup.first_owner_address,
-            &farm_setup.first_farm_wrapper,
-            REWARD_TOKEN_ID,
-            0,
-            &TOTAL_REWARDS_AMOUNT.into(),
-            |sc| {
-                sc.top_up_rewards();
-            },
-        )
-        .assert_ok();
-
-    let initial_rewards_capacity = TOTAL_REWARDS_AMOUNT;
-    farm_setup.check_rewards_capacity(initial_rewards_capacity);
-
-    let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 2;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount + 1);
-
-    farm_setup.set_block_epoch(5);
-    farm_setup.set_block_nonce(10);
-
-    let withdraw_amount = rust_biguint!(TOTAL_REWARDS_AMOUNT);
-    farm_setup.withdraw_rewards_with_error(&withdraw_amount, 4, WITHDRAW_AMOUNT_TOO_HIGH);
-
-    let expected_reward_token_out = 40;
-
-    let withdraw_amount =
-        rust_biguint!(TOTAL_REWARDS_AMOUNT) - rust_biguint!(expected_reward_token_out);
-    farm_setup.withdraw_rewards(&withdraw_amount);
-
-    // Only the user's rewards will remain
-    let final_rewards_capacity = expected_reward_token_out;
-    farm_setup.check_rewards_capacity(final_rewards_capacity);
 }
 
 #[test]

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           46
+// Endpoints:                           45
 // Async Callback:                       1
-// Total number of exported functions:  48
+// Total number of exported functions:  47
 
 #![no_std]
 #![allow(internal_features)]
@@ -26,7 +26,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         calculateRewardsForGivenPosition => calculate_rewards_for_given_position
         topUpRewards => top_up_rewards
         startProduceRewards => start_produce_rewards_endpoint
-        withdrawRewards => withdraw_rewards
         getAccumulatedRewards => accumulated_rewards
         getRewardCapacity => reward_capacity
         getGuildMasterRewardPerShare => guild_master_rps
