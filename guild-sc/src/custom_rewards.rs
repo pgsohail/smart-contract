@@ -45,8 +45,10 @@ pub trait CustomRewardsModule:
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
 
         let (payment_token, payment_amount) = self.call_value().single_fungible_esdt();
-        let reward_token_id = self.reward_token_id().get();
-        require!(payment_token == reward_token_id, "Invalid token");
+        require!(
+            payment_token == storage_cache.reward_token_id,
+            "Invalid token"
+        );
 
         self.reward_capacity().update(|r| *r += payment_amount);
     }
