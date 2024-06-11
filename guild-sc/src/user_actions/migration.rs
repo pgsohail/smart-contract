@@ -64,9 +64,11 @@ pub trait MigrationModule:
 
         let total_guild_master_tokens = self.guild_master_tokens().get();
         require!(
-            total_payment == total_guild_master_tokens.base + total_guild_master_tokens.compounded,
+            total_payment == total_guild_master_tokens.total(),
             "Must send all tokens when closing guild"
         );
+
+        self.call_decrease_total_staked_tokens(total_payment);
 
         let multi_unstake_result = self.multi_unstake(&caller, &payments);
         let unbond_epochs = self.get_min_unbond_epochs_guild_master();
