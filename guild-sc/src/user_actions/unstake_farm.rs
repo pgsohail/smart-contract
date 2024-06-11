@@ -105,11 +105,13 @@ pub trait UnstakeFarmModule:
             .clone()
             .into_part(&exit_result.context.farm_token.payment.amount);
 
-        self.remove_total_staked_tokens(&original_attributes.current_farm_amount);
+        let base_tokens_removed =
+            &original_attributes.current_farm_amount - &original_attributes.compounded_reward;
+        self.remove_total_staked_tokens(&base_tokens_removed);
         self.remove_tokens(
             &original_caller,
             &TotalTokens::new(
-                original_attributes.current_farm_amount.clone(),
+                base_tokens_removed.clone(),
                 original_attributes.compounded_reward.clone(),
             ),
         );
