@@ -39,6 +39,7 @@ pub trait CustomRewardsModule:
     #[endpoint(topUpRewards)]
     fn top_up_rewards(&self) {
         self.require_caller_has_admin_permissions();
+        self.require_not_closing();
 
         let (payment_token, payment_amount) = self.call_value().single_fungible_esdt();
         let reward_token_id = self.reward_token_id().get();
