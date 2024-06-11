@@ -8,7 +8,7 @@ use common_structs::Percent;
 use crate::base_impl_wrapper::FarmStakingWrapper;
 
 pub const MAX_PERCENT: Percent = 10_000;
-pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
+pub const SECONDS_IN_YEAR: u64 = 31_536_000;
 
 mod guild_factory_proxy {
     multiversx_sc::imports!();
@@ -124,7 +124,10 @@ pub trait CustomRewardsModule:
     }
 
     fn bound_amount_by_apr(&self, amount: &BigUint, apr: Percent) -> BigUint {
-        amount * apr / MAX_PERCENT / BLOCKS_IN_YEAR
+        let seconds_per_block = self.internal_seconds_per_block().get();
+        let blocks_in_year = SECONDS_IN_YEAR / seconds_per_block;
+
+        amount * apr / MAX_PERCENT / blocks_in_year
     }
 
     fn request_rewards(&self, base_amount: BigUint) -> BigUint {
@@ -140,6 +143,11 @@ pub trait CustomRewardsModule:
         received_rewards
     }
 
+    fn update_internal_seconds_per_block(&self) {
+        let seconds_per_block = self.get_seconds_per_block();
+        self.internal_seconds_per_block().set(seconds_per_block);
+    }
+
     #[proxy]
     fn guild_factory_proxy(
         &self,
@@ -153,4 +161,7 @@ pub trait CustomRewardsModule:
     #[view(getRewardCapacity)]
     #[storage_mapper("reward_capacity")]
     fn reward_capacity(&self) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("internalSecondsPerBlock")]
+    fn internal_seconds_per_block(&self) -> SingleValueMapper<u64>;
 }

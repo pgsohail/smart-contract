@@ -109,6 +109,7 @@ where
                     base_unbond_token_id: managed_buffer!(b"UNBOND"),
                     base_token_display_name: managed_buffer!(b"DISPLAY"),
                     tokens_decimals: 0,
+                    seconds_per_block: 6,
                 });
 
                 let mut user_tiers = MultiValueEncoded::new();

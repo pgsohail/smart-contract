@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           26
+// Endpoints:                           27
 // Async Callback (empty):               1
-// Total number of exported functions:  28
+// Total number of exported functions:  29
 
 #![no_std]
 #![allow(internal_features)]
@@ -34,6 +34,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         setTotalStakingTokenMinted => set_total_staking_token_minted
         increaseStakedTokens => increase_staked_tokens
         decreaseStakedTokens => decrease_staked_tokens
+        setSecondsPerBlock => set_seconds_per_block
         getTotalStakedPercent => get_total_staked_percent
         getMaxStakedTokens => max_staked_tokens
         getMinUnbondEpochsUser => min_unbond_epochs_user

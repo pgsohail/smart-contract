@@ -64,6 +64,14 @@ pub trait GlobalConfigModule {
             .update(|total| *total -= amount);
     }
 
+    #[only_owner]
+    #[endpoint(setSecondsPerBlock)]
+    fn set_seconds_per_block(&self, new_seconds_per_block: u64) {
+        require!(new_seconds_per_block > 0, "Invalid value");
+
+        self.seconds_per_block().set(new_seconds_per_block);
+    }
+
     #[view(getTotalStakedPercent)]
     fn get_total_staked_percent(&self) -> Percent {
         let total_minted = self.total_staking_token_minted().get();
@@ -172,4 +180,7 @@ pub trait GlobalConfigModule {
     #[view(getTokenDecimals)]
     #[storage_mapper("tokensDecimals")]
     fn tokens_decimals(&self) -> SingleValueMapper<usize>;
+
+    #[storage_mapper("secondsPerBlock")]
+    fn seconds_per_block(&self) -> SingleValueMapper<u64>;
 }

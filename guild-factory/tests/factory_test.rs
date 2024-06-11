@@ -4,7 +4,6 @@ pub mod factory_setup;
 
 use factory_setup::*;
 use guild_sc::{
-    custom_rewards::BLOCKS_IN_YEAR,
     tokens::{request_id::RequestIdModule, token_attributes::StakingFarmTokenAttributes},
     user_actions::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
@@ -19,6 +18,8 @@ use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_buffer, managed_token_id, rust_biguint,
     whitebox_legacy::TxTokenTransfer, DebugApi,
 };
+
+pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
 
 #[test]
 fn all_setup_test() {

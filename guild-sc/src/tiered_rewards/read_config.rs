@@ -13,6 +13,7 @@ static MAX_TOKENS_STORAGE_KEY: &[u8] = b"maxStakedTokens";
 static MIN_UNBOND_EPOCHS_USER_KEY: &[u8] = b"minUnbondEpochsUser";
 static MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY: &[u8] = b"minUnbondEpochsGuildMaster";
 static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
+static SECONDS_PER_BLOCK_KEY: &[u8] = b"secondsPerBlock";
 static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
 static BASE_FARM_TOKEN_ID_KEY: &[u8] = b"baseFarmTokenId";
 static BASE_UNBOND_TOKEN_ID_KEY: &[u8] = b"baseUnbondTokenId";
@@ -136,6 +137,16 @@ pub trait ReadConfigModule {
         self.config_proxy(config_sc_address)
             .get_total_staked_percent()
             .execute_on_dest_context()
+    }
+
+    fn get_seconds_per_block(&self) -> u64 {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(SECONDS_PER_BLOCK_KEY),
+        );
+
+        mapper.get()
     }
 
     fn get_base_farm_token_id(&self) -> ManagedBuffer {

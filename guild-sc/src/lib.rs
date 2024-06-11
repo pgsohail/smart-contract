@@ -88,6 +88,8 @@ pub trait FarmStaking:
         self.per_block_reward_amount().set(per_block_reward_amount);
 
         self.sc_whitelist_addresses().add(&owner);
+
+        self.update_internal_seconds_per_block();
     }
 
     #[upgrade]

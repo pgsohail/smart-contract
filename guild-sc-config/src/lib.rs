@@ -20,6 +20,7 @@ pub struct InitArgs<M: ManagedTypeApi> {
     pub base_unbond_token_id: ManagedBuffer<M>,
     pub base_token_display_name: ManagedBuffer<M>,
     pub tokens_decimals: usize,
+    pub seconds_per_block: u64,
 }
 
 #[multiversx_sc::contract]
@@ -31,6 +32,7 @@ pub trait GuildScConfig: tiers::TierModule + global_config::GlobalConfigModule {
         self.set_min_unbond_epochs_guild_master(args.guild_master_unbond_epochs);
         self.set_min_stake_user(args.min_stake_user);
         self.set_min_stake_guild_master(args.min_stake_guild_master);
+        self.set_seconds_per_block(args.seconds_per_block);
 
         self.max_staked_tokens().set(args.max_staked_tokens);
         self.base_farm_token_id().set(args.base_farm_token_id);

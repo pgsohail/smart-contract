@@ -117,6 +117,8 @@ where
             / &storage_cache.farm_token_supply;
         storage_cache.guild_master_rps += increase_guild_master;
         storage_cache.user_rps += increase_users;
+
+        sc.update_internal_seconds_per_block();
     }
 
     fn calculate_rewards(
