@@ -4,7 +4,6 @@ use crate::contexts::storage_cache::{FarmContracTraitBounds, StorageCache};
 use crate::farm_base_impl::exit_farm::InternalExitFarmResult;
 use common_structs::{Epoch, PaymentsVec};
 use farm::ExitFarmWithPartialPosResultType;
-use fixed_supply_token::FixedSupplyToken;
 use mergeable::Mergeable;
 
 use crate::{
@@ -99,12 +98,7 @@ pub trait UnstakeFarmModule:
         let exit_result =
             self.exit_farm_base::<FarmStakingWrapper<Self>>(original_caller.clone(), payment);
 
-        let original_attributes = exit_result
-            .context
-            .farm_token
-            .attributes
-            .clone()
-            .into_part(&exit_result.context.farm_token.payment.amount);
+        let original_attributes = exit_result.original_token_attributes.clone();
 
         let base_tokens_removed =
             &original_attributes.current_farm_amount - &original_attributes.compounded_reward;
