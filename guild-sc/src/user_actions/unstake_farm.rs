@@ -1,10 +1,11 @@
 multiversx_sc::imports!();
 
-use crate::contexts::storage_cache::FarmContracTraitBounds;
+use crate::contexts::storage_cache::{FarmContracTraitBounds, StorageCache};
 use crate::farm_base_impl::exit_farm::InternalExitFarmResult;
 use common_structs::{Epoch, PaymentsVec};
 use farm::ExitFarmWithPartialPosResultType;
 use fixed_supply_token::FixedSupplyToken;
+use mergeable::Mergeable;
 
 use crate::{
     base_impl_wrapper::FarmStakingWrapper,
@@ -25,6 +26,7 @@ where
 pub struct MultiUnstakeResultType<M: ManagedTypeApi> {
     pub base_rewards_payment: EsdtTokenPayment<M>,
     pub farming_tokens_payment: EsdtTokenPayment<M>,
+    pub original_attributes: StakingFarmTokenAttributes<M>,
 }
 
 pub struct CreateUnbondTokenResult<M: ManagedTypeApi> {
@@ -58,29 +60,28 @@ pub trait UnstakeFarmModule:
     #[endpoint(unstakeFarm)]
     fn unstake_farm(&self) -> ExitFarmWithPartialPosResultType<Self::Api> {
         let caller = self.blockchain().get_caller();
-        let payment = self.call_value().single_esdt();
-        let unstake_result = self.unstake_farm_common_no_unbond_token_mint(caller.clone(), payment);
-        let unbond_token_amount = unstake_result.exit_result.farming_token_payment.amount;
+        let payments = self.get_non_empty_payments();
+        let unstake_result = self.multi_unstake(&caller, &payments);
 
         self.require_over_min_stake(&caller);
 
+        let unbond_token_amount = unstake_result.farming_tokens_payment.amount;
         self.call_decrease_total_staked_tokens(unbond_token_amount.clone());
 
         let min_unbond_epochs = self.get_min_unbond_epochs_user();
         let create_unbond_token_result = self.create_and_send_unbond_tokens(
             &caller,
             unbond_token_amount,
-            Some(unstake_result.original_attributes),
+            Some(unstake_result.original_attributes.clone()),
             min_unbond_epochs,
         );
-        self.send_payment_non_zero(&caller, &unstake_result.base_rewards_payment);
 
         self.emit_exit_farm_event(
             &caller,
-            unstake_result.exit_result.context,
+            unstake_result.original_attributes,
             create_unbond_token_result.unbond_token.clone(),
             unstake_result.base_rewards_payment.clone(),
-            unstake_result.exit_result.storage_cache,
+            StorageCache::new(self),
         );
 
         (
@@ -136,11 +137,17 @@ pub trait UnstakeFarmModule:
     ) -> MultiUnstakeResultType<Self::Api> {
         let mut total_rewards = BigUint::zero();
         let mut total_farming_tokens = BigUint::zero();
+        let mut opt_original_attributes = Option::<StakingFarmTokenAttributes<Self::Api>>::None;
         for payment in payments {
             let unstake_result =
                 self.unstake_farm_common_no_unbond_token_mint(caller.clone(), payment);
             total_rewards += unstake_result.base_rewards_payment.amount;
             total_farming_tokens += unstake_result.exit_result.farming_token_payment.amount;
+
+            match &mut opt_original_attributes {
+                Some(attr) => attr.merge_with(unstake_result.original_attributes),
+                None => opt_original_attributes = Some(unstake_result.original_attributes),
+            }
         }
 
         let reward_token_id = self.reward_token_id().get();
@@ -154,6 +161,7 @@ pub trait UnstakeFarmModule:
         MultiUnstakeResultType {
             base_rewards_payment: reward_payment,
             farming_tokens_payment,
+            original_attributes: unsafe { opt_original_attributes.unwrap_unchecked() },
         }
     }
 

@@ -3,7 +3,6 @@ multiversx_sc::derive_imports!();
 
 use crate::contexts::{
     claim_rewards_context::{ClaimRewardsContext, CompoundRewardsContext},
-    exit_farm_context::ExitFarmContext,
     storage_cache::{FarmContracTraitBounds, StorageCache},
 };
 use common_structs::PaymentAttributesPair;
@@ -24,7 +23,6 @@ pub struct EnterFarmEvent<M: ManagedTypeApi> {
 pub struct ExitFarmEvent<M: ManagedTypeApi> {
     farming_token_id: TokenIdentifier<M>,
     farming_token_amount: BigUint<M>,
-    farm_token: EsdtTokenPayment<M>,
     farm_supply: BigUint<M>,
     reward_tokens: EsdtTokenPayment<M>,
     reward_reserve: BigUint<M>,
@@ -104,7 +102,7 @@ pub trait EventsModule {
     >(
         &self,
         original_caller: &ManagedAddress,
-        exit_farm_context: ExitFarmContext<Self::Api, AttributesType>,
+        original_attributes: AttributesType,
         output_farming_tokens: EsdtTokenPayment<Self::Api>,
         output_reward: EsdtTokenPayment<Self::Api>,
         storage_cache: StorageCache<'a, C>,
@@ -114,10 +112,7 @@ pub trait EventsModule {
         let timestamp = self.blockchain().get_block_timestamp();
 
         let mut farm_attributes = ManagedBuffer::new();
-        let _ = exit_farm_context
-            .farm_token
-            .attributes
-            .top_encode(&mut farm_attributes);
+        let _ = original_attributes.top_encode(&mut farm_attributes);
 
         self.exit_farm_event(
             original_caller,
@@ -128,7 +123,6 @@ pub trait EventsModule {
             &ExitFarmEvent {
                 farming_token_id: output_farming_tokens.token_identifier,
                 farming_token_amount: output_farming_tokens.amount,
-                farm_token: exit_farm_context.farm_token.payment,
                 farm_supply: storage_cache.farm_token_supply.clone(),
                 reward_tokens: output_reward,
                 reward_reserve: storage_cache.reward_reserve.clone(),

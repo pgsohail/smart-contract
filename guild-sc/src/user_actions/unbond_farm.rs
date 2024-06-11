@@ -38,23 +38,32 @@ pub trait UnbondFarmModule:
         self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
 
         let unbond_token_mapper = self.unbond_token();
-        let payment = self.call_value().single_esdt();
-        unbond_token_mapper.require_same_token(&payment.token_identifier);
+        let payments = self.get_non_empty_payments();
 
-        let attributes: UnbondSftAttributes<Self::Api> =
-            unbond_token_mapper.get_token_attributes(payment.token_nonce);
+        let mut total_farming_tokens = BigUint::zero();
+        for payment in &payments {
+            unbond_token_mapper.require_same_token(&payment.token_identifier);
 
-        let current_epoch = self.blockchain().get_block_epoch();
-        require!(
-            current_epoch >= attributes.unlock_epoch,
-            "Unbond period not over"
-        );
+            let attributes: UnbondSftAttributes<Self::Api> =
+                unbond_token_mapper.get_token_attributes(payment.token_nonce);
 
-        unbond_token_mapper.nft_burn(payment.token_nonce, &payment.amount);
+            let current_epoch = self.blockchain().get_block_epoch();
+            require!(
+                current_epoch >= attributes.unlock_epoch,
+                "Unbond period not over"
+            );
+
+            unbond_token_mapper.nft_burn(payment.token_nonce, &payment.amount);
+
+            total_farming_tokens += payment.amount;
+        }
 
         let caller = self.blockchain().get_caller();
-        let farming_tokens =
-            EsdtTokenPayment::new(storage_cache.farming_token_id.clone(), 0, payment.amount);
+        let farming_tokens = EsdtTokenPayment::new(
+            storage_cache.farming_token_id.clone(),
+            0,
+            total_farming_tokens,
+        );
         self.send_payment_non_zero(&caller, &farming_tokens);
 
         farming_tokens
