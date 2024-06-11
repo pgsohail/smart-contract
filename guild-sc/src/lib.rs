@@ -34,7 +34,6 @@ pub trait FarmStaking:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -86,8 +85,6 @@ pub trait FarmStaking:
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
         self.per_block_reward_amount().set(per_block_reward_amount);
-
-        self.sc_whitelist_addresses().add(&owner);
 
         self.update_internal_seconds_per_block();
     }

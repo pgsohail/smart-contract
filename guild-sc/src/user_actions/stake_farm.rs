@@ -13,7 +13,6 @@ pub trait StakeFarmModule:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
@@ -79,5 +78,24 @@ pub trait StakeFarmModule:
         );
 
         new_farm_token
+    }
+
+    fn get_orig_caller_from_opt(
+        &self,
+        caller: &ManagedAddress,
+        opt_original_caller: OptionalValue<ManagedAddress>,
+    ) -> ManagedAddress {
+        match opt_original_caller {
+            OptionalValue::Some(original_caller) => {
+                let factory_sc_address = self.blockchain().get_owner_address();
+                require!(
+                    caller == &factory_sc_address,
+                    "May not use original caller arg"
+                );
+
+                original_caller
+            }
+            OptionalValue::None => caller.clone(),
+        }
     }
 }

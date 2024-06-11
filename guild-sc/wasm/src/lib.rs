@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           45
+// Endpoints:                           42
 // Async Callback:                       1
-// Total number of exported functions:  47
+// Total number of exported functions:  44
 
 #![no_std]
 #![allow(internal_features)]
@@ -40,9 +40,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         setTransferRoleFarmToken => set_transfer_role_farm_token
         getFarmTokenId => farm_token
         getFarmTokenSupply => farm_token_supply
-        addSCAddressToWhitelist => add_sc_address_to_whitelist
-        removeSCAddressFromWhitelist => remove_sc_address_from_whitelist
-        isSCAddressWhitelisted => is_sc_address_whitelisted
         addToPauseWhitelist => add_to_pause_whitelist
         removeFromPauseWhitelist => remove_from_pause_whitelist
         pause => pause
