@@ -75,10 +75,6 @@ pub trait CustomRewardsModule:
             &remaining_rewards >= withdraw_amount,
             "Withdraw amount is higher than the remaining uncollected rewards!"
         );
-        require!(
-            &rewards_capacity >= withdraw_amount,
-            "Not enough rewards to withdraw"
-        );
 
         rewards_capacity -= withdraw_amount;
         reward_capacity_mapper.set(rewards_capacity);
