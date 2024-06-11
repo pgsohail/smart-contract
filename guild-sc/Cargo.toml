@@ -28,10 +28,6 @@ rev = "71d5305"
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
 
-[dependencies.sc_whitelist_module]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "71d5305"
-
 [dependencies.math]
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "71d5305"
