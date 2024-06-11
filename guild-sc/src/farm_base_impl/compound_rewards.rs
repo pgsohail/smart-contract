@@ -92,11 +92,12 @@ pub trait BaseCompoundRewardsModule:
         storage_cache.farm_token_supply += &total_rewards;
 
         let farm_token_mapper = self.farm_token();
+        let rps = self.get_rps_by_user(&caller, &storage_cache);
         let base_attributes = FC::create_compound_rewards_initial_attributes(
             self,
             caller.clone(),
             first_token_attributes.clone(),
-            storage_cache.reward_per_share.clone(),
+            rps.clone(),
             &total_rewards,
         );
         let new_farm_token = self.merge_and_create_token(

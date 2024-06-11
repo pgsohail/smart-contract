@@ -43,6 +43,10 @@ impl<M: ManagedTypeApi> TotalTokens<M> {
 
         self.base == big_zero && self.compounded == big_zero
     }
+
+    pub fn total(&self) -> BigUint<M> {
+        &self.base + &self.compounded
+    }
 }
 
 #[multiversx_sc::module]

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           45
+// Endpoints:                           46
 // Async Callback:                       1
-// Total number of exported functions:  47
+// Total number of exported functions:  48
 
 #![no_std]
 #![allow(internal_features)]
@@ -29,7 +29,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         withdrawRewards => withdraw_rewards
         getAccumulatedRewards => accumulated_rewards
         getRewardCapacity => reward_capacity
-        getRewardPerShare => reward_per_share
+        getGuildMasterRewardPerShare => guild_master_rps
+        getUserRewardPerShare => user_rps
         getRewardReserve => reward_reserve
         getFarmingTokenId => farming_token_id
         getRewardTokenId => reward_token_id

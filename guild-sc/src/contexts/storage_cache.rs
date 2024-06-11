@@ -15,7 +15,8 @@ pub struct StorageCache<'a, C: FarmContracTraitBounds> {
     pub farming_token_id: TokenIdentifier<C::Api>,
     pub reward_token_id: TokenIdentifier<C::Api>,
     pub reward_reserve: BigUint<C::Api>,
-    pub reward_per_share: BigUint<C::Api>,
+    pub user_rps: BigUint<C::Api>,
+    pub guild_master_rps: BigUint<C::Api>,
     pub division_safety_constant: BigUint<C::Api>,
 }
 
@@ -28,7 +29,8 @@ impl<'a, C: FarmContracTraitBounds> StorageCache<'a, C> {
             farming_token_id: sc_ref.farming_token_id().get(),
             reward_token_id: sc_ref.reward_token_id().get(),
             reward_reserve: sc_ref.reward_reserve().get(),
-            reward_per_share: sc_ref.reward_per_share().get(),
+            user_rps: sc_ref.user_rps().get(),
+            guild_master_rps: sc_ref.guild_master_rps().get(),
             division_safety_constant: sc_ref.division_safety_constant().get(),
             sc_ref,
         }
@@ -39,7 +41,8 @@ impl<'a, C: FarmContracTraitBounds> Drop for StorageCache<'a, C> {
     fn drop(&mut self) {
         // commit changes to storage for the mutable fields
         self.sc_ref.reward_reserve().set(&self.reward_reserve);
-        self.sc_ref.reward_per_share().set(&self.reward_per_share);
+        self.sc_ref.user_rps().set(&self.user_rps);
+        self.sc_ref.guild_master_rps().set(&self.guild_master_rps);
         self.sc_ref.farm_token_supply().set(&self.farm_token_supply);
     }
 }

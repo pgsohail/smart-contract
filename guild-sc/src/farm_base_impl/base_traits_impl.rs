@@ -15,6 +15,24 @@ pub trait AllBaseFarmImplTraits =
         + pausable::PausableModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule;
 
+pub struct TotalRewards<M: ManagedTypeApi> {
+    pub guild_master: BigUint<M>,
+    pub users: BigUint<M>,
+}
+
+impl<M: ManagedTypeApi> TotalRewards<M> {
+    pub fn zero() -> Self {
+        Self {
+            guild_master: BigUint::zero(),
+            users: BigUint::zero(),
+        }
+    }
+
+    pub fn total(&self) -> BigUint<M> {
+        &self.guild_master + &self.users
+    }
+}
+
 pub trait FarmContract {
     type FarmSc: AllBaseFarmImplTraits;
 
@@ -28,12 +46,6 @@ pub trait FarmContract {
         + FixedSupplyToken<<Self::FarmSc as ContractBase>::Api>
         + FarmToken<<Self::FarmSc as ContractBase>::Api>
         + ManagedVecItem;
-
-    fn mint_rewards(
-        sc: &Self::FarmSc,
-        token_id: &TokenIdentifier<<Self::FarmSc as ContractBase>::Api>,
-        amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
-    );
 
     fn calculate_per_block_rewards(
         sc: &Self::FarmSc,
@@ -52,8 +64,7 @@ pub trait FarmContract {
 
     fn mint_per_block_rewards(
         sc: &Self::FarmSc,
-        token_id: &TokenIdentifier<<Self::FarmSc as ContractBase>::Api>,
-    ) -> BigUint<<Self::FarmSc as ContractBase>::Api>;
+    ) -> TotalRewards<<Self::FarmSc as ContractBase>::Api>;
 
     fn generate_aggregated_rewards(
         sc: &Self::FarmSc,
@@ -61,20 +72,12 @@ pub trait FarmContract {
     );
 
     fn calculate_rewards(
-        _sc: &Self::FarmSc,
-        _caller: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
+        sc: &Self::FarmSc,
+        caller: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         farm_token_amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
         token_attributes: &Self::AttributesType,
         storage_cache: &StorageCache<Self::FarmSc>,
-    ) -> BigUint<<Self::FarmSc as ContractBase>::Api> {
-        let token_rps = token_attributes.get_reward_per_share();
-        if storage_cache.reward_per_share <= token_rps {
-            return BigUint::zero();
-        }
-
-        let rps_diff = &storage_cache.reward_per_share - &token_rps;
-        farm_token_amount * &rps_diff / &storage_cache.division_safety_constant
-    }
+    ) -> BigUint<<Self::FarmSc as ContractBase>::Api>;
 
     fn create_enter_farm_initial_attributes(
         sc: &Self::FarmSc,
@@ -97,20 +100,4 @@ pub trait FarmContract {
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
         reward: &BigUint<<Self::FarmSc as ContractBase>::Api>,
     ) -> Self::AttributesType;
-
-    fn get_exit_penalty(
-        _sc: &Self::FarmSc,
-        _total_exit_amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
-        _token_attributes: &Self::AttributesType,
-    ) -> BigUint<<Self::FarmSc as ContractBase>::Api> {
-        BigUint::zero()
-    }
-
-    fn apply_penalty(
-        _sc: &Self::FarmSc,
-        _total_exit_amount: &mut BigUint<<Self::FarmSc as ContractBase>::Api>,
-        _token_attributes: &Self::AttributesType,
-        _storage_cache: &StorageCache<Self::FarmSc>,
-    ) {
-    }
 }

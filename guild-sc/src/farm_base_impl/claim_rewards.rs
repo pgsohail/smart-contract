@@ -103,11 +103,12 @@ pub trait BaseClaimRewardsModule:
         storage_cache.reward_reserve -= &total_rewards;
 
         let farm_token_mapper = self.farm_token();
+        let rps = self.get_rps_by_user(&caller, &storage_cache);
         let base_attributes = FC::create_claim_rewards_initial_attributes(
             self,
             caller,
             first_token_attributes.clone(),
-            storage_cache.reward_per_share.clone(),
+            rps.clone(),
         );
         let new_token_attributes = self.merge_attributes_from_payments(
             base_attributes,
