@@ -101,6 +101,8 @@ pub trait FarmStaking:
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();
         let token_mapper = self.farm_token();
+        token_mapper.require_all_same_token(&payments);
+
         let output_attributes: StakingFarmTokenAttributes<Self::Api> =
             self.merge_from_payments_and_burn(payments, &token_mapper);
         let new_token_amount = output_attributes.get_total_supply();
