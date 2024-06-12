@@ -191,7 +191,7 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         let mut opt_found_index = None;
         for (i, tier) in mapper.iter().enumerate() {
             if tier.is_equal(&reward_tier) {
-                opt_found_index = Some(i);
+                opt_found_index = Some(i + 1);
                 break;
             }
         }

@@ -12,7 +12,7 @@ use guild_sc::{
         unstake_farm::UnstakeFarmModule,
     },
 };
-use guild_sc_config::tiers::MAX_PERCENT;
+use guild_sc_config::tiers::{TierModule, MAX_PERCENT};
 use multiversx_sc::{codec::Empty, imports::OptionalValue};
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_buffer, managed_token_id, rust_biguint,
@@ -742,5 +742,27 @@ fn id_to_human_readable_test() {
             let id_str = sc.id_to_human_readable(10);
             assert_eq!(id_str, managed_buffer!(b"10"));
         })
+        .assert_ok();
+}
+
+#[test]
+fn set_apr_test() {
+    DebugApi::dummy();
+
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+    farm_setup
+        .b_mock
+        .execute_tx(
+            &farm_setup.first_owner_address,
+            &farm_setup.config_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.set_user_tier_apr(MAX_PERCENT, 5_000);
+            },
+        )
         .assert_ok();
 }
