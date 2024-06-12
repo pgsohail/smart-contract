@@ -199,10 +199,3 @@ fn resume_guild_endpoint(&self, guild: ManagedAddress)
 ```
 
 Note that only the guild master may call this endpoint.
-
-Additionally, admins may remove guilds from this contract if needed through this endpoint:
-```
-#[only_admin]
-#[endpoint(removeGuild)]
-fn remove_guild(&self, guild: ManagedAddress, user: ManagedAddress)
-```
