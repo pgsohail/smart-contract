@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           31
+// Endpoints:                           32
 // Async Callback (empty):               1
-// Total number of exported functions:  33
+// Total number of exported functions:  34
 
 #![no_std]
 #![allow(internal_features)]
@@ -33,6 +33,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         setMinUnbondEpochsGuildMaster => set_min_unbond_epochs_guild_master
         setMinStakeUser => set_min_stake_user
         setMinStakeGuildMaster => set_min_stake_guild_master
+        setMaxStakedTokens => set_max_staked_tokens
         setTotalStakingTokenMinted => set_total_staking_token_minted
         increaseStakedTokens => increase_staked_tokens
         decreaseStakedTokens => decrease_staked_tokens

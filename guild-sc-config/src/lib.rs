@@ -35,8 +35,8 @@ pub trait GuildScConfig: tiers::TierModule + global_config::GlobalConfigModule {
         self.set_min_stake_guild_master(args.min_stake_guild_master);
         self.set_seconds_per_block(args.seconds_per_block);
         self.set_per_block_reward_amount(args.per_block_reward_amount);
+        self.set_max_staked_tokens(args.max_staked_tokens);
 
-        self.max_staked_tokens().set(args.max_staked_tokens);
         self.base_farm_token_id().set(args.base_farm_token_id);
         self.base_unbond_token_id().set(args.base_unbond_token_id);
         self.base_token_display_name()
