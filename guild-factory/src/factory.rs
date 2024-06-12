@@ -12,7 +12,6 @@ static GUILD_MASTER_KEY: &[u8] = b"guildMaster";
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
     pub farming_token_id: TokenIdentifier<M>,
     pub division_safety_constant: BigUint<M>,
-    pub per_block_reward_amount: BigUint<M>,
 }
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
@@ -46,7 +45,6 @@ pub trait FactoryModule:
                 guild_config.division_safety_constant,
                 config_sc_address,
                 caller,
-                guild_config.per_block_reward_amount,
                 MultiValueEncoded::new(),
             )
             .deploy_from_source::<()>(&source_address, code_metadata);

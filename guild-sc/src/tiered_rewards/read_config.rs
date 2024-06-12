@@ -14,6 +14,7 @@ static MIN_UNBOND_EPOCHS_USER_KEY: &[u8] = b"minUnbondEpochsUser";
 static MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY: &[u8] = b"minUnbondEpochsGuildMaster";
 static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
 static SECONDS_PER_BLOCK_KEY: &[u8] = b"secondsPerBlock";
+static PER_BLOCK_REWARD_AMOUNT_KEY: &[u8] = b"perBlockRewardAmount";
 static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
 static BASE_FARM_TOKEN_ID_KEY: &[u8] = b"baseFarmTokenId";
 static BASE_UNBOND_TOKEN_ID_KEY: &[u8] = b"baseUnbondTokenId";
@@ -144,6 +145,16 @@ pub trait ReadConfigModule {
         let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
             config_addr,
             StorageKey::new(SECONDS_PER_BLOCK_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_per_block_reward_amount(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(PER_BLOCK_REWARD_AMOUNT_KEY),
         );
 
         mapper.get()

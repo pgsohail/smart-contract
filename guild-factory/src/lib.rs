@@ -22,7 +22,6 @@ pub trait GuildFactory:
         guild_sc_source_address: ManagedAddress,
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
-        per_block_reward_amount: BigUint,
         admins: MultiValueEncoded<ManagedAddress>,
     ) {
         self.require_sc_address(&guild_sc_source_address);
@@ -32,7 +31,6 @@ pub trait GuildFactory:
         self.guild_local_config().set(GuildLocalConfig {
             farming_token_id,
             division_safety_constant,
-            per_block_reward_amount,
         });
 
         self.admins().extend(admins);

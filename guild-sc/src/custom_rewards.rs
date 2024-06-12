@@ -144,6 +144,11 @@ pub trait CustomRewardsModule:
         self.internal_seconds_per_block().set(seconds_per_block);
     }
 
+    fn update_per_block_reward_amount(&self) {
+        let per_block_reward_amount = self.get_per_block_reward_amount();
+        self.per_block_reward_amount().set(per_block_reward_amount);
+    }
+
     #[proxy]
     fn guild_factory_proxy(
         &self,

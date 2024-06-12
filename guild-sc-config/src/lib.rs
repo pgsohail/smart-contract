@@ -21,6 +21,7 @@ pub struct InitArgs<M: ManagedTypeApi> {
     pub base_token_display_name: ManagedBuffer<M>,
     pub tokens_decimals: usize,
     pub seconds_per_block: u64,
+    pub per_block_reward_amount: BigUint<M>,
 }
 
 #[multiversx_sc::contract]
@@ -33,6 +34,7 @@ pub trait GuildScConfig: tiers::TierModule + global_config::GlobalConfigModule {
         self.set_min_stake_user(args.min_stake_user);
         self.set_min_stake_guild_master(args.min_stake_guild_master);
         self.set_seconds_per_block(args.seconds_per_block);
+        self.set_per_block_reward_amount(args.per_block_reward_amount);
 
         self.max_staked_tokens().set(args.max_staked_tokens);
         self.base_farm_token_id().set(args.base_farm_token_id);

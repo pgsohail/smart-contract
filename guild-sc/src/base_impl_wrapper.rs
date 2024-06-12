@@ -119,6 +119,7 @@ where
         storage_cache.user_rps += increase_users;
 
         sc.update_internal_seconds_per_block();
+        sc.update_per_block_reward_amount();
     }
 
     fn calculate_rewards(

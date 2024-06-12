@@ -6,6 +6,8 @@ use crate::tiers::MAX_PERCENT;
 multiversx_sc::imports!();
 
 pub static INVALID_MIN_UNBOND_EPOCHS_ERR_MSG: &[u8] = b"Invalid min unbond epochs";
+static INVALID_VALUE_ERR_MSG: &[u8] = b"Invalid value";
+
 static GUILD_SC_ID_STORAGE_KEY: &[u8] = b"deployedGuilds";
 static GUILD_ADDRESS_TO_ID_MAPPER_STORAGE_KEY: &[u8] = b"guildIds";
 static CLOSED_GUILDS_MAPPER_STORAGE_KEY: &[u8] = b"closedGuilds";
@@ -67,9 +69,18 @@ pub trait GlobalConfigModule {
     #[only_owner]
     #[endpoint(setSecondsPerBlock)]
     fn set_seconds_per_block(&self, new_seconds_per_block: u64) {
-        require!(new_seconds_per_block > 0, "Invalid value");
+        require!(new_seconds_per_block > 0, INVALID_VALUE_ERR_MSG);
 
         self.seconds_per_block().set(new_seconds_per_block);
+    }
+
+    #[only_owner]
+    #[endpoint(setPerBlockRewardAmount)]
+    fn set_per_block_reward_amount(&self, new_per_block_reward_amount: BigUint) {
+        require!(new_per_block_reward_amount > 0, INVALID_VALUE_ERR_MSG);
+
+        self.per_block_reward_amount()
+            .set(new_per_block_reward_amount);
     }
 
     #[view(getTotalStakedPercent)]
@@ -181,6 +192,11 @@ pub trait GlobalConfigModule {
     #[storage_mapper("tokensDecimals")]
     fn tokens_decimals(&self) -> SingleValueMapper<usize>;
 
+    #[view(getSecondsPerBlock)]
     #[storage_mapper("secondsPerBlock")]
     fn seconds_per_block(&self) -> SingleValueMapper<u64>;
+
+    #[view(getPerBlockRewardAmount)]
+    #[storage_mapper("perBlockRewardAmount")]
+    fn per_block_reward_amount(&self) -> SingleValueMapper<BigUint>;
 }

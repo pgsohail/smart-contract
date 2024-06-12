@@ -63,7 +63,6 @@ pub trait FarmStaking:
         division_safety_constant: BigUint,
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,
-        per_block_reward_amount: BigUint,
         mut admins: MultiValueEncoded<ManagedAddress>,
     ) {
         let owner = self.blockchain().get_caller();
@@ -83,9 +82,9 @@ pub trait FarmStaking:
 
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
-        self.per_block_reward_amount().set(per_block_reward_amount);
 
         self.update_internal_seconds_per_block();
+        self.update_per_block_reward_amount();
     }
 
     #[upgrade]

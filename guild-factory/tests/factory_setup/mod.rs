@@ -110,6 +110,7 @@ where
                     base_token_display_name: managed_buffer!(b"DISPLAY"),
                     tokens_decimals: 0,
                     seconds_per_block: 6,
+                    per_block_reward_amount: managed_biguint!(PER_BLOCK_REWARD_AMOUNT),
                 });
 
                 let mut user_tiers = MultiValueEncoded::new();
@@ -133,7 +134,6 @@ where
                     managed_address!(guild_source_wrapper.address_ref()),
                     managed_token_id!(FARMING_TOKEN_ID),
                     managed_biguint!(DIVISION_SAFETY_CONSTANT),
-                    managed_biguint!(PER_BLOCK_REWARD_AMOUNT),
                     admins,
                 );
 

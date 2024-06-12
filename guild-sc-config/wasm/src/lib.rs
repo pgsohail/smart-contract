@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           27
+// Endpoints:                           30
 // Async Callback (empty):               1
-// Total number of exported functions:  29
+// Total number of exported functions:  32
 
 #![no_std]
 #![allow(internal_features)]
@@ -35,6 +35,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         increaseStakedTokens => increase_staked_tokens
         decreaseStakedTokens => decrease_staked_tokens
         setSecondsPerBlock => set_seconds_per_block
+        setPerBlockRewardAmount => set_per_block_reward_amount
         getTotalStakedPercent => get_total_staked_percent
         getMaxStakedTokens => max_staked_tokens
         getMinUnbondEpochsUser => min_unbond_epochs_user
@@ -47,6 +48,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         getBaseUnbondTokenId => base_unbond_token_id
         getBaseTokenDisplayName => base_token_display_name
         getTokenDecimals => tokens_decimals
+        getSecondsPerBlock => seconds_per_block
+        getPerBlockRewardAmount => per_block_reward_amount
     )
 }
 
