@@ -1,10 +1,12 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
+use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
+static GUILD_MASTER_KEY: &[u8] = b"guildMaster";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
@@ -100,9 +102,15 @@ pub trait FactoryModule:
         self.guild_ids().get_id_non_zero(&guild_address)
     }
 
-    fn remove_guild_common(&self, guild: ManagedAddress, user: ManagedAddress) {
+    fn remove_guild_common(&self, guild: ManagedAddress) {
+        let guild_master_mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            guild.clone(),
+            StorageKey::new(GUILD_MASTER_KEY),
+        );
+        let guild_master = guild_master_mapper.get();
+
         let guild_id = self.guild_ids().remove_by_address(&guild);
-        let user_id = self.user_ids().remove_by_address(&user);
+        let user_id = self.user_ids().remove_by_address(&guild_master);
 
         let removed = self.deployed_guilds().swap_remove(&guild_id);
         require!(removed, UNKNOWN_GUILD_ERR_MSG);

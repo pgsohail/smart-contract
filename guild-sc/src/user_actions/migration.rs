@@ -10,10 +10,10 @@ mod guild_factory_proxy {
     pub trait GuildFactoryProxy {
         #[payable("*")]
         #[endpoint(depositRewardsGuild)]
-        fn deposit_rewards_guild(&self, guild_master: ManagedAddress);
+        fn deposit_rewards_guild(&self);
 
         #[endpoint(closeGuildNoRewardsRemaining)]
-        fn close_guild_no_rewards_remaining(&self, guild_master: ManagedAddress);
+        fn close_guild_no_rewards_remaining(&self);
 
         #[payable("*")]
         #[endpoint(migrateToOtherGuild)]
@@ -93,13 +93,13 @@ pub trait MigrationModule:
         if remaining_rewards > 0 {
             let _: IgnoreValue = self
                 .factory_proxy(guild_factory)
-                .deposit_rewards_guild(guild_master)
+                .deposit_rewards_guild()
                 .with_esdt_transfer((reward_token_id, 0, remaining_rewards))
                 .execute_on_dest_context();
         } else {
             let _: IgnoreValue = self
                 .factory_proxy(guild_factory)
-                .close_guild_no_rewards_remaining(guild_master)
+                .close_guild_no_rewards_remaining()
                 .execute_on_dest_context();
         }
 
