@@ -24,9 +24,7 @@ pub struct GetGuildResultType<M: ManagedTypeApi> {
 }
 
 #[multiversx_sc::module]
-pub trait FactoryModule:
-    crate::config::ConfigModule + multiversx_sc_modules::only_admin::OnlyAdminModule
-{
+pub trait FactoryModule: crate::config::ConfigModule {
     #[endpoint(deployGuild)]
     fn deploy_guild(&self) -> ManagedAddress {
         let caller = self.blockchain().get_caller();

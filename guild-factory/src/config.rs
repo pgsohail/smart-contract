@@ -3,8 +3,8 @@ use guild_sc_config::InitArgs;
 multiversx_sc::imports!();
 
 #[multiversx_sc::module]
-pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
-    #[only_admin]
+pub trait ConfigModule {
+    #[only_owner]
     #[endpoint(deployConfigSc)]
     fn deploy_config_sc(
         &self,
@@ -23,7 +23,7 @@ pub trait ConfigModule: multiversx_sc_modules::only_admin::OnlyAdminModule {
         config_mapper.set(config_address);
     }
 
-    #[only_admin]
+    #[only_owner]
     #[endpoint(callConfigFunction)]
     fn call_config_function(
         &self,
