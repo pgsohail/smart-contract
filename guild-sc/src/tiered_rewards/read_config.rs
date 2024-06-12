@@ -1,7 +1,6 @@
 use common_structs::{Epoch, Percent};
-use guild_sc_config::{
-    global_config::ProxyTrait as _,
-    tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier, TIER_NOT_FOUND_ERR_MSG},
+use guild_sc_config::tiers::{
+    GuildMasterRewardTier, RewardTier, UserRewardTier, TIER_NOT_FOUND_ERR_MSG,
 };
 use multiversx_sc::storage::StorageKey;
 
@@ -16,6 +15,8 @@ static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
 static SECONDS_PER_BLOCK_KEY: &[u8] = b"secondsPerBlock";
 static PER_BLOCK_REWARD_AMOUNT_KEY: &[u8] = b"perBlockRewardAmount";
 static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
+static TOTAL_STAKING_TOKEN_MINTED_KEY: &[u8] = b"totalStakingTokenMinted";
+static TOTAL_STAKING_TOKEN_STAKED_KEY: &[u8] = b"totalStakingTokenStaked";
 static BASE_FARM_TOKEN_ID_KEY: &[u8] = b"baseFarmTokenId";
 static BASE_UNBOND_TOKEN_ID_KEY: &[u8] = b"baseUnbondTokenId";
 static BASE_DISPLAY_NAME_KEY: &[u8] = b"baseTokenDisplayName";
@@ -117,13 +118,6 @@ pub trait ReadConfigModule {
         }
     }
 
-    fn get_total_staked_percent(&self) -> Percent {
-        let config_sc_address = self.config_sc_address().get();
-        self.config_proxy(config_sc_address)
-            .get_total_staked_percent()
-            .execute_on_dest_context()
-    }
-
     fn get_seconds_per_block(&self) -> u64 {
         let config_addr = self.config_sc_address().get();
         let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
@@ -139,6 +133,26 @@ pub trait ReadConfigModule {
         let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
             config_addr,
             StorageKey::new(PER_BLOCK_REWARD_AMOUNT_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_total_staking_token_minted(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(TOTAL_STAKING_TOKEN_MINTED_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_total_staking_token_staked(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(TOTAL_STAKING_TOKEN_STAKED_KEY),
         );
 
         mapper.get()

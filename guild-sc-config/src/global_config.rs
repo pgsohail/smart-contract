@@ -1,7 +1,5 @@
-use common_structs::{Epoch, Percent};
+use common_structs::Epoch;
 use multiversx_sc::storage::StorageKey;
-
-use crate::tiers::MAX_PERCENT;
 
 multiversx_sc::imports!();
 
@@ -81,17 +79,6 @@ pub trait GlobalConfigModule {
 
         self.per_block_reward_amount()
             .set(new_per_block_reward_amount);
-    }
-
-    #[view(getTotalStakedPercent)]
-    fn get_total_staked_percent(&self) -> Percent {
-        let total_minted = self.total_staking_token_minted().get();
-        let total_staked = self.total_staking_token_staked().get();
-
-        let opt_result = (total_staked * MAX_PERCENT / total_minted).to_u64();
-        require!(opt_result.is_some(), "Math failure");
-
-        unsafe { opt_result.unwrap_unchecked() }
     }
 
     fn require_valid_unbond_epochs(&self, unbond_epochs: Epoch) {

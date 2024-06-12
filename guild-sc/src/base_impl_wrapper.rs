@@ -118,9 +118,7 @@ where
         storage_cache.guild_master_rps += increase_guild_master;
         storage_cache.user_rps += increase_users;
 
-        sc.update_internal_seconds_per_block();
-        sc.update_per_block_reward_amount();
-        sc.update_internal_tiers();
+        sc.update_all();
     }
 
     fn calculate_rewards(

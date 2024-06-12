@@ -83,9 +83,7 @@ pub trait FarmStaking:
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
 
-        self.update_internal_seconds_per_block();
-        self.update_per_block_reward_amount();
-        self.update_internal_tiers();
+        self.update_all();
     }
 
     #[upgrade]

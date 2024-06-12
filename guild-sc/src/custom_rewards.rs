@@ -143,6 +143,16 @@ pub trait CustomRewardsModule:
         amount * apr / MAX_PERCENT / blocks_in_year
     }
 
+    fn get_total_staked_percent(&self) -> u64 {
+        let total_minted = self.internal_total_staking_token_minted().get();
+        let total_staked = self.get_total_staking_token_staked();
+
+        let opt_result = (total_staked * MAX_PERCENT / total_minted).to_u64();
+        require!(opt_result.is_some(), "Math failure");
+
+        unsafe { opt_result.unwrap_unchecked() }
+    }
+
     fn request_rewards(&self, base_amount: BigUint) -> BigUint {
         let guild_factory = self.blockchain().get_owner_address();
         let received_rewards = self
@@ -183,6 +193,18 @@ pub trait CustomRewardsModule:
         }
     }
 
+    fn update_internal_staking_token_minted(&self) {
+        let minted = self.get_total_staking_token_minted();
+        self.internal_total_staking_token_minted().set(minted);
+    }
+
+    fn update_all(&self) {
+        self.update_internal_seconds_per_block();
+        self.update_per_block_reward_amount();
+        self.update_internal_tiers();
+        self.update_internal_staking_token_minted();
+    }
+
     #[proxy]
     fn guild_factory_proxy(
         &self,
@@ -205,4 +227,7 @@ pub trait CustomRewardsModule:
 
     #[storage_mapper("internalUserTiers")]
     fn internal_user_tiers(&self) -> VecMapper<UserRewardTier>;
+
+    #[storage_mapper("internalTotalStakingTokenMinted")]
+    fn internal_total_staking_token_minted(&self) -> SingleValueMapper<BigUint>;
 }
