@@ -131,7 +131,6 @@ where
 
                 sc.init(
                     managed_address!(guild_source_wrapper.address_ref()),
-                    2,
                     managed_token_id!(FARMING_TOKEN_ID),
                     managed_biguint!(DIVISION_SAFETY_CONSTANT),
                     managed_biguint!(PER_BLOCK_REWARD_AMOUNT),

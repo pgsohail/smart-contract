@@ -32,13 +32,6 @@ pub trait FactoryModule:
         let guild_mapper = self.guild_sc_for_user(caller_id);
         require!(guild_mapper.is_empty(), "Already have a guild deployed");
 
-        let max_guilds = self.max_guilds().get();
-        let mut deployed_guilds_mapper = self.deployed_guilds();
-        require!(
-            deployed_guilds_mapper.len() < max_guilds,
-            "May not deploy any more guilds"
-        );
-
         let config_sc_mapper = self.config_sc_address();
         require!(!config_sc_mapper.is_empty(), "Config not deployed yet");
 
@@ -59,7 +52,7 @@ pub trait FactoryModule:
             .deploy_from_source::<()>(&source_address, code_metadata);
 
         let guild_id = self.guild_ids().insert_new(&guild_address);
-        let _ = deployed_guilds_mapper.insert(guild_id);
+        let _ = self.deployed_guilds().insert(guild_id);
         self.guild_master_for_guild(guild_id).set(caller_id);
         guild_mapper.set(guild_id);
 
@@ -182,9 +175,6 @@ pub trait FactoryModule:
 
     #[storage_mapper("guildScSourceAddress")]
     fn guild_sc_source_address(&self) -> SingleValueMapper<ManagedAddress>;
-
-    #[storage_mapper("maxGuilds")]
-    fn max_guilds(&self) -> SingleValueMapper<usize>;
 
     #[storage_mapper("guildLocalConfig")]
     fn guild_local_config(&self) -> SingleValueMapper<GuildLocalConfig<Self::Api>>;
