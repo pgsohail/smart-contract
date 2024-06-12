@@ -1,7 +1,5 @@
 use common_structs::{Epoch, Percent};
-use guild_sc_config::tiers::{
-    GuildMasterRewardTier, RewardTier, UserRewardTier, TIER_NOT_FOUND_ERR_MSG,
-};
+use guild_sc_config::tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier};
 use multiversx_sc::storage::StorageKey;
 
 multiversx_sc::imports!();
@@ -36,7 +34,8 @@ pub trait ReadConfigModule {
             }
         }
 
-        sc_panic!(TIER_NOT_FOUND_ERR_MSG);
+        let last_index = mapper.len();
+        mapper.get(last_index)
     }
 
     fn get_guild_master_tiers_mapper(
