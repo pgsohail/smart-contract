@@ -1,4 +1,5 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
+use guild_sc_config::tiers::{GuildMasterRewardTier, UserRewardTier};
 use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 
@@ -7,6 +8,8 @@ multiversx_sc::derive_imports!();
 
 static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
 static GUILD_MASTER_KEY: &[u8] = b"guildMaster";
+static GUILD_MASTER_TIERS_KEY: &[u8] = b"guildMasterTiers";
+static USER_TIERS_KEY: &[u8] = b"userTiers";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
@@ -66,6 +69,7 @@ pub trait FactoryModule:
         let caller = self.blockchain().get_caller();
         let caller_id = self.user_ids().get_id_non_zero(&caller);
         self.require_guild_master_caller(guild_id, caller_id);
+        self.require_config_setup_complete();
         self.require_guild_setup_complete(guild.clone());
 
         self.resume_guild(guild.clone());
@@ -133,6 +137,24 @@ pub trait FactoryModule:
         require!(
             guild_master_id == caller_id,
             "Only guild master may call this function"
+        );
+    }
+
+    fn require_config_setup_complete(&self) {
+        let config_sc_address = self.config_sc_address().get();
+        let guild_master_tiers_mapper =
+            VecMapper::<_, GuildMasterRewardTier<Self::Api>, ManagedAddress>::new_from_address(
+                config_sc_address.clone(),
+                StorageKey::new(GUILD_MASTER_TIERS_KEY),
+            );
+        let user_tiers_mapper = VecMapper::<_, UserRewardTier, ManagedAddress>::new_from_address(
+            config_sc_address,
+            StorageKey::new(USER_TIERS_KEY),
+        );
+
+        require!(
+            !guild_master_tiers_mapper.is_empty() && !user_tiers_mapper.is_empty(),
+            "Config setup not complete"
         );
     }
 
