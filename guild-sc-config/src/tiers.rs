@@ -51,6 +51,8 @@ pub trait RewardTier<M: ManagedTypeApi> {
 
     fn is_equal(&self, other: &Self) -> bool;
 
+    fn get_apr(&self) -> Percent;
+
     fn set_apr(&mut self, other: &Self);
 }
 
@@ -65,6 +67,10 @@ impl<M: ManagedTypeApi> RewardTier<M> for GuildMasterRewardTier<M> {
 
     fn is_equal(&self, other: &Self) -> bool {
         self.max_stake == other.max_stake
+    }
+
+    fn get_apr(&self) -> Percent {
+        self.apr
     }
 
     fn set_apr(&mut self, other: &Self) {
@@ -83,6 +89,10 @@ impl<M: ManagedTypeApi> RewardTier<M> for UserRewardTier {
 
     fn is_equal(&self, other: &Self) -> bool {
         self.max_percentage_staked == other.max_percentage_staked
+    }
+
+    fn get_apr(&self) -> Percent {
+        self.apr
     }
 
     fn set_apr(&mut self, other: &Self) {
@@ -220,6 +230,10 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
             require!(
                 previous_entry.is_below_or_equal(tier),
                 "Invalid stake entry"
+            );
+            require!(
+                tier.get_apr() > previous_entry.get_apr(),
+                "Invalid APR value"
             );
         }
 
