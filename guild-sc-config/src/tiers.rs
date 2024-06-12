@@ -48,7 +48,7 @@ impl From<UserRewardTierMultiValue> for UserRewardTier {
 pub trait RewardTier<M: ManagedTypeApi> {
     fn is_in_range(&self, user_stake: &BigUint<M>, percentage_staked: Percent) -> bool;
 
-    fn is_below_or_equal(&self, other: &Self) -> bool;
+    fn is_below(&self, other: &Self) -> bool;
 
     fn is_equal(&self, other: &Self) -> bool;
 
@@ -62,8 +62,8 @@ impl<M: ManagedTypeApi> RewardTier<M> for GuildMasterRewardTier<M> {
         user_stake <= &self.max_stake
     }
 
-    fn is_below_or_equal(&self, other: &Self) -> bool {
-        self.max_stake <= other.max_stake
+    fn is_below(&self, other: &Self) -> bool {
+        self.max_stake < other.max_stake
     }
 
     fn is_equal(&self, other: &Self) -> bool {
@@ -84,8 +84,8 @@ impl<M: ManagedTypeApi> RewardTier<M> for UserRewardTier {
         percentage_staked <= self.max_percentage_staked
     }
 
-    fn is_below_or_equal(&self, other: &Self) -> bool {
-        self.max_percentage_staked <= other.max_percentage_staked
+    fn is_below(&self, other: &Self) -> bool {
+        self.max_percentage_staked < other.max_percentage_staked
     }
 
     fn is_equal(&self, other: &Self) -> bool {
@@ -230,10 +230,7 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
 
         if mapper_len > 0 {
             let previous_entry = mapper.get(mapper_len);
-            require!(
-                previous_entry.is_below_or_equal(tier),
-                "Invalid stake entry"
-            );
+            require!(previous_entry.is_below(tier), "Invalid stake entry");
             require!(
                 tier.get_apr() > previous_entry.get_apr(),
                 "Invalid APR value"
