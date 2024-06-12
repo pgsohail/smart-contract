@@ -4,6 +4,7 @@ multiversx_sc::derive_imports!();
 use crate::contexts::storage_cache::StorageCache;
 use crate::farm_base_impl::base_traits_impl::{FarmContract, TotalRewards};
 use common_structs::Percent;
+use guild_sc_config::tiers::{GuildMasterRewardTier, UserRewardTier};
 
 use crate::base_impl_wrapper::FarmStakingWrapper;
 
@@ -119,6 +120,22 @@ pub trait CustomRewardsModule:
         }
     }
 
+    // percentage_staked unused
+    fn find_guild_master_tier_apr(&self, total_farming_tokens: &BigUint) -> Percent {
+        let mapper = self.internal_guild_master_tiers();
+        let tier = self.find_tier_common(total_farming_tokens, Percent::default(), &mapper);
+
+        tier.apr
+    }
+
+    // total_farming_tokens unused
+    fn find_user_tier_apr(&self, percentage_staked: Percent) -> Percent {
+        let mapper = self.internal_user_tiers();
+        let tier = self.find_tier_common(&BigUint::default(), percentage_staked, &mapper);
+
+        tier.apr
+    }
+
     fn bound_amount_by_apr(&self, amount: &BigUint, apr: Percent) -> BigUint {
         let seconds_per_block = self.internal_seconds_per_block().get();
         let blocks_in_year = SECONDS_IN_YEAR / seconds_per_block;
@@ -149,6 +166,23 @@ pub trait CustomRewardsModule:
         self.per_block_reward_amount().set(per_block_reward_amount);
     }
 
+    fn update_internal_tiers(&self) {
+        let mut internal_guild_master_tiers_mapper = self.internal_guild_master_tiers();
+        let mut internal_user_tiers_mapper = self.internal_user_tiers();
+        internal_guild_master_tiers_mapper.clear();
+        internal_user_tiers_mapper.clear();
+
+        let external_guild_master_tiers_mapper = self.get_guild_master_tiers_mapper();
+        for tier in external_guild_master_tiers_mapper.iter() {
+            internal_guild_master_tiers_mapper.push(&tier);
+        }
+
+        let external_user_tiers_mapper = self.get_user_tiers_mapper();
+        for tier in external_user_tiers_mapper.iter() {
+            internal_user_tiers_mapper.push(&tier);
+        }
+    }
+
     #[proxy]
     fn guild_factory_proxy(
         &self,
@@ -165,4 +199,10 @@ pub trait CustomRewardsModule:
 
     #[storage_mapper("internalSecondsPerBlock")]
     fn internal_seconds_per_block(&self) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("internalGuildMasterTiers")]
+    fn internal_guild_master_tiers(&self) -> VecMapper<GuildMasterRewardTier<Self::Api>>;
+
+    #[storage_mapper("internalUserTiers")]
+    fn internal_user_tiers(&self) -> VecMapper<UserRewardTier>;
 }

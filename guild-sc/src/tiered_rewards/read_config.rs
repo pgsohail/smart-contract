@@ -23,27 +23,11 @@ static TOKEN_DECIMALS_KEY: &[u8] = b"tokensDecimals";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
-    // percentage_staked unused
-    fn find_guild_master_tier_apr(&self, total_farming_tokens: &BigUint) -> Percent {
-        let mapper = self.get_guild_master_tiers_mapper();
-        let tier = self.find_tier_common(total_farming_tokens, Percent::default(), &mapper);
-
-        tier.apr
-    }
-
-    // total_farming_tokens unused
-    fn find_user_tier_apr(&self, percentage_staked: Percent) -> Percent {
-        let mapper = self.get_user_tiers_mapper();
-        let tier = self.find_tier_common(&BigUint::default(), percentage_staked, &mapper);
-
-        tier.apr
-    }
-
     fn find_tier_common<T: TopEncode + TopDecode + RewardTier<Self::Api>>(
         &self,
         total_farming_tokens: &BigUint,
         percentage_staked: Percent,
-        mapper: &VecMapper<T, ManagedAddress>,
+        mapper: &VecMapper<T>,
     ) -> T {
         for reward_tier in mapper.iter() {
             if reward_tier.is_in_range(total_farming_tokens, percentage_staked) {

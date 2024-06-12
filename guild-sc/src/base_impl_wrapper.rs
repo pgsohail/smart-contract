@@ -120,6 +120,7 @@ where
 
         sc.update_internal_seconds_per_block();
         sc.update_per_block_reward_amount();
+        sc.update_internal_tiers();
     }
 
     fn calculate_rewards(

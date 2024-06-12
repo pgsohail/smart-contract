@@ -35,6 +35,8 @@ pub trait FactoryModule: crate::config::ConfigModule {
         let config_sc_mapper = self.config_sc_address();
         require!(!config_sc_mapper.is_empty(), "Config not deployed yet");
 
+        self.require_config_setup_complete();
+
         let guild_config = self.guild_local_config().get();
         let config_sc_address = config_sc_mapper.get();
         let source_address = self.guild_sc_source_address().get();

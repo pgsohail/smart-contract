@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           30
+// Endpoints:                           32
 // Async Callback (empty):               1
-// Total number of exported functions:  32
+// Total number of exported functions:  34
 
 #![no_std]
 #![allow(internal_features)]
@@ -22,8 +22,10 @@ multiversx_sc_wasm_adapter::endpoints! {
         init => init
         upgrade => upgrade
         addGuildMasterTiers => add_guild_master_tiers
+        updateGuildMasterTiers => update_guild_master_tiers
         setGuildMasterTierApr => set_guild_master_tier_apr
         addUserTiers => add_user_tiers
+        updateUserTiers => update_user_tiers
         setUserTierApr => set_user_tier_apr
         getGuildMasterTiers => guild_master_tiers
         getUserTiers => user_tiers
