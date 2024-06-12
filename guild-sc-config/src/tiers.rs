@@ -6,6 +6,7 @@ multiversx_sc::derive_imports!();
 pub static TIER_NOT_FOUND_ERR_MSG: &[u8] = b"Tier not found";
 pub static INVALID_APR_ERR_MSG: &[u8] = b"Invalid APR";
 pub const MAX_PERCENT: Percent = 10_000;
+pub const MAX_TIERS: usize = 5;
 
 pub type GuildMasterRewardTierMultiValue<M> = MultiValue2<BigUint<M>, Percent>;
 pub type UserRewardTierMultiValue = MultiValue2<Percent, Percent>;
@@ -225,6 +226,8 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         tier: &T,
     ) {
         let mapper_len = mapper.len();
+        require!(mapper_len < MAX_TIERS, "May not add more tiers");
+
         if mapper_len > 0 {
             let previous_entry = mapper.get(mapper_len);
             require!(
