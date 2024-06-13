@@ -43,6 +43,7 @@ pub trait StakeFarmModule:
         payments: PaymentsVec<Self::Api>,
     ) -> EsdtTokenPayment {
         self.require_not_closing();
+        self.require_not_globally_paused();
 
         let guild_master = self.guild_master().get();
         if original_caller != guild_master {

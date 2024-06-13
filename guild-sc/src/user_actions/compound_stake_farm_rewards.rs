@@ -26,6 +26,7 @@ pub trait CompoundStakeFarmRewardsModule:
     #[endpoint(compoundRewards)]
     fn compound_rewards(&self) -> EsdtTokenPayment {
         self.require_not_closing();
+        self.require_not_globally_paused();
 
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();

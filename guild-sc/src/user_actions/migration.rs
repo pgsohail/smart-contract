@@ -50,6 +50,7 @@ pub trait MigrationModule:
     #[endpoint(closeGuild)]
     fn close_guild(&self) {
         self.require_not_closing();
+        self.require_not_globally_paused();
 
         let guild_master = self.guild_master().get();
         let caller = self.blockchain().get_caller();
@@ -110,6 +111,7 @@ pub trait MigrationModule:
     #[endpoint(migrateToOtherGuild)]
     fn migrate_to_other_guild(&self, guild_address: ManagedAddress) {
         self.require_closing();
+        self.require_not_globally_paused();
 
         let caller = self.blockchain().get_caller();
         let guild_master = self.guild_master().get();

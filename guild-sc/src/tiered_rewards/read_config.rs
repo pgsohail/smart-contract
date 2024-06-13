@@ -1,5 +1,8 @@
 use common_structs::{Epoch, Percent};
-use guild_sc_config::tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier};
+use guild_sc_config::{
+    global_config::{GlobalPauseStatus, UNPAUSED},
+    tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier},
+};
 use multiversx_sc::storage::StorageKey;
 
 multiversx_sc::imports!();
@@ -15,6 +18,7 @@ static PER_BLOCK_REWARD_AMOUNT_KEY: &[u8] = b"perBlockRewardAmount";
 static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
 static TOTAL_STAKING_TOKEN_MINTED_KEY: &[u8] = b"totalStakingTokenMinted";
 static TOTAL_STAKING_TOKEN_STAKED_KEY: &[u8] = b"totalStakingTokenStaked";
+static GLOBAL_PAUSE_STATUS_KEY: &[u8] = b"globalPauseStatus";
 static BASE_FARM_TOKEN_ID_KEY: &[u8] = b"baseFarmTokenId";
 static BASE_UNBOND_TOKEN_ID_KEY: &[u8] = b"baseUnbondTokenId";
 static BASE_DISPLAY_NAME_KEY: &[u8] = b"baseTokenDisplayName";
@@ -195,6 +199,16 @@ pub trait ReadConfigModule {
         );
 
         mapper.get()
+    }
+
+    fn require_not_globally_paused(&self) {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, GlobalPauseStatus, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(GLOBAL_PAUSE_STATUS_KEY),
+        );
+
+        require!(mapper.get() == UNPAUSED, "All guilds are currently paused");
     }
 
     #[proxy]

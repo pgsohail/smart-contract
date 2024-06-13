@@ -12,6 +12,10 @@ static CLOSED_GUILDS_MAPPER_STORAGE_KEY: &[u8] = b"closedGuilds";
 
 pub const MAX_MIN_UNBOND_EPOCHS: Epoch = 30;
 
+pub type GlobalPauseStatus = bool;
+pub const PAUSED: bool = true;
+pub const UNPAUSED: bool = false;
+
 #[multiversx_sc::module]
 pub trait GlobalConfigModule {
     #[only_owner]
@@ -85,6 +89,18 @@ pub trait GlobalConfigModule {
 
         self.per_block_reward_amount()
             .set(new_per_block_reward_amount);
+    }
+
+    #[only_owner]
+    #[endpoint(pauseAllGuilds)]
+    fn pause_all_guilds(&self) {
+        self.global_pause_status().set(PAUSED);
+    }
+
+    #[only_owner]
+    #[endpoint(unpauseAllGuilds)]
+    fn unpause_all_guilds(&self) {
+        self.global_pause_status().set(UNPAUSED);
     }
 
     fn require_valid_unbond_epochs(&self, unbond_epochs: Epoch) {
@@ -192,4 +208,8 @@ pub trait GlobalConfigModule {
     #[view(getPerBlockRewardAmount)]
     #[storage_mapper("perBlockRewardAmount")]
     fn per_block_reward_amount(&self) -> SingleValueMapper<BigUint>;
+
+    #[view(areAllGuildsPaused)]
+    #[storage_mapper("globalPauseStatus")]
+    fn global_pause_status(&self) -> SingleValueMapper<GlobalPauseStatus>;
 }

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           32
+// Endpoints:                           35
 // Async Callback (empty):               1
-// Total number of exported functions:  34
+// Total number of exported functions:  37
 
 #![no_std]
 #![allow(internal_features)]
@@ -39,6 +39,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         decreaseStakedTokens => decrease_staked_tokens
         setSecondsPerBlock => set_seconds_per_block
         setPerBlockRewardAmount => set_per_block_reward_amount
+        pauseAllGuilds => pause_all_guilds
+        unpauseAllGuilds => unpause_all_guilds
         getMaxStakedTokens => max_staked_tokens
         getMinUnbondEpochsUser => min_unbond_epochs_user
         getMinUnbondEpochsGuildMaster => min_unbond_epochs_guild_master
@@ -52,6 +54,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getTokenDecimals => tokens_decimals
         getSecondsPerBlock => seconds_per_block
         getPerBlockRewardAmount => per_block_reward_amount
+        areAllGuildsPaused => global_pause_status
     )
 }
 
