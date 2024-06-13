@@ -19,22 +19,6 @@ pub const UNPAUSED: bool = false;
 #[multiversx_sc::module]
 pub trait GlobalConfigModule {
     #[only_owner]
-    #[endpoint(setMinUnbondEpochsUser)]
-    fn set_min_unbond_epochs_user(&self, min_unbond_epochs: Epoch) {
-        self.require_valid_unbond_epochs(min_unbond_epochs);
-
-        self.min_unbond_epochs_user().set(min_unbond_epochs);
-    }
-
-    #[only_owner]
-    #[endpoint(setMinUnbondEpochsGuildMaster)]
-    fn set_min_unbond_epochs_guild_master(&self, min_unbond_epochs: Epoch) {
-        self.require_valid_unbond_epochs(min_unbond_epochs);
-
-        self.min_unbond_epochs_guild_master().set(min_unbond_epochs);
-    }
-
-    #[only_owner]
     #[endpoint(setMinStakeUser)]
     fn set_min_stake_user(&self, min_stake: BigUint) {
         self.min_stake_user().set(min_stake);
@@ -101,6 +85,18 @@ pub trait GlobalConfigModule {
     #[endpoint(unpauseAllGuilds)]
     fn unpause_all_guilds(&self) {
         self.global_pause_status().set(UNPAUSED);
+    }
+
+    fn set_min_unbond_epochs_user(&self, min_unbond_epochs: Epoch) {
+        self.require_valid_unbond_epochs(min_unbond_epochs);
+
+        self.min_unbond_epochs_user().set(min_unbond_epochs);
+    }
+
+    fn set_min_unbond_epochs_guild_master(&self, min_unbond_epochs: Epoch) {
+        self.require_valid_unbond_epochs(min_unbond_epochs);
+
+        self.min_unbond_epochs_guild_master().set(min_unbond_epochs);
     }
 
     fn require_valid_unbond_epochs(&self, unbond_epochs: Epoch) {
