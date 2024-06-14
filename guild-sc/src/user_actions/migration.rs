@@ -10,10 +10,10 @@ mod guild_factory_proxy {
     pub trait GuildFactoryProxy {
         #[payable("*")]
         #[endpoint(depositRewardsGuild)]
-        fn deposit_rewards_guild(&self, guild_master: ManagedAddress);
+        fn deposit_rewards_guild(&self);
 
         #[endpoint(closeGuildNoRewardsRemaining)]
-        fn close_guild_no_rewards_remaining(&self, guild_master: ManagedAddress);
+        fn close_guild_no_rewards_remaining(&self);
 
         #[payable("*")]
         #[endpoint(migrateToOtherGuild)]
@@ -37,7 +37,6 @@ pub trait MigrationModule:
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-    + crate::farm_base_impl::base_farm_init::BaseFarmInitModule
     + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + crate::farm_base_impl::exit_farm::BaseExitFarmModule
     + utils::UtilsModule
@@ -51,6 +50,7 @@ pub trait MigrationModule:
     #[endpoint(closeGuild)]
     fn close_guild(&self) {
         self.require_not_closing();
+        self.require_not_globally_paused();
 
         let guild_master = self.guild_master().get();
         let caller = self.blockchain().get_caller();
@@ -64,9 +64,11 @@ pub trait MigrationModule:
 
         let total_guild_master_tokens = self.guild_master_tokens().get();
         require!(
-            total_payment == total_guild_master_tokens.base + total_guild_master_tokens.compounded,
+            total_payment == total_guild_master_tokens.total(),
             "Must send all tokens when closing guild"
         );
+
+        self.call_decrease_total_staked_tokens(total_payment);
 
         let multi_unstake_result = self.multi_unstake(&caller, &payments);
         let unbond_epochs = self.get_min_unbond_epochs_guild_master();
@@ -92,13 +94,13 @@ pub trait MigrationModule:
         if remaining_rewards > 0 {
             let _: IgnoreValue = self
                 .factory_proxy(guild_factory)
-                .deposit_rewards_guild(guild_master)
+                .deposit_rewards_guild()
                 .with_esdt_transfer((reward_token_id, 0, remaining_rewards))
                 .execute_on_dest_context();
         } else {
             let _: IgnoreValue = self
                 .factory_proxy(guild_factory)
-                .close_guild_no_rewards_remaining(guild_master)
+                .close_guild_no_rewards_remaining()
                 .execute_on_dest_context();
         }
 
@@ -109,6 +111,7 @@ pub trait MigrationModule:
     #[endpoint(migrateToOtherGuild)]
     fn migrate_to_other_guild(&self, guild_address: ManagedAddress) {
         self.require_closing();
+        self.require_not_globally_paused();
 
         let caller = self.blockchain().get_caller();
         let guild_master = self.guild_master().get();

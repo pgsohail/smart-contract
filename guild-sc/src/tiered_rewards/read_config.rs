@@ -1,7 +1,7 @@
 use common_structs::{Epoch, Percent};
 use guild_sc_config::{
-    global_config::ProxyTrait as _,
-    tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier, TIER_NOT_FOUND_ERR_MSG},
+    global_config::{GlobalPauseStatus, UNPAUSED},
+    tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier},
 };
 use multiversx_sc::storage::StorageKey;
 
@@ -13,7 +13,12 @@ static MAX_TOKENS_STORAGE_KEY: &[u8] = b"maxStakedTokens";
 static MIN_UNBOND_EPOCHS_USER_KEY: &[u8] = b"minUnbondEpochsUser";
 static MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY: &[u8] = b"minUnbondEpochsGuildMaster";
 static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
+static SECONDS_PER_BLOCK_KEY: &[u8] = b"secondsPerBlock";
+static PER_BLOCK_REWARD_AMOUNT_KEY: &[u8] = b"perBlockRewardAmount";
 static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
+static TOTAL_STAKING_TOKEN_MINTED_KEY: &[u8] = b"totalStakingTokenMinted";
+static TOTAL_STAKING_TOKEN_STAKED_KEY: &[u8] = b"totalStakingTokenStaked";
+static GLOBAL_PAUSE_STATUS_KEY: &[u8] = b"globalPauseStatus";
 static BASE_FARM_TOKEN_ID_KEY: &[u8] = b"baseFarmTokenId";
 static BASE_UNBOND_TOKEN_ID_KEY: &[u8] = b"baseUnbondTokenId";
 static BASE_DISPLAY_NAME_KEY: &[u8] = b"baseTokenDisplayName";
@@ -21,49 +26,20 @@ static TOKEN_DECIMALS_KEY: &[u8] = b"tokensDecimals";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
-    fn find_any_user_tier_apr(
-        &self,
-        user: &ManagedAddress,
-        base_farming_amount: &BigUint,
-        percentage_staked: Percent,
-    ) -> Percent {
-        let guild_master = self.guild_master().get();
-        if user != &guild_master {
-            self.find_user_tier_apr(percentage_staked)
-        } else {
-            self.find_guild_master_tier_apr(base_farming_amount)
-        }
-    }
-
-    // percentage_staked unused
-    fn find_guild_master_tier_apr(&self, base_farming_amount: &BigUint) -> Percent {
-        let mapper = self.get_guild_master_tiers_mapper();
-        let tier = self.find_tier_common(base_farming_amount, Percent::default(), &mapper);
-
-        tier.apr
-    }
-
-    // base_farming_amount unused
-    fn find_user_tier_apr(&self, percentage_staked: Percent) -> Percent {
-        let mapper = self.get_user_tiers_mapper();
-        let tier = self.find_tier_common(&BigUint::default(), percentage_staked, &mapper);
-
-        tier.apr
-    }
-
     fn find_tier_common<T: TopEncode + TopDecode + RewardTier<Self::Api>>(
         &self,
-        base_farming_amount: &BigUint,
+        total_farming_tokens: &BigUint,
         percentage_staked: Percent,
-        mapper: &VecMapper<T, ManagedAddress>,
+        mapper: &VecMapper<T>,
     ) -> T {
         for reward_tier in mapper.iter() {
-            if reward_tier.is_in_range(base_farming_amount, percentage_staked) {
+            if reward_tier.is_in_range(total_farming_tokens, percentage_staked) {
                 return reward_tier;
             }
         }
 
-        sc_panic!(TIER_NOT_FOUND_ERR_MSG);
+        let last_index = mapper.len();
+        mapper.get(last_index)
     }
 
     fn get_guild_master_tiers_mapper(
@@ -145,11 +121,44 @@ pub trait ReadConfigModule {
         }
     }
 
-    fn get_total_staked_percent(&self) -> Percent {
-        let config_sc_address = self.config_sc_address().get();
-        self.config_proxy(config_sc_address)
-            .get_total_staked_percent()
-            .execute_on_dest_context()
+    fn get_seconds_per_block(&self) -> u64 {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(SECONDS_PER_BLOCK_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_per_block_reward_amount(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(PER_BLOCK_REWARD_AMOUNT_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_total_staking_token_minted(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(TOTAL_STAKING_TOKEN_MINTED_KEY),
+        );
+
+        mapper.get()
+    }
+
+    fn get_total_staking_token_staked(&self) -> BigUint {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(TOTAL_STAKING_TOKEN_STAKED_KEY),
+        );
+
+        mapper.get()
     }
 
     fn get_base_farm_token_id(&self) -> ManagedBuffer {
@@ -190,6 +199,16 @@ pub trait ReadConfigModule {
         );
 
         mapper.get()
+    }
+
+    fn require_not_globally_paused(&self) {
+        let config_addr = self.config_sc_address().get();
+        let mapper = SingleValueMapper::<_, GlobalPauseStatus, ManagedAddress>::new_from_address(
+            config_addr,
+            StorageKey::new(GLOBAL_PAUSE_STATUS_KEY),
+        );
+
+        require!(mapper.get() == UNPAUSED, "All guilds are currently paused");
     }
 
     #[proxy]

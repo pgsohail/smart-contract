@@ -1,4 +1,5 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
+use guild_sc_config::tiers::{GuildMasterRewardTier, UserRewardTier};
 use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 
@@ -6,13 +7,14 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
-static FARM_TOKEN_SUPPLY_STORAGE_KEY: &[u8] = b"farm_token_supply";
+static GUILD_MASTER_KEY: &[u8] = b"guildMaster";
+static GUILD_MASTER_TIERS_KEY: &[u8] = b"guildMasterTiers";
+static USER_TIERS_KEY: &[u8] = b"userTiers";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
     pub farming_token_id: TokenIdentifier<M>,
     pub division_safety_constant: BigUint<M>,
-    pub per_block_reward_amount: BigUint<M>,
 }
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
@@ -22,9 +24,7 @@ pub struct GetGuildResultType<M: ManagedTypeApi> {
 }
 
 #[multiversx_sc::module]
-pub trait FactoryModule:
-    crate::config::ConfigModule + multiversx_sc_modules::only_admin::OnlyAdminModule
-{
+pub trait FactoryModule: crate::config::ConfigModule {
     #[endpoint(deployGuild)]
     fn deploy_guild(&self) -> ManagedAddress {
         let caller = self.blockchain().get_caller();
@@ -32,15 +32,10 @@ pub trait FactoryModule:
         let guild_mapper = self.guild_sc_for_user(caller_id);
         require!(guild_mapper.is_empty(), "Already have a guild deployed");
 
-        let max_guilds = self.max_guilds().get();
-        let mut deployed_guilds_mapper = self.deployed_guilds();
-        require!(
-            deployed_guilds_mapper.len() < max_guilds,
-            "May not deploy any more guilds"
-        );
-
         let config_sc_mapper = self.config_sc_address();
         require!(!config_sc_mapper.is_empty(), "Config not deployed yet");
+
+        self.require_config_setup_complete();
 
         let guild_config = self.guild_local_config().get();
         let config_sc_address = config_sc_mapper.get();
@@ -53,13 +48,12 @@ pub trait FactoryModule:
                 guild_config.division_safety_constant,
                 config_sc_address,
                 caller,
-                guild_config.per_block_reward_amount,
                 MultiValueEncoded::new(),
             )
             .deploy_from_source::<()>(&source_address, code_metadata);
 
         let guild_id = self.guild_ids().insert_new(&guild_address);
-        let _ = deployed_guilds_mapper.insert(guild_id);
+        let _ = self.deployed_guilds().insert(guild_id);
         self.guild_master_for_guild(guild_id).set(caller_id);
         guild_mapper.set(guild_id);
 
@@ -75,24 +69,11 @@ pub trait FactoryModule:
         let caller = self.blockchain().get_caller();
         let caller_id = self.user_ids().get_id_non_zero(&caller);
         self.require_guild_master_caller(guild_id, caller_id);
+        self.require_config_setup_complete();
         self.require_guild_setup_complete(guild.clone());
 
         self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
-    }
-
-    /// To be used by admins when guild was created, but no further action was taken for it
-    #[only_admin]
-    #[endpoint(removeGuild)]
-    fn remove_guild(&self, guild: ManagedAddress, user: ManagedAddress) {
-        let supply_mapper = SingleValueMapper::<_, BigUint, ManagedAddress>::new_from_address(
-            guild.clone(),
-            StorageKey::new(FARM_TOKEN_SUPPLY_STORAGE_KEY),
-        );
-        let supply = supply_mapper.get();
-        require!(supply == 0, "Guild is not empty");
-
-        self.remove_guild_common(guild, user);
     }
 
     #[view(getAllGuilds)]
@@ -123,9 +104,15 @@ pub trait FactoryModule:
         self.guild_ids().get_id_non_zero(&guild_address)
     }
 
-    fn remove_guild_common(&self, guild: ManagedAddress, user: ManagedAddress) {
+    fn remove_guild_common(&self, guild: ManagedAddress) {
+        let guild_master_mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
+            guild.clone(),
+            StorageKey::new(GUILD_MASTER_KEY),
+        );
+        let guild_master = guild_master_mapper.get();
+
         let guild_id = self.guild_ids().remove_by_address(&guild);
-        let user_id = self.user_ids().remove_by_address(&user);
+        let user_id = self.user_ids().remove_by_address(&guild_master);
 
         let removed = self.deployed_guilds().swap_remove(&guild_id);
         require!(removed, UNKNOWN_GUILD_ERR_MSG);
@@ -150,6 +137,24 @@ pub trait FactoryModule:
         require!(
             guild_master_id == caller_id,
             "Only guild master may call this function"
+        );
+    }
+
+    fn require_config_setup_complete(&self) {
+        let config_sc_address = self.config_sc_address().get();
+        let guild_master_tiers_mapper =
+            VecMapper::<_, GuildMasterRewardTier<Self::Api>, ManagedAddress>::new_from_address(
+                config_sc_address.clone(),
+                StorageKey::new(GUILD_MASTER_TIERS_KEY),
+            );
+        let user_tiers_mapper = VecMapper::<_, UserRewardTier, ManagedAddress>::new_from_address(
+            config_sc_address,
+            StorageKey::new(USER_TIERS_KEY),
+        );
+
+        require!(
+            !guild_master_tiers_mapper.is_empty() && !user_tiers_mapper.is_empty(),
+            "Config setup not complete"
         );
     }
 
@@ -182,9 +187,6 @@ pub trait FactoryModule:
 
     #[storage_mapper("guildScSourceAddress")]
     fn guild_sc_source_address(&self) -> SingleValueMapper<ManagedAddress>;
-
-    #[storage_mapper("maxGuilds")]
-    fn max_guilds(&self) -> SingleValueMapper<usize>;
 
     #[storage_mapper("guildLocalConfig")]
     fn guild_local_config(&self) -> SingleValueMapper<GuildLocalConfig<Self::Api>>;

@@ -13,11 +13,9 @@ pub trait StakeFarmModule:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-    + crate::farm_base_impl::base_farm_init::BaseFarmInitModule
     + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + crate::farm_base_impl::enter_farm::BaseEnterFarmModule
     + utils::UtilsModule
@@ -45,10 +43,10 @@ pub trait StakeFarmModule:
         payments: PaymentsVec<Self::Api>,
     ) -> EsdtTokenPayment {
         self.require_not_closing();
+        self.require_not_globally_paused();
 
-        let caller = self.blockchain().get_caller();
         let guild_master = self.guild_master().get();
-        if caller != guild_master {
+        if original_caller != guild_master {
             require!(
                 !self.guild_master_tokens().is_empty(),
                 "Guild master must stake first"
@@ -80,5 +78,24 @@ pub trait StakeFarmModule:
         );
 
         new_farm_token
+    }
+
+    fn get_orig_caller_from_opt(
+        &self,
+        caller: &ManagedAddress,
+        opt_original_caller: OptionalValue<ManagedAddress>,
+    ) -> ManagedAddress {
+        match opt_original_caller {
+            OptionalValue::Some(original_caller) => {
+                let factory_sc_address = self.blockchain().get_owner_address();
+                require!(
+                    caller == &factory_sc_address,
+                    "May not use original caller arg"
+                );
+
+                original_caller
+            }
+            OptionalValue::None => caller.clone(),
+        }
     }
 }

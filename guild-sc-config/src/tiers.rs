@@ -6,6 +6,7 @@ multiversx_sc::derive_imports!();
 pub static TIER_NOT_FOUND_ERR_MSG: &[u8] = b"Tier not found";
 pub static INVALID_APR_ERR_MSG: &[u8] = b"Invalid APR";
 pub const MAX_PERCENT: Percent = 10_000;
+pub const MAX_TIERS: usize = 5;
 
 pub type GuildMasterRewardTierMultiValue<M> = MultiValue2<BigUint<M>, Percent>;
 pub type UserRewardTierMultiValue = MultiValue2<Percent, Percent>;
@@ -47,9 +48,11 @@ impl From<UserRewardTierMultiValue> for UserRewardTier {
 pub trait RewardTier<M: ManagedTypeApi> {
     fn is_in_range(&self, user_stake: &BigUint<M>, percentage_staked: Percent) -> bool;
 
-    fn is_below_or_equal(&self, other: &Self) -> bool;
+    fn is_below(&self, other: &Self) -> bool;
 
     fn is_equal(&self, other: &Self) -> bool;
+
+    fn get_apr(&self) -> Percent;
 
     fn set_apr(&mut self, other: &Self);
 }
@@ -59,12 +62,16 @@ impl<M: ManagedTypeApi> RewardTier<M> for GuildMasterRewardTier<M> {
         user_stake <= &self.max_stake
     }
 
-    fn is_below_or_equal(&self, other: &Self) -> bool {
-        self.max_stake <= other.max_stake
+    fn is_below(&self, other: &Self) -> bool {
+        self.max_stake < other.max_stake
     }
 
     fn is_equal(&self, other: &Self) -> bool {
         self.max_stake == other.max_stake
+    }
+
+    fn get_apr(&self) -> Percent {
+        self.apr
     }
 
     fn set_apr(&mut self, other: &Self) {
@@ -77,12 +84,16 @@ impl<M: ManagedTypeApi> RewardTier<M> for UserRewardTier {
         percentage_staked <= self.max_percentage_staked
     }
 
-    fn is_below_or_equal(&self, other: &Self) -> bool {
-        self.max_percentage_staked <= other.max_percentage_staked
+    fn is_below(&self, other: &Self) -> bool {
+        self.max_percentage_staked < other.max_percentage_staked
     }
 
     fn is_equal(&self, other: &Self) -> bool {
         self.max_percentage_staked == other.max_percentage_staked
+    }
+
+    fn get_apr(&self) -> Percent {
+        self.apr
     }
 
     fn set_apr(&mut self, other: &Self) {
@@ -104,19 +115,22 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         let mut tiers_mapper = self.guild_master_tiers();
         self.require_empty_mapper(&tiers_mapper);
 
-        let tiers_len = tiers.len();
-        for (i, tier_multi) in tiers.into_iter().enumerate() {
-            let reward_tier = GuildMasterRewardTier::from(tier_multi);
-            self.add_tier(&mut tiers_mapper, &reward_tier);
+        self.set_guild_master_tiers_common(&mut tiers_mapper, tiers);
+    }
 
-            if i == tiers_len - 1 {
-                let max_staked_tokens = self.max_staked_tokens().get();
-                require!(
-                    reward_tier.max_stake == max_staked_tokens,
-                    "Invalid last guild master tier"
-                );
-            }
-        }
+    /// Pairs of (max_stake, apr)
+    /// APR is scaled by two decimals, i.e. 10_000 is 100%
+    /// Last max_stake value must be equal to the init value of max_staked_tokens
+    #[only_owner]
+    #[endpoint(updateGuildMasterTiers)]
+    fn update_guild_master_tiers(
+        &self,
+        tiers: MultiValueEncoded<GuildMasterRewardTierMultiValue<Self::Api>>,
+    ) {
+        let mut tiers_mapper = self.guild_master_tiers();
+        tiers_mapper.clear();
+
+        self.set_guild_master_tiers_common(&mut tiers_mapper, tiers);
     }
 
     #[only_owner]
@@ -139,20 +153,19 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         let mut tiers_mapper = self.user_tiers();
         self.require_empty_mapper(&tiers_mapper);
 
-        let tiers_len = tiers.len();
-        for (i, tier_multi) in tiers.into_iter().enumerate() {
-            let reward_tier = UserRewardTier::from(tier_multi);
-            self.require_valid_user_tier(&reward_tier);
+        self.set_user_tiers_common(&mut tiers_mapper, tiers);
+    }
 
-            self.add_tier(&mut tiers_mapper, &reward_tier);
+    /// Pairs of (max_percentage_staked, apr)
+    /// Both percentages are scaled by two decimals, i.e. 10_000 is 100%
+    /// max_percentage_staked must be <= 10_000, and the last one must be 10_000
+    #[only_owner]
+    #[endpoint(updateUserTiers)]
+    fn update_user_tiers(&self, tiers: MultiValueEncoded<UserRewardTierMultiValue>) {
+        let mut tiers_mapper = self.user_tiers();
+        tiers_mapper.clear();
 
-            if i == tiers_len - 1 {
-                require!(
-                    reward_tier.max_percentage_staked == MAX_PERCENT,
-                    "Invalid last user tier value"
-                );
-            }
-        }
+        self.set_user_tiers_common(&mut tiers_mapper, tiers);
     }
 
     #[only_owner]
@@ -166,17 +179,61 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         self.set_apr(&mut tiers_mapper, reward_tier);
     }
 
+    fn set_guild_master_tiers_common(
+        &self,
+        tiers_mapper: &mut VecMapper<GuildMasterRewardTier<Self::Api>>,
+        tiers: MultiValueEncoded<GuildMasterRewardTierMultiValue<Self::Api>>,
+    ) {
+        let tiers_len = tiers.len();
+        for (i, tier_multi) in tiers.into_iter().enumerate() {
+            let reward_tier = GuildMasterRewardTier::from(tier_multi);
+            self.add_tier(tiers_mapper, &reward_tier);
+
+            if i == tiers_len - 1 {
+                let max_staked_tokens = self.max_staked_tokens().get();
+                require!(
+                    reward_tier.max_stake == max_staked_tokens,
+                    "Invalid last guild master tier"
+                );
+            }
+        }
+    }
+
+    fn set_user_tiers_common(
+        &self,
+        tiers_mapper: &mut VecMapper<UserRewardTier>,
+        tiers: MultiValueEncoded<UserRewardTierMultiValue>,
+    ) {
+        let tiers_len = tiers.len();
+        for (i, tier_multi) in tiers.into_iter().enumerate() {
+            let reward_tier = UserRewardTier::from(tier_multi);
+            self.require_valid_user_tier(&reward_tier);
+
+            self.add_tier(tiers_mapper, &reward_tier);
+
+            if i == tiers_len - 1 {
+                require!(
+                    reward_tier.max_percentage_staked == MAX_PERCENT,
+                    "Invalid last user tier value"
+                );
+            }
+        }
+    }
+
     fn add_tier<T: TopEncode + TopDecode + RewardTier<Self::Api>>(
         &self,
         mapper: &mut VecMapper<T>,
         tier: &T,
     ) {
         let mapper_len = mapper.len();
+        require!(mapper_len < MAX_TIERS, "May not add more tiers");
+
         if mapper_len > 0 {
             let previous_entry = mapper.get(mapper_len);
+            require!(previous_entry.is_below(tier), "Invalid stake entry");
             require!(
-                previous_entry.is_below_or_equal(tier),
-                "Invalid stake entry"
+                tier.get_apr() > previous_entry.get_apr(),
+                "Invalid APR value"
             );
         }
 
@@ -191,7 +248,7 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         let mut opt_found_index = None;
         for (i, tier) in mapper.iter().enumerate() {
             if tier.is_equal(&reward_tier) {
-                opt_found_index = Some(i);
+                opt_found_index = Some(i + 1);
                 break;
             }
         }

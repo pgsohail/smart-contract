@@ -1,35 +1,23 @@
-use common_structs::{Epoch, Percent};
+use common_structs::Epoch;
 use multiversx_sc::storage::StorageKey;
-
-use crate::tiers::MAX_PERCENT;
 
 multiversx_sc::imports!();
 
 pub static INVALID_MIN_UNBOND_EPOCHS_ERR_MSG: &[u8] = b"Invalid min unbond epochs";
+static INVALID_VALUE_ERR_MSG: &[u8] = b"Invalid value";
+
 static GUILD_SC_ID_STORAGE_KEY: &[u8] = b"deployedGuilds";
 static GUILD_ADDRESS_TO_ID_MAPPER_STORAGE_KEY: &[u8] = b"guildIds";
 static CLOSED_GUILDS_MAPPER_STORAGE_KEY: &[u8] = b"closedGuilds";
 
 pub const MAX_MIN_UNBOND_EPOCHS: Epoch = 30;
 
+pub type GlobalPauseStatus = bool;
+pub const PAUSED: bool = true;
+pub const UNPAUSED: bool = false;
+
 #[multiversx_sc::module]
 pub trait GlobalConfigModule {
-    #[only_owner]
-    #[endpoint(setMinUnbondEpochsUser)]
-    fn set_min_unbond_epochs_user(&self, min_unbond_epochs: Epoch) {
-        self.require_valid_unbond_epochs(min_unbond_epochs);
-
-        self.min_unbond_epochs_user().set(min_unbond_epochs);
-    }
-
-    #[only_owner]
-    #[endpoint(setMinUnbondEpochsGuildMaster)]
-    fn set_min_unbond_epochs_guild_master(&self, min_unbond_epochs: Epoch) {
-        self.require_valid_unbond_epochs(min_unbond_epochs);
-
-        self.min_unbond_epochs_guild_master().set(min_unbond_epochs);
-    }
-
     #[only_owner]
     #[endpoint(setMinStakeUser)]
     fn set_min_stake_user(&self, min_stake: BigUint) {
@@ -40,6 +28,12 @@ pub trait GlobalConfigModule {
     #[endpoint(setMinStakeGuildMaster)]
     fn set_min_stake_guild_master(&self, min_stake: BigUint) {
         self.min_stake_guild_master().set(min_stake);
+    }
+
+    #[only_owner]
+    #[endpoint(setMaxStakedTokens)]
+    fn set_max_staked_tokens(&self, max_staked_tokens: BigUint) {
+        self.max_staked_tokens().set(max_staked_tokens);
     }
 
     #[only_owner]
@@ -64,15 +58,45 @@ pub trait GlobalConfigModule {
             .update(|total| *total -= amount);
     }
 
-    #[view(getTotalStakedPercent)]
-    fn get_total_staked_percent(&self) -> Percent {
-        let total_minted = self.total_staking_token_minted().get();
-        let total_staked = self.total_staking_token_staked().get();
+    #[only_owner]
+    #[endpoint(setSecondsPerBlock)]
+    fn set_seconds_per_block(&self, new_seconds_per_block: u64) {
+        require!(new_seconds_per_block > 0, INVALID_VALUE_ERR_MSG);
 
-        let opt_result = (total_staked * MAX_PERCENT / total_minted).to_u64();
-        require!(opt_result.is_some(), "Math failure");
+        self.seconds_per_block().set(new_seconds_per_block);
+    }
 
-        unsafe { opt_result.unwrap_unchecked() }
+    #[only_owner]
+    #[endpoint(setPerBlockRewardAmount)]
+    fn set_per_block_reward_amount(&self, new_per_block_reward_amount: BigUint) {
+        require!(new_per_block_reward_amount > 0, INVALID_VALUE_ERR_MSG);
+
+        self.per_block_reward_amount()
+            .set(new_per_block_reward_amount);
+    }
+
+    #[only_owner]
+    #[endpoint(pauseAllGuilds)]
+    fn pause_all_guilds(&self) {
+        self.global_pause_status().set(PAUSED);
+    }
+
+    #[only_owner]
+    #[endpoint(unpauseAllGuilds)]
+    fn unpause_all_guilds(&self) {
+        self.global_pause_status().set(UNPAUSED);
+    }
+
+    fn set_min_unbond_epochs_user(&self, min_unbond_epochs: Epoch) {
+        self.require_valid_unbond_epochs(min_unbond_epochs);
+
+        self.min_unbond_epochs_user().set(min_unbond_epochs);
+    }
+
+    fn set_min_unbond_epochs_guild_master(&self, min_unbond_epochs: Epoch) {
+        self.require_valid_unbond_epochs(min_unbond_epochs);
+
+        self.min_unbond_epochs_guild_master().set(min_unbond_epochs);
     }
 
     fn require_valid_unbond_epochs(&self, unbond_epochs: Epoch) {
@@ -172,4 +196,16 @@ pub trait GlobalConfigModule {
     #[view(getTokenDecimals)]
     #[storage_mapper("tokensDecimals")]
     fn tokens_decimals(&self) -> SingleValueMapper<usize>;
+
+    #[view(getSecondsPerBlock)]
+    #[storage_mapper("secondsPerBlock")]
+    fn seconds_per_block(&self) -> SingleValueMapper<u64>;
+
+    #[view(getPerBlockRewardAmount)]
+    #[storage_mapper("perBlockRewardAmount")]
+    fn per_block_reward_amount(&self) -> SingleValueMapper<BigUint>;
+
+    #[view(areAllGuildsPaused)]
+    #[storage_mapper("globalPauseStatus")]
+    fn global_pause_status(&self) -> SingleValueMapper<GlobalPauseStatus>;
 }

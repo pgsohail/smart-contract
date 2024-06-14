@@ -16,6 +16,7 @@ where
     pub storage_cache: StorageCache<'a, C>,
     pub farming_token_payment: EsdtTokenPayment<C::Api>,
     pub rewards: BigUint<C::Api>,
+    pub original_token_attributes: T,
 }
 
 #[multiversx_sc::module]
@@ -85,6 +86,7 @@ pub trait BaseExitFarmModule:
             farming_token_payment,
             rewards,
             storage_cache,
+            original_token_attributes: token_attributes,
         }
     }
 }

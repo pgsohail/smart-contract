@@ -4,20 +4,22 @@ pub mod factory_setup;
 
 use factory_setup::*;
 use guild_sc::{
-    custom_rewards::{CustomRewardsModule, BLOCKS_IN_YEAR},
     tokens::{request_id::RequestIdModule, token_attributes::StakingFarmTokenAttributes},
     user_actions::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
         compound_stake_farm_rewards::CompoundStakeFarmRewardsModule, migration::MigrationModule,
         stake_farm::StakeFarmModule, unbond_farm::UnbondFarmModule,
+        unstake_farm::UnstakeFarmModule,
     },
 };
-use guild_sc_config::tiers::MAX_PERCENT;
+use guild_sc_config::tiers::{TierModule, MAX_PERCENT};
 use multiversx_sc::{codec::Empty, imports::OptionalValue};
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_buffer, managed_token_id, rust_biguint,
     whitebox_legacy::TxTokenTransfer, DebugApi,
 };
+
+pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
 
 #[test]
 fn all_setup_test() {
@@ -323,6 +325,22 @@ fn compound_rewards_test() {
     );
 
     farm_setup.check_farm_token_supply(farm_in_amount + expected_reward_token_out + 1);
+
+    // try unstake full amount
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce + 1,
+            &rust_biguint!(farm_in_amount + expected_reward_token_out),
+            |sc| {
+                let _ = sc.unstake_farm();
+            },
+        )
+        .assert_ok();
+    farm_setup.check_farm_token_supply(1);
 }
 
 #[test]
@@ -605,97 +623,6 @@ fn test_unbond() {
 }
 
 #[test]
-fn test_withdraw_rewards() {
-    DebugApi::dummy();
-    let mut farm_setup = FarmStakingSetup::new(
-        guild_sc::contract_obj,
-        guild_sc_config::contract_obj,
-        guild_factory::contract_obj,
-    );
-
-    farm_setup.b_mock.set_esdt_balance(
-        &farm_setup.first_owner_address,
-        REWARD_TOKEN_ID,
-        &TOTAL_REWARDS_AMOUNT.into(),
-    );
-    farm_setup
-        .b_mock
-        .execute_esdt_transfer(
-            &farm_setup.first_owner_address,
-            &farm_setup.first_farm_wrapper,
-            REWARD_TOKEN_ID,
-            0,
-            &TOTAL_REWARDS_AMOUNT.into(),
-            |sc| {
-                sc.top_up_rewards();
-            },
-        )
-        .assert_ok();
-
-    let initial_rewards_capacity = TOTAL_REWARDS_AMOUNT;
-    farm_setup.check_rewards_capacity(initial_rewards_capacity);
-
-    let withdraw_amount = rust_biguint!(TOTAL_REWARDS_AMOUNT);
-    farm_setup.withdraw_rewards(&withdraw_amount);
-
-    let final_rewards_capacity = 0u64;
-    farm_setup.check_rewards_capacity(final_rewards_capacity);
-}
-
-#[test]
-fn test_withdraw_after_produced_rewards() {
-    DebugApi::dummy();
-    let mut farm_setup = FarmStakingSetup::new(
-        guild_sc::contract_obj,
-        guild_sc_config::contract_obj,
-        guild_factory::contract_obj,
-    );
-
-    farm_setup.b_mock.set_esdt_balance(
-        &farm_setup.first_owner_address,
-        REWARD_TOKEN_ID,
-        &TOTAL_REWARDS_AMOUNT.into(),
-    );
-    farm_setup
-        .b_mock
-        .execute_esdt_transfer(
-            &farm_setup.first_owner_address,
-            &farm_setup.first_farm_wrapper,
-            REWARD_TOKEN_ID,
-            0,
-            &TOTAL_REWARDS_AMOUNT.into(),
-            |sc| {
-                sc.top_up_rewards();
-            },
-        )
-        .assert_ok();
-
-    let initial_rewards_capacity = TOTAL_REWARDS_AMOUNT;
-    farm_setup.check_rewards_capacity(initial_rewards_capacity);
-
-    let farm_in_amount = 100_000_000;
-    let expected_farm_token_nonce = 2;
-    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-    farm_setup.check_farm_token_supply(farm_in_amount + 1);
-
-    farm_setup.set_block_epoch(5);
-    farm_setup.set_block_nonce(10);
-
-    let withdraw_amount = rust_biguint!(TOTAL_REWARDS_AMOUNT);
-    farm_setup.withdraw_rewards_with_error(&withdraw_amount, 4, WITHDRAW_AMOUNT_TOO_HIGH);
-
-    let expected_reward_token_out = 40;
-
-    let withdraw_amount =
-        rust_biguint!(TOTAL_REWARDS_AMOUNT) - rust_biguint!(expected_reward_token_out);
-    farm_setup.withdraw_rewards(&withdraw_amount);
-
-    // Only the user's rewards will remain
-    let final_rewards_capacity = expected_reward_token_out;
-    farm_setup.check_rewards_capacity(final_rewards_capacity);
-}
-
-#[test]
 fn cancel_unbond_test() {
     DebugApi::dummy();
     let mut farm_setup = FarmStakingSetup::new(
@@ -815,5 +742,27 @@ fn id_to_human_readable_test() {
             let id_str = sc.id_to_human_readable(10);
             assert_eq!(id_str, managed_buffer!(b"10"));
         })
+        .assert_ok();
+}
+
+#[test]
+fn set_apr_test() {
+    DebugApi::dummy();
+
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+    farm_setup
+        .b_mock
+        .execute_tx(
+            &farm_setup.first_owner_address,
+            &farm_setup.config_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.set_user_tier_apr(MAX_PERCENT, 5_000);
+            },
+        )
         .assert_ok();
 }

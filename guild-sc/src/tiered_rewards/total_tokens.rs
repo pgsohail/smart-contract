@@ -43,6 +43,10 @@ impl<M: ManagedTypeApi> TotalTokens<M> {
 
         self.base == big_zero && self.compounded == big_zero
     }
+
+    pub fn total(&self) -> BigUint<M> {
+        &self.base + &self.compounded
+    }
 }
 
 #[multiversx_sc::module]
@@ -138,7 +142,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
             self.guild_master_tokens().get()
         };
 
-        tokens_per_tier.base
+        tokens_per_tier.total()
     }
 
     fn require_over_min_stake(&self, user: &ManagedAddress) {

@@ -2,13 +2,14 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use crate::contexts::storage_cache::StorageCache;
-use crate::farm_base_impl::base_traits_impl::FarmContract;
+use crate::farm_base_impl::base_traits_impl::{FarmContract, TotalRewards};
 use common_structs::Percent;
+use guild_sc_config::tiers::{GuildMasterRewardTier, UserRewardTier};
 
 use crate::base_impl_wrapper::FarmStakingWrapper;
 
 pub const MAX_PERCENT: Percent = 10_000;
-pub const BLOCKS_IN_YEAR: u64 = 31_536_000 / 6; // seconds_in_year / 6_seconds_per_block
+pub const SECONDS_IN_YEAR: u64 = 31_536_000;
 
 mod guild_factory_proxy {
     multiversx_sc::imports!();
@@ -39,10 +40,16 @@ pub trait CustomRewardsModule:
     #[endpoint(topUpRewards)]
     fn top_up_rewards(&self) {
         self.require_caller_has_admin_permissions();
+        self.require_not_closing();
+
+        let mut storage_cache = StorageCache::new(self);
+        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
 
         let (payment_token, payment_amount) = self.call_value().single_fungible_esdt();
-        let reward_token_id = self.reward_token_id().get();
-        require!(payment_token == reward_token_id, "Invalid token");
+        require!(
+            payment_token == storage_cache.reward_token_id,
+            "Invalid token"
+        );
 
         self.reward_capacity().update(|r| *r += payment_amount);
     }
@@ -51,17 +58,6 @@ pub trait CustomRewardsModule:
     #[endpoint(startProduceRewards)]
     fn start_produce_rewards_endpoint(&self) {
         self.start_produce_rewards();
-    }
-
-    #[only_owner]
-    #[payable("*")]
-    #[endpoint(withdrawRewards)]
-    fn withdraw_rewards(&self, withdraw_amount: BigUint) {
-        self.withdraw_rewards_common(&withdraw_amount);
-
-        let caller = self.blockchain().get_caller();
-        let reward_token_id = self.reward_token_id().get();
-        self.send_tokens_non_zero(&caller, &reward_token_id, 0, &withdraw_amount);
     }
 
     fn withdraw_rewards_common(&self, withdraw_amount: &BigUint) {
@@ -80,35 +76,32 @@ pub trait CustomRewardsModule:
             &remaining_rewards >= withdraw_amount,
             "Withdraw amount is higher than the remaining uncollected rewards!"
         );
-        require!(
-            &rewards_capacity >= withdraw_amount,
-            "Not enough rewards to withdraw"
-        );
 
         rewards_capacity -= withdraw_amount;
         reward_capacity_mapper.set(rewards_capacity);
     }
 
-    fn get_amount_apr_bounded(&self) -> BigUint {
-        let mut total = BigUint::zero();
-        let mut guild_master_tokens_total = BigUint::zero();
-        let mut guild_master_compounded_total = BigUint::zero();
-
-        if !self.guild_master_tokens().is_empty() {
-            let guild_master_tokens = self.guild_master_tokens().get();
-            let guild_master_apr = self.find_guild_master_tier_apr(&guild_master_tokens.base);
-            let base_amount_bounded_guild_master =
-                self.bound_amount_by_apr(&guild_master_tokens.base, guild_master_apr);
-            let compounded_amount_bounded_guild_master =
-                self.bound_amount_by_apr(&guild_master_tokens.compounded, guild_master_apr);
-            total += base_amount_bounded_guild_master;
-            total += compounded_amount_bounded_guild_master;
-
-            guild_master_tokens_total = guild_master_tokens.base;
-            guild_master_compounded_total = guild_master_tokens.compounded;
-        }
+    fn get_amount_apr_bounded(&self) -> TotalRewards<Self::Api> {
+        let mut total_guild_master = BigUint::zero();
+        let mut total_users = BigUint::zero();
 
         let mut total_user_tokens = self.total_staked_tokens().get();
+        let (guild_master_tokens_total, guild_master_compounded_total) =
+            if !self.guild_master_tokens().is_empty() {
+                let guild_master_apr = self.find_guild_master_tier_apr(&total_user_tokens);
+                let guild_master_tokens = self.guild_master_tokens().get();
+                let base_amount_bounded_guild_master =
+                    self.bound_amount_by_apr(&guild_master_tokens.base, guild_master_apr);
+                let compounded_amount_bounded_guild_master =
+                    self.bound_amount_by_apr(&guild_master_tokens.compounded, guild_master_apr);
+                total_guild_master += base_amount_bounded_guild_master;
+                total_guild_master += compounded_amount_bounded_guild_master;
+
+                (guild_master_tokens.base, guild_master_tokens.compounded)
+            } else {
+                (BigUint::zero(), BigUint::zero())
+            };
+
         total_user_tokens -= guild_master_tokens_total;
 
         let mut total_user_compounded = self.total_compounded_tokens().get();
@@ -118,14 +111,46 @@ pub trait CustomRewardsModule:
         let user_apr = self.find_user_tier_apr(staked_percent);
         let base_amount_bounded = self.bound_amount_by_apr(&total_user_tokens, user_apr);
         let compounded_amount_bounded = self.bound_amount_by_apr(&total_user_compounded, user_apr);
-        total += base_amount_bounded;
-        total += compounded_amount_bounded;
+        total_users += base_amount_bounded;
+        total_users += compounded_amount_bounded;
 
-        total
+        TotalRewards {
+            guild_master: total_guild_master,
+            users: total_users,
+        }
+    }
+
+    // percentage_staked unused
+    fn find_guild_master_tier_apr(&self, total_farming_tokens: &BigUint) -> Percent {
+        let mapper = self.internal_guild_master_tiers();
+        let tier = self.find_tier_common(total_farming_tokens, Percent::default(), &mapper);
+
+        tier.apr
+    }
+
+    // total_farming_tokens unused
+    fn find_user_tier_apr(&self, percentage_staked: Percent) -> Percent {
+        let mapper = self.internal_user_tiers();
+        let tier = self.find_tier_common(&BigUint::default(), percentage_staked, &mapper);
+
+        tier.apr
     }
 
     fn bound_amount_by_apr(&self, amount: &BigUint, apr: Percent) -> BigUint {
-        amount * apr / MAX_PERCENT / BLOCKS_IN_YEAR
+        let seconds_per_block = self.internal_seconds_per_block().get();
+        let blocks_in_year = SECONDS_IN_YEAR / seconds_per_block;
+
+        amount * apr / MAX_PERCENT / blocks_in_year
+    }
+
+    fn get_total_staked_percent(&self) -> u64 {
+        let total_minted = self.internal_total_staking_token_minted().get();
+        let total_staked = self.get_total_staking_token_staked();
+
+        let opt_result = (total_staked * MAX_PERCENT / total_minted).to_u64();
+        require!(opt_result.is_some(), "Math failure");
+
+        unsafe { opt_result.unwrap_unchecked() }
     }
 
     fn request_rewards(&self, base_amount: BigUint) -> BigUint {
@@ -141,6 +166,45 @@ pub trait CustomRewardsModule:
         received_rewards
     }
 
+    fn update_internal_seconds_per_block(&self) {
+        let seconds_per_block = self.get_seconds_per_block();
+        self.internal_seconds_per_block().set(seconds_per_block);
+    }
+
+    fn update_per_block_reward_amount(&self) {
+        let per_block_reward_amount = self.get_per_block_reward_amount();
+        self.per_block_reward_amount().set(per_block_reward_amount);
+    }
+
+    fn update_internal_tiers(&self) {
+        let mut internal_guild_master_tiers_mapper = self.internal_guild_master_tiers();
+        let mut internal_user_tiers_mapper = self.internal_user_tiers();
+        internal_guild_master_tiers_mapper.clear();
+        internal_user_tiers_mapper.clear();
+
+        let external_guild_master_tiers_mapper = self.get_guild_master_tiers_mapper();
+        for tier in external_guild_master_tiers_mapper.iter() {
+            internal_guild_master_tiers_mapper.push(&tier);
+        }
+
+        let external_user_tiers_mapper = self.get_user_tiers_mapper();
+        for tier in external_user_tiers_mapper.iter() {
+            internal_user_tiers_mapper.push(&tier);
+        }
+    }
+
+    fn update_internal_staking_token_minted(&self) {
+        let minted = self.get_total_staking_token_minted();
+        self.internal_total_staking_token_minted().set(minted);
+    }
+
+    fn update_all(&self) {
+        self.update_internal_seconds_per_block();
+        self.update_per_block_reward_amount();
+        self.update_internal_tiers();
+        self.update_internal_staking_token_minted();
+    }
+
     #[proxy]
     fn guild_factory_proxy(
         &self,
@@ -154,4 +218,16 @@ pub trait CustomRewardsModule:
     #[view(getRewardCapacity)]
     #[storage_mapper("reward_capacity")]
     fn reward_capacity(&self) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("internalSecondsPerBlock")]
+    fn internal_seconds_per_block(&self) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("internalGuildMasterTiers")]
+    fn internal_guild_master_tiers(&self) -> VecMapper<GuildMasterRewardTier<Self::Api>>;
+
+    #[storage_mapper("internalUserTiers")]
+    fn internal_user_tiers(&self) -> VecMapper<UserRewardTier>;
+
+    #[storage_mapper("internalTotalStakingTokenMinted")]
+    fn internal_total_staking_token_minted(&self) -> SingleValueMapper<BigUint>;
 }

@@ -1,7 +1,4 @@
 #![no_std]
-#![allow(clippy::from_over_into)]
-#![allow(clippy::too_many_arguments)]
-#![feature(exact_size_is_empty)]
 #![feature(trait_alias)]
 #![feature(associated_type_defaults)]
 
@@ -9,9 +6,12 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use base_impl_wrapper::FarmStakingWrapper;
+use common_errors::{ERROR_NOT_AN_ESDT, ERROR_ZERO_AMOUNT};
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmContract;
 use fixed_supply_token::FixedSupplyToken;
+use pausable::State;
+use permissions_module::Permissions;
 use tokens::token_attributes::StakingFarmTokenAttributes;
 
 pub mod base_impl_wrapper;
@@ -34,11 +34,9 @@ pub trait FarmStaking:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + sc_whitelist_module::SCWhitelistModule
     + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
-    + farm_base_impl::base_farm_init::BaseFarmInitModule
     + farm_base_impl::base_farm_validation::BaseFarmValidationModule
     + farm_base_impl::enter_farm::BaseEnterFarmModule
     + farm_base_impl::claim_rewards::BaseClaimRewardsModule
@@ -65,7 +63,6 @@ pub trait FarmStaking:
         division_safety_constant: BigUint,
         config_sc_address: ManagedAddress,
         guild_master: ManagedAddress,
-        per_block_reward_amount: BigUint,
         mut admins: MultiValueEncoded<ManagedAddress>,
     ) {
         let owner = self.blockchain().get_caller();
@@ -85,9 +82,8 @@ pub trait FarmStaking:
 
         self.config_sc_address().set(config_sc_address);
         self.guild_master().set(guild_master);
-        self.per_block_reward_amount().set(per_block_reward_amount);
 
-        self.sc_whitelist_addresses().add(&owner);
+        self.update_all();
     }
 
     #[upgrade]
@@ -101,6 +97,8 @@ pub trait FarmStaking:
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();
         let token_mapper = self.farm_token();
+        token_mapper.require_all_same_token(&payments);
+
         let output_attributes: StakingFarmTokenAttributes<Self::Api> =
             self.merge_from_payments_and_burn(payments, &token_mapper);
         let new_token_amount = output_attributes.get_total_supply();
@@ -154,5 +152,45 @@ pub trait FarmStaking:
             caller == sc_address,
             "May only call this function through VM query"
         );
+    }
+
+    fn base_farm_init(
+        &self,
+        reward_token_id: TokenIdentifier,
+        farming_token_id: TokenIdentifier,
+        division_safety_constant: BigUint,
+        owner: ManagedAddress,
+        admins: MultiValueEncoded<ManagedAddress>,
+    ) {
+        require!(
+            reward_token_id.is_valid_esdt_identifier(),
+            ERROR_NOT_AN_ESDT
+        );
+        require!(
+            farming_token_id.is_valid_esdt_identifier(),
+            ERROR_NOT_AN_ESDT
+        );
+        require!(division_safety_constant != 0u64, ERROR_ZERO_AMOUNT);
+
+        self.state().set(State::Inactive);
+        self.division_safety_constant()
+            .set(&division_safety_constant);
+
+        self.reward_token_id().set(&reward_token_id);
+        self.farming_token_id().set(&farming_token_id);
+
+        if !owner.is_zero() {
+            self.add_permissions(owner, Permissions::OWNER | Permissions::PAUSE);
+        }
+
+        let caller = self.blockchain().get_caller();
+        if admins.is_empty() {
+            // backwards compatibility
+            let all_permissions = Permissions::OWNER | Permissions::ADMIN | Permissions::PAUSE;
+            self.add_permissions(caller, all_permissions);
+        } else {
+            self.add_permissions(caller, Permissions::OWNER | Permissions::PAUSE);
+            self.add_permissions_for_all(admins, Permissions::ADMIN);
+        };
     }
 }

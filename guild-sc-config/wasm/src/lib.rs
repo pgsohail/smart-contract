@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           26
+// Endpoints:                           33
 // Async Callback (empty):               1
-// Total number of exported functions:  28
+// Total number of exported functions:  35
 
 #![no_std]
 #![allow(internal_features)]
@@ -22,19 +22,23 @@ multiversx_sc_wasm_adapter::endpoints! {
         init => init
         upgrade => upgrade
         addGuildMasterTiers => add_guild_master_tiers
+        updateGuildMasterTiers => update_guild_master_tiers
         setGuildMasterTierApr => set_guild_master_tier_apr
         addUserTiers => add_user_tiers
+        updateUserTiers => update_user_tiers
         setUserTierApr => set_user_tier_apr
         getGuildMasterTiers => guild_master_tiers
         getUserTiers => user_tiers
-        setMinUnbondEpochsUser => set_min_unbond_epochs_user
-        setMinUnbondEpochsGuildMaster => set_min_unbond_epochs_guild_master
         setMinStakeUser => set_min_stake_user
         setMinStakeGuildMaster => set_min_stake_guild_master
+        setMaxStakedTokens => set_max_staked_tokens
         setTotalStakingTokenMinted => set_total_staking_token_minted
         increaseStakedTokens => increase_staked_tokens
         decreaseStakedTokens => decrease_staked_tokens
-        getTotalStakedPercent => get_total_staked_percent
+        setSecondsPerBlock => set_seconds_per_block
+        setPerBlockRewardAmount => set_per_block_reward_amount
+        pauseAllGuilds => pause_all_guilds
+        unpauseAllGuilds => unpause_all_guilds
         getMaxStakedTokens => max_staked_tokens
         getMinUnbondEpochsUser => min_unbond_epochs_user
         getMinUnbondEpochsGuildMaster => min_unbond_epochs_guild_master
@@ -46,6 +50,9 @@ multiversx_sc_wasm_adapter::endpoints! {
         getBaseUnbondTokenId => base_unbond_token_id
         getBaseTokenDisplayName => base_token_display_name
         getTokenDecimals => tokens_decimals
+        getSecondsPerBlock => seconds_per_block
+        getPerBlockRewardAmount => per_block_reward_amount
+        areAllGuildsPaused => global_pause_status
     )
 }
 

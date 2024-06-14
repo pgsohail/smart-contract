@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           45
+// Endpoints:                           42
 // Async Callback:                       1
-// Total number of exported functions:  47
+// Total number of exported functions:  44
 
 #![no_std]
 #![allow(internal_features)]
@@ -26,10 +26,10 @@ multiversx_sc_wasm_adapter::endpoints! {
         calculateRewardsForGivenPosition => calculate_rewards_for_given_position
         topUpRewards => top_up_rewards
         startProduceRewards => start_produce_rewards_endpoint
-        withdrawRewards => withdraw_rewards
         getAccumulatedRewards => accumulated_rewards
         getRewardCapacity => reward_capacity
-        getRewardPerShare => reward_per_share
+        getGuildMasterRewardPerShare => guild_master_rps
+        getUserRewardPerShare => user_rps
         getRewardReserve => reward_reserve
         getFarmingTokenId => farming_token_id
         getRewardTokenId => reward_token_id
@@ -40,9 +40,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         setTransferRoleFarmToken => set_transfer_role_farm_token
         getFarmTokenId => farm_token
         getFarmTokenSupply => farm_token_supply
-        addSCAddressToWhitelist => add_sc_address_to_whitelist
-        removeSCAddressFromWhitelist => remove_sc_address_from_whitelist
-        isSCAddressWhitelisted => is_sc_address_whitelisted
         addToPauseWhitelist => add_to_pause_whitelist
         removeFromPauseWhitelist => remove_from_pause_whitelist
         pause => pause

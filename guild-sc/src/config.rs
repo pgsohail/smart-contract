@@ -4,34 +4,6 @@ multiversx_sc::derive_imports!();
 use common_structs::Nonce;
 use pausable::State;
 
-pub const DEFAULT_NFT_DEPOSIT_MAX_LEN: usize = 10;
-pub const DEFAULT_FARM_POSITION_MIGRATION_NONCE: u64 = 1;
-
-#[derive(
-    ManagedVecItem,
-    TopEncode,
-    TopDecode,
-    NestedEncode,
-    NestedDecode,
-    TypeAbi,
-    Clone,
-    PartialEq,
-    Debug,
-)]
-pub struct UserTotalFarmPosition<M: ManagedTypeApi> {
-    pub total_farm_position: BigUint<M>,
-    pub allow_external_claim_boosted_rewards: bool,
-}
-
-impl<M: ManagedTypeApi> Default for UserTotalFarmPosition<M> {
-    fn default() -> Self {
-        Self {
-            total_farm_position: BigUint::zero(),
-            allow_external_claim_boosted_rewards: false,
-        }
-    }
-}
-
 #[multiversx_sc::module]
 pub trait ConfigModule: pausable::PausableModule + permissions_module::PermissionsModule {
     #[inline]

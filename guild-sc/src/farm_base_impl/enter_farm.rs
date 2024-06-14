@@ -67,11 +67,12 @@ pub trait BaseEnterFarmModule:
         storage_cache.farm_token_supply += &enter_farm_context.farming_token_payment.amount;
 
         let farm_token_mapper = self.farm_token();
+        let rps = self.get_rps_by_user(&caller, &storage_cache);
         let base_attributes = FC::create_enter_farm_initial_attributes(
             self,
             caller,
             enter_farm_context.farming_token_payment.amount.clone(),
-            storage_cache.reward_per_share.clone(),
+            rps.clone(),
         );
         let new_token_attributes = self.merge_attributes_from_payments(
             base_attributes,
