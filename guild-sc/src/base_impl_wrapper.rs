@@ -43,9 +43,15 @@ where
             return TotalRewards::zero();
         }
 
+        sc.last_reward_block_nonce().set(current_block_nonce);
+
         let extra_rewards_unbounded =
             Self::calculate_per_block_rewards(sc, current_block_nonce, last_reward_nonce);
         if extra_rewards_unbounded == 0 {
+            return TotalRewards::zero();
+        }
+
+        if sc.guild_master_tokens().is_empty() {
             return TotalRewards::zero();
         }
 
@@ -65,8 +71,6 @@ where
             guild_master: extra_rewards_apr_bounded_per_block.guild_master * block_nonce_diff,
             users: extra_rewards_apr_bounded_per_block.users * block_nonce_diff,
         };
-
-        sc.last_reward_block_nonce().set(current_block_nonce);
 
         TotalRewards {
             guild_master: core::cmp::min(
