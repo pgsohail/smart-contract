@@ -1,4 +1,6 @@
-use crate::{base_impl_wrapper::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens};
+use crate::{
+    farm_base_impl::base_traits_impl::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens,
+};
 
 multiversx_sc::imports!();
 

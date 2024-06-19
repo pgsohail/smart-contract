@@ -1,7 +1,7 @@
-use crate::contexts::storage_cache::StorageCache;
-use crate::farm_base_impl::base_traits_impl::FarmContract;
-
-use crate::base_impl_wrapper::FarmStakingWrapper;
+use crate::{
+    contexts::storage_cache::StorageCache,
+    farm_base_impl::base_traits_impl::{FarmContract, FarmStakingWrapper},
+};
 
 mod guild_factory_proxy {
     multiversx_sc::imports!();

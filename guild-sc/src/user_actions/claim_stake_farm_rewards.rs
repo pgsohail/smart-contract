@@ -2,7 +2,7 @@ multiversx_sc::imports!();
 
 use farm::base_functions::ClaimRewardsResultType;
 
-use crate::base_impl_wrapper::FarmStakingWrapper;
+use crate::farm_base_impl::base_traits_impl::FarmStakingWrapper;
 
 #[multiversx_sc::module]
 pub trait ClaimStakeFarmRewardsModule:

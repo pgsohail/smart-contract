@@ -1,11 +1,12 @@
 multiversx_sc::imports!();
 
-use crate::contexts::storage_cache::StorageCache;
+use crate::{
+    contexts::storage_cache::StorageCache, farm_base_impl::base_traits_impl::FarmStakingWrapper,
+};
 use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
-    base_impl_wrapper::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens,
-    tokens::token_attributes::UnbondSftAttributes,
+    tiered_rewards::total_tokens::TotalTokens, tokens::token_attributes::UnbondSftAttributes,
 };
 
 #[multiversx_sc::module]

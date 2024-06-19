@@ -1,13 +1,13 @@
 multiversx_sc::imports!();
 
 use crate::contexts::storage_cache::{FarmContracTraitBounds, StorageCache};
+use crate::farm_base_impl::base_traits_impl::FarmStakingWrapper;
 use crate::farm_base_impl::exit_farm::InternalExitFarmResult;
 use common_structs::{Epoch, PaymentsVec};
 use farm::ExitFarmWithPartialPosResultType;
 use mergeable::Mergeable;
 
 use crate::{
-    base_impl_wrapper::FarmStakingWrapper,
     tiered_rewards::total_tokens::TotalTokens,
     tokens::token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes},
 };

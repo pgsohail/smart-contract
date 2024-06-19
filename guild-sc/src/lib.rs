@@ -5,16 +5,15 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-use base_impl_wrapper::FarmStakingWrapper;
+use crate::farm_base_impl::base_traits_impl::FarmContract;
 use common_errors::{ERROR_NOT_AN_ESDT, ERROR_ZERO_AMOUNT};
 use contexts::storage_cache::StorageCache;
-use farm_base_impl::base_traits_impl::FarmContract;
+use farm_base_impl::base_traits_impl::FarmStakingWrapper;
 use fixed_supply_token::FixedSupplyToken;
 use pausable::State;
 use permissions_module::Permissions;
 use tokens::token_attributes::StakingFarmTokenAttributes;
 
-pub mod base_impl_wrapper;
 pub mod config;
 pub mod contexts;
 pub mod custom_rewards;
