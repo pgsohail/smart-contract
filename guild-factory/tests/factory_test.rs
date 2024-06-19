@@ -838,4 +838,18 @@ fn calculate_rewards_test() {
             );
         })
         .assert_ok();
+
+    // check guild master rewards
+    farm_setup
+        .b_mock
+        .execute_query(&farm_setup.first_farm_wrapper, |sc| {
+            let token_attributes = StakingFarmTokenAttributes::<DebugApi> {
+                reward_per_share: managed_biguint!(0),
+                compounded_reward: managed_biguint!(0),
+                current_farm_amount: managed_biguint!(1),
+            };
+
+            let _ = sc.calculate_rewards_for_given_position(managed_biguint!(1), token_attributes);
+        })
+        .assert_ok();
 }
