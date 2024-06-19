@@ -11,6 +11,7 @@ use guild_sc::{
         stake_farm::StakeFarmModule, unbond_farm::UnbondFarmModule,
         unstake_farm::UnstakeFarmModule,
     },
+    FarmStaking,
 };
 use guild_sc_config::tiers::{TierModule, MAX_PERCENT};
 use multiversx_sc::{codec::Empty, imports::OptionalValue};
@@ -764,5 +765,44 @@ fn set_apr_test() {
                 sc.set_user_tier_apr(MAX_PERCENT, 5_000);
             },
         )
+        .assert_ok();
+}
+
+#[test]
+fn calculate_rewards_test() {
+    DebugApi::dummy();
+
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 2;
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
+
+    farm_setup.set_block_epoch(5);
+    farm_setup.set_block_nonce(10);
+
+    // value taken from the "test_unstake_farm" test
+    let expected_reward_token_out = 39;
+
+    farm_setup
+        .b_mock
+        .execute_query(&farm_setup.first_farm_wrapper, |sc| {
+            let token_attributes = StakingFarmTokenAttributes::<DebugApi> {
+                reward_per_share: managed_biguint!(0),
+                compounded_reward: managed_biguint!(0),
+                current_farm_amount: managed_biguint!(farm_in_amount),
+            };
+
+            let calculated_reward = sc.calculate_rewards_for_given_position(
+                managed_biguint!(farm_in_amount),
+                token_attributes,
+            );
+            assert_eq!(calculated_reward, expected_reward_token_out);
+        })
         .assert_ok();
 }
