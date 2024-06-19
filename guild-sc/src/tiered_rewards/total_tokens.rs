@@ -103,9 +103,9 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         mapper: &SingleValueMapper<TotalTokens<Self::Api>>,
     ) {
         if !mapper.is_empty() {
-            mapper.update(|tokens_per_tier| {
-                tokens_per_tier.base += &tokens.base;
-                tokens_per_tier.compounded += &tokens.compounded;
+            mapper.update(|total_tokens| {
+                total_tokens.base += &tokens.base;
+                total_tokens.compounded += &tokens.compounded;
             });
         } else {
             mapper.set(tokens);
@@ -128,21 +128,21 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         tokens: &TotalTokens<Self::Api>,
         mapper: &SingleValueMapper<TotalTokens<Self::Api>>,
     ) {
-        mapper.update(|tokens_per_tier| {
-            tokens_per_tier.base -= &tokens.base;
-            tokens_per_tier.compounded -= &tokens.compounded;
+        mapper.update(|total_tokens| {
+            total_tokens.base -= &tokens.base;
+            total_tokens.compounded -= &tokens.compounded;
         });
     }
 
     fn get_total_stake_for_user(&self, user: &ManagedAddress) -> BigUint {
         let guild_master = self.guild_master().get();
-        let tokens_per_tier = if user != &guild_master {
+        let total_tokens = if user != &guild_master {
             self.user_tokens(user).get()
         } else {
             self.guild_master_tokens().get()
         };
 
-        tokens_per_tier.total()
+        total_tokens.total()
     }
 
     fn require_over_min_stake(&self, user: &ManagedAddress) {
