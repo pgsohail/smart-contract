@@ -1,7 +1,7 @@
 use common_structs::{Epoch, Percent};
 use guild_sc_config::{
     global_config::{GlobalPauseStatus, UNPAUSED},
-    tiers::{GuildMasterRewardTier, RewardTier, UserRewardTier},
+    tier_types::{GuildMasterRewardTier, RewardTier, UserRewardTier},
 };
 use multiversx_sc::storage::StorageKey;
 

@@ -6,6 +6,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 pub mod global_config;
+pub mod tier_types;
 pub mod tiers;
 
 #[derive(TypeAbi, TopEncode, TopDecode)]

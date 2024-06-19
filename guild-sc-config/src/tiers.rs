@@ -1,5 +1,10 @@
 use common_structs::Percent;
 
+use crate::tier_types::{
+    GuildMasterRewardTier, GuildMasterRewardTierMultiValue, RewardTier, UserRewardTier,
+    UserRewardTierMultiValue,
+};
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
@@ -10,101 +15,24 @@ pub const MAX_PERCENT: Percent = 10_000;
 pub const MAX_TIERS: usize = 5;
 pub const FIRST_INDEX_VEC_MAPPER: usize = 1;
 
-pub type GuildMasterRewardTierMultiValue<M> = MultiValue2<BigUint<M>, Percent>;
-pub type UserRewardTierMultiValue = MultiValue2<Percent, Percent>;
-
-#[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
-pub struct GuildMasterRewardTier<M: ManagedTypeApi> {
-    pub max_stake: BigUint<M>,
-    pub apr: Percent,
-}
-
-impl<M: ManagedTypeApi> From<GuildMasterRewardTierMultiValue<M>> for GuildMasterRewardTier<M> {
-    fn from(value: GuildMasterRewardTierMultiValue<M>) -> Self {
-        let (max_stake, apr) = value.into_tuple();
-        if apr == 0 {
-            M::error_api_impl().signal_error(INVALID_APR_ERR_MSG);
-        }
-
-        Self { max_stake, apr }
-    }
-}
-
-#[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
-pub struct UserRewardTier {
-    pub max_percentage_staked: Percent,
-    pub apr: Percent,
-}
-
-impl From<UserRewardTierMultiValue> for UserRewardTier {
-    fn from(value: UserRewardTierMultiValue) -> Self {
-        let (max_percentage_staked, apr) = value.into_tuple();
-
-        Self {
-            max_percentage_staked,
-            apr,
-        }
-    }
-}
-
-pub trait RewardTier<M: ManagedTypeApi> {
-    fn is_in_range(&self, user_stake: &BigUint<M>, percentage_staked: Percent) -> bool;
-
-    fn is_below(&self, other: &Self) -> bool;
-
-    fn is_equal(&self, other: &Self) -> bool;
-
-    fn get_apr(&self) -> Percent;
-
-    fn set_apr(&mut self, other: &Self);
-}
-
-impl<M: ManagedTypeApi> RewardTier<M> for GuildMasterRewardTier<M> {
-    fn is_in_range(&self, user_stake: &BigUint<M>, _percentage_staked: Percent) -> bool {
-        user_stake <= &self.max_stake
-    }
-
-    fn is_below(&self, other: &Self) -> bool {
-        self.max_stake < other.max_stake
-    }
-
-    fn is_equal(&self, other: &Self) -> bool {
-        self.max_stake == other.max_stake
-    }
-
-    fn get_apr(&self) -> Percent {
-        self.apr
-    }
-
-    fn set_apr(&mut self, other: &Self) {
-        self.apr = other.apr;
-    }
-}
-
-impl<M: ManagedTypeApi> RewardTier<M> for UserRewardTier {
-    fn is_in_range(&self, _user_stake: &BigUint<M>, percentage_staked: Percent) -> bool {
-        percentage_staked <= self.max_percentage_staked
-    }
-
-    fn is_below(&self, other: &Self) -> bool {
-        self.max_percentage_staked < other.max_percentage_staked
-    }
-
-    fn is_equal(&self, other: &Self) -> bool {
-        self.max_percentage_staked == other.max_percentage_staked
-    }
-
-    fn get_apr(&self) -> Percent {
-        self.apr
-    }
-
-    fn set_apr(&mut self, other: &Self) {
-        self.apr = other.apr;
-    }
-}
-
 #[multiversx_sc::module]
 pub trait TierModule: crate::global_config::GlobalConfigModule {
+    #[only_owner]
+    #[endpoint(setMaxStakedTokens)]
+    fn set_max_staked_tokens(&self, max_staked_tokens: BigUint) {
+        let tiers_mapper = self.guild_master_tiers();
+        let tiers_len = tiers_mapper.len();
+        if tiers_len > 1 {
+            let penultimate_tier = tiers_mapper.get(tiers_len - 1);
+            require!(
+                max_staked_tokens > penultimate_tier.max_stake,
+                "Invalid max stake"
+            );
+        }
+
+        self.max_staked_tokens().set(max_staked_tokens);
+    }
+
     /// Pairs of (max_stake, apr)
     /// APR is scaled by two decimals, i.e. 10_000 is 100%
     /// Last max_stake value must be equal to the init value of max_staked_tokens

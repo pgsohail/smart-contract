@@ -21,6 +21,7 @@ multiversx_sc_wasm_adapter::endpoints! {
     (
         init => init
         upgrade => upgrade
+        setMaxStakedTokens => set_max_staked_tokens
         addGuildMasterTiers => add_guild_master_tiers
         updateGuildMasterTiers => update_guild_master_tiers
         setGuildMasterTierApr => set_guild_master_tier_apr
@@ -31,7 +32,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         getUserTiers => user_tiers
         setMinStakeUser => set_min_stake_user
         setMinStakeGuildMaster => set_min_stake_guild_master
-        setMaxStakedTokens => set_max_staked_tokens
         setTotalStakingTokenMinted => set_total_staking_token_minted
         increaseStakedTokens => increase_staked_tokens
         decreaseStakedTokens => decrease_staked_tokens

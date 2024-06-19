@@ -6,7 +6,7 @@ use crate::{
     contexts::storage_cache::StorageCache, farm_base_impl::base_traits_impl::FarmStakingWrapper,
 };
 use common_structs::Percent;
-use guild_sc_config::tiers::{GuildMasterRewardTier, UserRewardTier};
+use guild_sc_config::tier_types::{GuildMasterRewardTier, UserRewardTier};
 
 pub const MAX_PERCENT: Percent = 10_000;
 pub const SECONDS_IN_YEAR: u64 = 31_536_000;

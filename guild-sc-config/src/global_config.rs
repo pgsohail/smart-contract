@@ -31,12 +31,6 @@ pub trait GlobalConfigModule {
     }
 
     #[only_owner]
-    #[endpoint(setMaxStakedTokens)]
-    fn set_max_staked_tokens(&self, max_staked_tokens: BigUint) {
-        self.max_staked_tokens().set(max_staked_tokens);
-    }
-
-    #[only_owner]
     #[endpoint(setTotalStakingTokenMinted)]
     fn set_total_staking_token_minted(&self, total_minted: BigUint) {
         self.total_staking_token_minted().set(total_minted);
