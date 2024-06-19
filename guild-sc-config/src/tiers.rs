@@ -5,8 +5,10 @@ multiversx_sc::derive_imports!();
 
 pub static TIER_NOT_FOUND_ERR_MSG: &[u8] = b"Tier not found";
 pub static INVALID_APR_ERR_MSG: &[u8] = b"Invalid APR";
+
 pub const MAX_PERCENT: Percent = 10_000;
 pub const MAX_TIERS: usize = 5;
+pub const FIRST_INDEX_VEC_MAPPER: usize = 1;
 
 pub type GuildMasterRewardTierMultiValue<M> = MultiValue2<BigUint<M>, Percent>;
 pub type UserRewardTierMultiValue = MultiValue2<Percent, Percent>;
@@ -233,7 +235,7 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
             require!(previous_entry.is_below(tier), "Invalid stake entry");
             require!(
                 tier.get_apr() > previous_entry.get_apr(),
-                "Invalid APR value"
+                INVALID_APR_ERR_MSG
             );
         }
 
@@ -256,6 +258,25 @@ pub trait TierModule: crate::global_config::GlobalConfigModule {
         require!(opt_found_index.is_some(), TIER_NOT_FOUND_ERR_MSG);
 
         let index = unsafe { opt_found_index.unwrap_unchecked() };
+        if index > FIRST_INDEX_VEC_MAPPER {
+            let prev_index = index - 1;
+            let prev_entry = mapper.get(prev_index);
+            require!(
+                reward_tier.get_apr() > prev_entry.get_apr(),
+                INVALID_APR_ERR_MSG
+            );
+        }
+
+        let last_index_vec_mapper = mapper.len();
+        if index < last_index_vec_mapper {
+            let next_index = index + 1;
+            let next_entry = mapper.get(next_index);
+            require!(
+                reward_tier.get_apr() < next_entry.get_apr(),
+                INVALID_APR_ERR_MSG
+            );
+        }
+
         let mut tier = mapper.get(index);
         tier.set_apr(&reward_tier);
         mapper.set(index, &tier);
