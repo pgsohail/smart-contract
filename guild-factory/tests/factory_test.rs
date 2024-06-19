@@ -805,4 +805,37 @@ fn calculate_rewards_test() {
             assert_eq!(calculated_reward, expected_reward_token_out);
         })
         .assert_ok();
+
+    let expected_farming_token_balance =
+        rust_biguint!(USER_TOTAL_RIDE_TOKENS - farm_in_amount + expected_reward_token_out);
+    let expected_reward_per_share = 399_999;
+    farm_setup.claim_rewards(
+        farm_in_amount,
+        expected_farm_token_nonce,
+        expected_reward_token_out,
+        &expected_farming_token_balance,
+        &expected_farming_token_balance,
+        expected_farm_token_nonce + 1,
+        expected_reward_per_share,
+    );
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
+
+    farm_setup.set_block_epoch(10);
+    farm_setup.set_block_nonce(20);
+
+    farm_setup
+        .b_mock
+        .execute_query(&farm_setup.first_farm_wrapper, |sc| {
+            let token_attributes = StakingFarmTokenAttributes::<DebugApi> {
+                reward_per_share: managed_biguint!(expected_reward_per_share),
+                compounded_reward: managed_biguint!(0),
+                current_farm_amount: managed_biguint!(farm_in_amount),
+            };
+
+            let _ = sc.calculate_rewards_for_given_position(
+                managed_biguint!(farm_in_amount),
+                token_attributes,
+            );
+        })
+        .assert_ok();
 }
