@@ -3,8 +3,8 @@ multiversx_sc::imports!();
 use core::marker::PhantomData;
 
 use crate::contexts::storage_cache::StorageCache;
-use crate::tokens::token_attributes::StakingFarmTokenAttributes;
-use common_structs::{FarmToken, Nonce};
+use crate::tokens::token_attributes::{LocalFarmToken, StakingFarmTokenAttributes};
+use common_structs::Nonce;
 use fixed_supply_token::FixedSupplyToken;
 use mergeable::Mergeable;
 
@@ -49,7 +49,7 @@ pub trait FarmContract {
         + NestedDecode
         + Mergeable<<Self::FarmSc as ContractBase>::Api>
         + FixedSupplyToken<<Self::FarmSc as ContractBase>::Api>
-        + FarmToken<<Self::FarmSc as ContractBase>::Api>
+        + LocalFarmToken<<Self::FarmSc as ContractBase>::Api>
         + ManagedVecItem;
 
     fn calculate_per_block_rewards(

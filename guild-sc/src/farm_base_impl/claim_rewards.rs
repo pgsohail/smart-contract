@@ -1,9 +1,12 @@
 multiversx_sc::imports!();
 
 use super::base_traits_impl::FarmContract;
-use crate::contexts::{
-    claim_rewards_context::ClaimRewardsContext,
-    storage_cache::{FarmContracTraitBounds, StorageCache},
+use crate::{
+    contexts::{
+        claim_rewards_context::ClaimRewardsContext,
+        storage_cache::{FarmContracTraitBounds, StorageCache},
+    },
+    tokens::token_attributes::LocalFarmToken,
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
 use fixed_supply_token::FixedSupplyToken;
@@ -110,11 +113,13 @@ pub trait BaseClaimRewardsModule:
             first_token_attributes.clone(),
             rps.clone(),
         );
-        let new_token_attributes = self.merge_attributes_from_payments(
+        let mut new_token_attributes = self.merge_attributes_from_payments(
             base_attributes,
             &claim_rewards_context.additional_payments,
             &farm_token_mapper,
         );
+        new_token_attributes.set_reward_per_share(rps.clone());
+
         let new_farm_token = PaymentAttributesPair {
             payment: EsdtTokenPayment::new(
                 storage_cache.farm_token_id.clone(),

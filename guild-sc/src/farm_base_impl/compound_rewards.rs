@@ -1,9 +1,12 @@
 multiversx_sc::imports!();
 
 use super::base_traits_impl::FarmContract;
-use crate::contexts::{
-    claim_rewards_context::CompoundRewardsContext,
-    storage_cache::{FarmContracTraitBounds, StorageCache},
+use crate::{
+    contexts::{
+        claim_rewards_context::CompoundRewardsContext,
+        storage_cache::{FarmContracTraitBounds, StorageCache},
+    },
+    tokens::token_attributes::LocalFarmToken,
 };
 use common_errors::ERROR_DIFFERENT_TOKEN_IDS;
 use common_structs::{PaymentAttributesPair, PaymentsVec};
@@ -93,13 +96,15 @@ pub trait BaseCompoundRewardsModule:
 
         let farm_token_mapper = self.farm_token();
         let rps = self.get_rps_by_user(&caller, &storage_cache);
-        let base_attributes = FC::create_compound_rewards_initial_attributes(
+        let mut base_attributes = FC::create_compound_rewards_initial_attributes(
             self,
             caller.clone(),
             first_token_attributes.clone(),
             rps.clone(),
             &total_rewards,
         );
+        base_attributes.set_reward_per_share(rps.clone());
+
         let new_farm_token = self.merge_and_create_token(
             base_attributes,
             &compound_rewards_context.additional_payments,
