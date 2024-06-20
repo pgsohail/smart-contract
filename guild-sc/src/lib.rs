@@ -130,8 +130,6 @@ pub trait FarmStaking:
         farm_token_amount: BigUint,
         attributes: StakingFarmTokenAttributes<Self::Api>,
     ) -> BigUint {
-        self.require_queried();
-
         let mut storage_cache = StorageCache::new(self);
         FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
 
@@ -142,15 +140,6 @@ pub trait FarmStaking:
             &attributes,
             &storage_cache,
         )
-    }
-
-    fn require_queried(&self) {
-        let caller = self.blockchain().get_caller();
-        let sc_address = self.blockchain().get_sc_address();
-        require!(
-            caller == sc_address,
-            "May only call this function through VM query"
-        );
     }
 
     fn base_farm_init(
