@@ -101,7 +101,7 @@ pub trait UnstakeFarmModule:
 
         let base_tokens_removed =
             &original_attributes.current_farm_amount - &original_attributes.compounded_reward;
-        self.remove_total_staked_tokens(&base_tokens_removed);
+        self.remove_total_base_staked_tokens(&base_tokens_removed);
         self.remove_tokens(
             &original_caller,
             &TotalTokens::new(

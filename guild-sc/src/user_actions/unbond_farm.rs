@@ -112,7 +112,7 @@ pub trait UnbondFarmModule:
         new_attributes.compounded_reward = original_attributes.compounded_reward;
 
         let initial_farming_tokens = new_attributes.get_initial_farming_tokens();
-        self.add_total_staked_tokens(&initial_farming_tokens);
+        self.add_total_base_staked_tokens(&initial_farming_tokens);
         self.add_tokens(
             &caller,
             &TotalTokens::new(

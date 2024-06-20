@@ -67,9 +67,9 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         }
     }
 
-    fn add_total_staked_tokens(&self, amount: &BigUint) {
+    fn add_total_base_staked_tokens(&self, amount: &BigUint) {
         let max_staked_tokens = self.get_max_staked_tokens();
-        self.total_staked_tokens().update(|total| {
+        self.total_base_staked_tokens().update(|total| {
             *total += amount;
 
             require!(
@@ -80,8 +80,8 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     }
 
     #[inline]
-    fn remove_total_staked_tokens(&self, amount: &BigUint) {
-        self.total_staked_tokens().update(|total| {
+    fn remove_total_base_staked_tokens(&self, amount: &BigUint) {
+        self.total_base_staked_tokens().update(|total| {
             *total -= amount;
         });
     }
@@ -156,8 +156,8 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         require!(total_stake >= min_stake, "Not enough stake");
     }
 
-    #[storage_mapper("totalStakedTokens")]
-    fn total_staked_tokens(&self) -> SingleValueMapper<BigUint>;
+    #[storage_mapper("totalBaseStakedTokens")]
+    fn total_base_staked_tokens(&self) -> SingleValueMapper<BigUint>;
 
     #[storage_mapper("totalCompoundedTokens")]
     fn total_compounded_tokens(&self) -> SingleValueMapper<BigUint>;

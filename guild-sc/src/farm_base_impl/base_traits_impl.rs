@@ -90,7 +90,8 @@ pub trait FarmContract {
         }
 
         let guild_master_tokens = sc.guild_master_tokens().get();
-        let total_user_tokens = sc.total_staked_tokens().get() + sc.total_compounded_tokens().get();
+        let total_user_tokens =
+            sc.total_base_staked_tokens().get() + sc.total_compounded_tokens().get();
         let guild_master_rewards =
             &guild_master_tokens.total() * &extra_rewards_unbounded / total_user_tokens;
         let user_rewards = &extra_rewards_unbounded - &guild_master_rewards;
@@ -152,7 +153,7 @@ pub trait FarmContract {
         }
 
         let guild_master_tokens = sc.guild_master_tokens().get();
-        let total_tokens_base = sc.total_staked_tokens().get();
+        let total_tokens_base = sc.total_base_staked_tokens().get();
         let total_compounded = sc.total_compounded_tokens().get();
         let user_tokens = TotalTokens {
             base: &total_tokens_base - &guild_master_tokens.base,

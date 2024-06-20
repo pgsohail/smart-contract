@@ -82,10 +82,10 @@ pub trait CustomRewardsModule:
         let mut total_guild_master = BigUint::zero();
         let mut total_users = BigUint::zero();
 
-        let mut total_user_tokens = self.total_staked_tokens().get();
-        let (guild_master_tokens_total, guild_master_compounded_total) =
+        let mut total_user_base_tokens = self.total_base_staked_tokens().get();
+        let (guild_master_tokens_base_total, guild_master_compounded_total) =
             if !self.guild_master_tokens().is_empty() {
-                let guild_master_apr = self.find_guild_master_tier_apr(&total_user_tokens);
+                let guild_master_apr = self.find_guild_master_tier_apr(&total_user_base_tokens);
                 let guild_master_tokens = self.guild_master_tokens().get();
                 let base_amount_bounded_guild_master =
                     self.bound_amount_by_apr(&guild_master_tokens.base, guild_master_apr);
@@ -99,14 +99,14 @@ pub trait CustomRewardsModule:
                 (BigUint::zero(), BigUint::zero())
             };
 
-        total_user_tokens -= guild_master_tokens_total;
+        total_user_base_tokens -= guild_master_tokens_base_total;
 
         let mut total_user_compounded = self.total_compounded_tokens().get();
         total_user_compounded -= guild_master_compounded_total;
 
         let staked_percent = self.get_total_staked_percent();
         let user_apr = self.find_user_tier_apr(staked_percent);
-        let base_amount_bounded = self.bound_amount_by_apr(&total_user_tokens, user_apr);
+        let base_amount_bounded = self.bound_amount_by_apr(&total_user_base_tokens, user_apr);
         let compounded_amount_bounded = self.bound_amount_by_apr(&total_user_compounded, user_apr);
         total_users += base_amount_bounded;
         total_users += compounded_amount_bounded;
