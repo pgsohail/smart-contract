@@ -136,6 +136,8 @@ pub trait FarmContract {
 
         // If needed rewards STILL more than remaining rewards, just return instead of doing additional math
         if total_reward > remaining_rewards {
+            sc.update_all();
+
             return;
         }
 
@@ -144,6 +146,8 @@ pub trait FarmContract {
         accumulated_rewards_mapper.set(&accumulated_rewards);
 
         if storage_cache.farm_token_supply == 0 {
+            sc.update_all();
+
             return;
         }
 
