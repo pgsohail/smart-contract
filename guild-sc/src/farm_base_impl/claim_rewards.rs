@@ -23,6 +23,16 @@ where
     pub created_with_merge: bool,
 }
 
+pub struct TempInternalClaimRewardsResult<'a, C, T>
+where
+    C: FarmContracTraitBounds,
+    T: Clone + TopEncode + TopDecode + NestedEncode + NestedDecode + ManagedVecItem,
+{
+    pub context: ClaimRewardsContext<C::Api, T>,
+    pub storage_cache: StorageCache<'a, C>,
+    pub rewards: BigUint<C::Api>,
+}
+
 #[multiversx_sc::module]
 pub trait BaseClaimRewardsModule:
     crate::rewards::RewardsModule
@@ -59,6 +69,53 @@ pub trait BaseClaimRewardsModule:
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
     ) -> InternalClaimRewardsResult<Self, FC::AttributesType> {
+        let temp_result = self.claim_rewards_base_impl::<FC>(&caller, payments);
+        let first_token_attributes =
+            self.get_first_token_part_attributes::<FC>(&temp_result.context);
+
+        let farm_token_mapper = self.farm_token();
+        let rps = self.get_rps_by_user(&caller, &temp_result.storage_cache);
+        let base_attributes = FC::create_claim_rewards_initial_attributes(
+            self,
+            caller,
+            first_token_attributes.clone(),
+            rps.clone(),
+        );
+        let mut new_token_attributes = self.merge_attributes_from_payments(
+            base_attributes,
+            &temp_result.context.additional_payments,
+            &farm_token_mapper,
+        );
+        new_token_attributes.set_reward_per_share(rps.clone());
+
+        let first_farm_token = &temp_result.context.first_farm_token.payment;
+        farm_token_mapper.nft_burn(first_farm_token.token_nonce, &first_farm_token.amount);
+        self.send()
+            .esdt_local_burn_multi(&temp_result.context.additional_payments);
+
+        let new_farm_token = PaymentAttributesPair {
+            payment: EsdtTokenPayment::new(
+                temp_result.storage_cache.farm_token_id.clone(),
+                0,
+                new_token_attributes.get_total_supply(),
+            ),
+            attributes: new_token_attributes,
+        };
+
+        InternalClaimRewardsResult {
+            created_with_merge: !temp_result.context.additional_payments.is_empty(),
+            context: temp_result.context,
+            rewards: temp_result.rewards,
+            new_farm_token,
+            storage_cache: temp_result.storage_cache,
+        }
+    }
+
+    fn claim_rewards_base_impl<FC: FarmContract<FarmSc = Self>>(
+        &self,
+        caller: &ManagedAddress,
+        payments: PaymentsVec<Self::Api>,
+    ) -> TempInternalClaimRewardsResult<Self, FC::AttributesType> {
         let mut storage_cache = StorageCache::new(self);
         self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
 
@@ -70,22 +127,62 @@ pub trait BaseClaimRewardsModule:
 
         FC::generate_aggregated_rewards(self, &mut storage_cache);
 
-        let mut total_rewards = BigUint::zero();
+        let mut total_rewards =
+            self.get_first_token_rewards::<FC>(caller, &storage_cache, &claim_rewards_context);
+        self.add_additional_token_rewards::<FC>(
+            &mut total_rewards,
+            caller,
+            &storage_cache,
+            &claim_rewards_context,
+        );
+
+        storage_cache.reward_reserve -= &total_rewards;
+
+        TempInternalClaimRewardsResult {
+            context: claim_rewards_context,
+            storage_cache,
+            rewards: total_rewards,
+        }
+    }
+
+    fn get_first_token_part_attributes<FC: FarmContract<FarmSc = Self>>(
+        &self,
+        claim_rewards_context: &ClaimRewardsContext<Self::Api, FC::AttributesType>,
+    ) -> FC::AttributesType {
         let first_farm_token_amount = &claim_rewards_context.first_farm_token.payment.amount;
-        let first_token_attributes = claim_rewards_context
+        claim_rewards_context
             .first_farm_token
             .attributes
             .clone()
-            .into_part(first_farm_token_amount);
-        let first_rewards = FC::calculate_rewards(
+            .into_part(first_farm_token_amount)
+    }
+
+    fn get_first_token_rewards<FC: FarmContract<FarmSc = Self>>(
+        &self,
+        caller: &ManagedAddress,
+        storage_cache: &StorageCache<Self>,
+        claim_rewards_context: &ClaimRewardsContext<Self::Api, FC::AttributesType>,
+    ) -> BigUint {
+        let first_farm_token_amount = &claim_rewards_context.first_farm_token.payment.amount;
+        let first_token_attributes =
+            self.get_first_token_part_attributes::<FC>(claim_rewards_context);
+
+        FC::calculate_rewards(
             self,
-            &caller,
+            caller,
             first_farm_token_amount,
             &first_token_attributes,
-            &storage_cache,
-        );
-        total_rewards += first_rewards;
+            storage_cache,
+        )
+    }
 
+    fn add_additional_token_rewards<FC: FarmContract<FarmSc = Self>>(
+        &self,
+        total_rewards: &mut BigUint,
+        caller: &ManagedAddress,
+        storage_cache: &StorageCache<Self>,
+        claim_rewards_context: &ClaimRewardsContext<Self::Api, FC::AttributesType>,
+    ) {
         for (payment, attributes) in claim_rewards_context.additional_payments.iter().zip(
             claim_rewards_context
                 .additional_token_attributes
@@ -95,51 +192,12 @@ pub trait BaseClaimRewardsModule:
             let token_attributes = attributes.clone().into_part(farm_token_amount);
             let rewards = FC::calculate_rewards(
                 self,
-                &caller,
+                caller,
                 farm_token_amount,
                 &token_attributes,
                 &storage_cache,
             );
-            total_rewards += rewards;
-        }
-
-        storage_cache.reward_reserve -= &total_rewards;
-
-        let farm_token_mapper = self.farm_token();
-        let rps = self.get_rps_by_user(&caller, &storage_cache);
-        let base_attributes = FC::create_claim_rewards_initial_attributes(
-            self,
-            caller,
-            first_token_attributes.clone(),
-            rps.clone(),
-        );
-        let mut new_token_attributes = self.merge_attributes_from_payments(
-            base_attributes,
-            &claim_rewards_context.additional_payments,
-            &farm_token_mapper,
-        );
-        new_token_attributes.set_reward_per_share(rps.clone());
-
-        let new_farm_token = PaymentAttributesPair {
-            payment: EsdtTokenPayment::new(
-                storage_cache.farm_token_id.clone(),
-                0,
-                new_token_attributes.get_total_supply(),
-            ),
-            attributes: new_token_attributes,
-        };
-
-        let first_farm_token = &claim_rewards_context.first_farm_token.payment;
-        farm_token_mapper.nft_burn(first_farm_token.token_nonce, &first_farm_token.amount);
-        self.send()
-            .esdt_local_burn_multi(&claim_rewards_context.additional_payments);
-
-        InternalClaimRewardsResult {
-            created_with_merge: !claim_rewards_context.additional_payments.is_empty(),
-            context: claim_rewards_context,
-            rewards: total_rewards,
-            new_farm_token,
-            storage_cache,
+            *total_rewards += rewards;
         }
     }
 }

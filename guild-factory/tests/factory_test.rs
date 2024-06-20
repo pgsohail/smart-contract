@@ -167,7 +167,7 @@ fn migrate_to_other_guild_test() {
     setup.b_mock.set_block_epoch(5);
     setup.b_mock.set_block_epoch(8);
 
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
 
     setup
         .b_mock
@@ -224,9 +224,9 @@ fn test_unstake_farm() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 39);
+    assert_eq!(expected_rewards, 40);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -260,10 +260,10 @@ fn test_claim_rewards() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
     let expected_farming_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS - farm_in_amount + expected_reward_token_out);
-    let expected_reward_per_share = 399_999;
+    let expected_reward_per_share = 400_000;
     farm_setup.claim_rewards(
         farm_in_amount,
         expected_farm_token_nonce,
@@ -295,8 +295,8 @@ fn compound_rewards_test() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
-    let expected_reward_per_share = 399_999;
+    let expected_reward_token_out = 40;
+    let expected_reward_per_share = 400_000;
 
     farm_setup
         .b_mock
@@ -436,7 +436,7 @@ fn claim_rewards_multi_test() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
 
     // Not sure why the +10 difference here. Likely rounding errors.
     let expected_farming_token_balance = rust_biguint!(
@@ -514,7 +514,7 @@ where
 
     let total_amount = farm_in_amount + second_farm_in_amount + 1;
     let first_reward_share = 0;
-    let second_reward_share = 399_999;
+    let second_reward_share = 400_000;
     let expected_reward_per_share = (first_reward_share * farm_in_amount
         + second_reward_share * second_farm_in_amount
         + total_amount
@@ -597,9 +597,9 @@ fn test_unbond() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 39);
+    assert_eq!(expected_rewards, 40);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -648,9 +648,9 @@ fn cancel_unbond_test() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 39);
+    assert_eq!(expected_rewards, 40);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -788,7 +788,7 @@ fn calculate_rewards_test() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
 
     farm_setup
         .b_mock
@@ -809,7 +809,7 @@ fn calculate_rewards_test() {
 
     let expected_farming_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS - farm_in_amount + expected_reward_token_out);
-    let expected_reward_per_share = 399_999;
+    let expected_reward_per_share = 400_000;
     farm_setup.claim_rewards(
         farm_in_amount,
         expected_farm_token_nonce,
@@ -874,8 +874,8 @@ fn try_manipulate_staked_amounts_test() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
-    let expected_reward_per_share = 399_999;
+    let expected_reward_token_out = 40;
+    let expected_reward_per_share = 400_000;
 
     farm_setup
         .b_mock

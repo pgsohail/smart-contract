@@ -8,7 +8,6 @@ use crate::{
     },
     tokens::token_attributes::LocalFarmToken,
 };
-use common_errors::ERROR_DIFFERENT_TOKEN_IDS;
 use common_structs::{PaymentAttributesPair, PaymentsVec};
 use fixed_supply_token::FixedSupplyToken;
 
@@ -37,91 +36,55 @@ pub trait BaseCompoundRewardsModule:
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
+    + super::claim_rewards::BaseClaimRewardsModule
 {
     fn compound_rewards_base<FC: FarmContract<FarmSc = Self>>(
         &self,
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
     ) -> InternalCompoundRewardsResult<Self, FC::AttributesType> {
-        let mut storage_cache = StorageCache::new(self);
-        self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
-        require!(
-            storage_cache.farming_token_id == storage_cache.reward_token_id,
-            ERROR_DIFFERENT_TOKEN_IDS
-        );
+        let mut temp_result = self.claim_rewards_base_impl::<FC>(&caller, payments);
+        let first_token_attributes =
+            self.get_first_token_part_attributes::<FC>(&temp_result.context);
 
-        let compound_rewards_context = CompoundRewardsContext::<Self::Api, FC::AttributesType>::new(
-            payments,
-            &storage_cache.farm_token_id,
-            self.blockchain(),
-        );
-
-        FC::generate_aggregated_rewards(self, &mut storage_cache);
-
-        let mut total_rewards = BigUint::zero();
-        let first_farm_token_amount = &compound_rewards_context.first_farm_token.payment.amount;
-        let first_token_attributes = compound_rewards_context
-            .first_farm_token
-            .attributes
-            .clone()
-            .into_part(first_farm_token_amount);
-        let first_rewards = FC::calculate_rewards(
-            self,
-            &caller,
-            first_farm_token_amount,
-            &first_token_attributes,
-            &storage_cache,
-        );
-        total_rewards += first_rewards;
-
-        for (payment, attributes) in compound_rewards_context.additional_payments.iter().zip(
-            compound_rewards_context
-                .additional_token_attributes
-                .into_iter(),
-        ) {
-            let farm_token_amount = &payment.amount;
-            let token_attributes = attributes.clone().into_part(farm_token_amount);
-            let rewards = FC::calculate_rewards(
-                self,
-                &caller,
-                farm_token_amount,
-                &token_attributes,
-                &storage_cache,
-            );
-            total_rewards += rewards;
-        }
-
-        storage_cache.reward_reserve -= &total_rewards;
-        storage_cache.farm_token_supply += &total_rewards;
+        temp_result.storage_cache.farm_token_supply += &temp_result.rewards;
 
         let farm_token_mapper = self.farm_token();
-        let rps = self.get_rps_by_user(&caller, &storage_cache);
-        let mut base_attributes = FC::create_compound_rewards_initial_attributes(
+        let rps = self.get_rps_by_user(&caller, &temp_result.storage_cache);
+        let base_attributes = FC::create_compound_rewards_initial_attributes(
             self,
             caller.clone(),
             first_token_attributes.clone(),
             rps.clone(),
-            &total_rewards,
+            &temp_result.rewards,
         );
-        base_attributes.set_reward_per_share(rps.clone());
 
-        let new_farm_token = self.merge_and_create_token(
+        let mut new_token_attributes = self.merge_attributes_from_payments(
             base_attributes,
-            &compound_rewards_context.additional_payments,
+            &temp_result.context.additional_payments,
             &farm_token_mapper,
         );
+        new_token_attributes.set_reward_per_share(rps.clone());
 
-        let first_farm_token = &compound_rewards_context.first_farm_token.payment;
+        let new_farm_token = farm_token_mapper.nft_create(
+            new_token_attributes.get_total_supply(),
+            &new_token_attributes,
+        );
+
+        let first_farm_token = &temp_result.context.first_farm_token.payment;
         farm_token_mapper.nft_burn(first_farm_token.token_nonce, &first_farm_token.amount);
         self.send()
-            .esdt_local_burn_multi(&compound_rewards_context.additional_payments);
+            .esdt_local_burn_multi(&temp_result.context.additional_payments);
 
         InternalCompoundRewardsResult {
-            created_with_merge: !compound_rewards_context.additional_payments.is_empty(),
-            context: compound_rewards_context,
-            new_farm_token,
-            compounded_rewards: total_rewards,
-            storage_cache,
+            created_with_merge: !temp_result.context.additional_payments.is_empty(),
+            context: temp_result.context,
+            new_farm_token: PaymentAttributesPair {
+                payment: new_farm_token,
+                attributes: new_token_attributes,
+            },
+            compounded_rewards: temp_result.rewards,
+            storage_cache: temp_result.storage_cache,
         }
     }
 }

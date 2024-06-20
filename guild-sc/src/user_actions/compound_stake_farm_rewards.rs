@@ -23,6 +23,7 @@ pub trait CompoundStakeFarmRewardsModule:
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + crate::tiered_rewards::call_config::CallConfigModule
     + super::close_guild::CloseGuildModule
+    + crate::farm_base_impl::claim_rewards::BaseClaimRewardsModule
 {
     #[payable("*")]
     #[endpoint(compoundRewards)]
