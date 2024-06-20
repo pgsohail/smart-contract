@@ -61,9 +61,6 @@ pub trait CustomRewardsModule:
     }
 
     fn withdraw_rewards_common(&self, withdraw_amount: &BigUint) {
-        let mut storage_cache = StorageCache::new(self);
-        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
-
         if withdraw_amount == &0 {
             return;
         }
