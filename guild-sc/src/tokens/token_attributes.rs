@@ -11,6 +11,8 @@ pub trait LocalFarmToken<M: ManagedTypeApi> {
 
     fn get_compounded_rewards(&self) -> BigUint<M>;
 
+    fn get_initial_farming_tokens(&self) -> BigUint<M>;
+
     fn set_reward_per_share(&mut self, new_rps: BigUint<M>);
 }
 
@@ -46,6 +48,10 @@ impl<M: ManagedTypeApi> LocalFarmToken<M> for StakingFarmTokenAttributes<M> {
     #[inline]
     fn get_compounded_rewards(&self) -> BigUint<M> {
         self.compounded_reward.clone()
+    }
+
+    fn get_initial_farming_tokens(&self) -> BigUint<M> {
+        &self.current_farm_amount - &self.compounded_reward
     }
 
     #[inline]

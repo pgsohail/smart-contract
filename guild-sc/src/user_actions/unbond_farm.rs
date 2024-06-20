@@ -2,6 +2,7 @@ multiversx_sc::imports!();
 
 use crate::{
     contexts::storage_cache::StorageCache, farm_base_impl::base_traits_impl::FarmStakingWrapper,
+    tokens::token_attributes::LocalFarmToken,
 };
 use fixed_supply_token::FixedSupplyToken;
 
@@ -96,27 +97,29 @@ pub trait UnbondFarmModule:
         };
 
         let caller = self.blockchain().get_caller();
-        let total_farming_tokens = original_attributes.get_total_supply();
+        let total_farming_tokens = original_attributes.get_initial_farming_tokens();
         let farming_token_id = self.farming_token_id().get();
         let farming_token_payment =
-            EsdtTokenPayment::new(farming_token_id, 0, total_farming_tokens.clone());
+            EsdtTokenPayment::new(farming_token_id, 0, total_farming_tokens);
         let enter_result = self.enter_farm_base_no_token_create::<FarmStakingWrapper<Self>>(
             caller.clone(),
             ManagedVec::from_single_item(farming_token_payment),
         );
 
         let mut new_attributes = enter_result.new_farm_token.attributes;
+        new_attributes.current_farm_amount += &original_attributes.compounded_reward;
         new_attributes.compounded_reward = original_attributes.compounded_reward;
 
-        self.add_total_staked_tokens(&new_attributes.current_farm_amount);
+        let initial_farming_tokens = new_attributes.get_initial_farming_tokens();
+        self.add_total_staked_tokens(&initial_farming_tokens);
         self.add_tokens(
             &caller,
             &TotalTokens::new(
-                new_attributes.current_farm_amount.clone(),
+                initial_farming_tokens,
                 new_attributes.compounded_reward.clone(),
             ),
         );
-        self.call_increase_total_staked_tokens(new_attributes.current_farm_amount.clone());
+        self.call_increase_total_staked_tokens(new_attributes.get_total_supply());
 
         self.total_compounded_tokens()
             .update(|total| *total += &new_attributes.compounded_reward);
