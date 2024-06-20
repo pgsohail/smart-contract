@@ -74,6 +74,7 @@ pub trait UnbondFarmModule:
     #[endpoint(cancelUnbond)]
     fn cancel_unbond(&self) -> EsdtTokenPayment {
         self.require_not_closing();
+        self.require_not_globally_paused();
 
         let unbond_token_mapper = self.unbond_token();
         let payment = self.call_value().single_esdt();
