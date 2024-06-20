@@ -195,7 +195,7 @@ pub trait BaseClaimRewardsModule:
                 caller,
                 farm_token_amount,
                 &token_attributes,
-                &storage_cache,
+                storage_cache,
             );
             *total_rewards += rewards;
         }
