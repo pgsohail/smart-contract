@@ -127,6 +127,7 @@ pub trait FarmStaking:
     #[view(calculateRewardsForGivenPosition)]
     fn calculate_rewards_for_given_position(
         &self,
+        user: ManagedAddress,
         farm_token_amount: BigUint,
         attributes: StakingFarmTokenAttributes<Self::Api>,
     ) -> BigUint {
@@ -135,7 +136,7 @@ pub trait FarmStaking:
 
         FarmStakingWrapper::<Self>::calculate_rewards(
             self,
-            &ManagedAddress::zero(),
+            &user,
             &farm_token_amount,
             &attributes,
             &storage_cache,

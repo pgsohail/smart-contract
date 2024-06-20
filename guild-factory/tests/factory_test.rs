@@ -790,6 +790,7 @@ fn calculate_rewards_test() {
     // value taken from the "test_unstake_farm" test
     let expected_reward_token_out = 40;
 
+    let user_addr = farm_setup.user_address.clone();
     farm_setup
         .b_mock
         .execute_query(&farm_setup.first_farm_wrapper, |sc| {
@@ -800,6 +801,7 @@ fn calculate_rewards_test() {
             };
 
             let calculated_reward = sc.calculate_rewards_for_given_position(
+                managed_address!(&user_addr),
                 managed_biguint!(farm_in_amount),
                 token_attributes,
             );
@@ -834,6 +836,7 @@ fn calculate_rewards_test() {
             };
 
             let _ = sc.calculate_rewards_for_given_position(
+                managed_address!(&user_addr),
                 managed_biguint!(farm_in_amount),
                 token_attributes,
             );
@@ -841,6 +844,7 @@ fn calculate_rewards_test() {
         .assert_ok();
 
     // check guild master rewards
+    let guild_master_addr = farm_setup.first_owner_address.clone();
     farm_setup
         .b_mock
         .execute_query(&farm_setup.first_farm_wrapper, |sc| {
@@ -850,7 +854,11 @@ fn calculate_rewards_test() {
                 current_farm_amount: managed_biguint!(1),
             };
 
-            let _ = sc.calculate_rewards_for_given_position(managed_biguint!(1), token_attributes);
+            let _ = sc.calculate_rewards_for_given_position(
+                managed_address!(&guild_master_addr),
+                managed_biguint!(1),
+                token_attributes,
+            );
         })
         .assert_ok();
 }
