@@ -1,12 +1,14 @@
 multiversx_sc::imports!();
 
 use super::base_traits_impl::FarmContract;
-use crate::contexts::{
-    enter_farm_context::EnterFarmContext,
-    storage_cache::{FarmContracTraitBounds, StorageCache},
+use crate::{
+    contexts::{
+        enter_farm_context::EnterFarmContext,
+        storage_cache::{FarmContracTraitBounds, StorageCache},
+    },
+    tokens::token_attributes::FixedSupplyToken,
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
-use fixed_supply_token::FixedSupplyToken;
 
 pub struct InternalEnterFarmResult<'a, C, T>
 where
@@ -32,6 +34,9 @@ pub trait BaseEnterFarmModule:
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
+    + crate::custom_rewards::CustomRewardsModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
 {
     fn enter_farm_base<FC: FarmContract<FarmSc = Self>>(
         &self,
@@ -74,7 +79,7 @@ pub trait BaseEnterFarmModule:
             enter_farm_context.farming_token_payment.amount.clone(),
             rps.clone(),
         );
-        let new_token_attributes = self.merge_attributes_from_payments(
+        let new_token_attributes = self.merge_attributes_from_payments_local(
             base_attributes,
             &enter_farm_context.additional_farm_tokens,
             &farm_token_mapper,

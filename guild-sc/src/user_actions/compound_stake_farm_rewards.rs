@@ -1,5 +1,6 @@
 use crate::{
-    farm_base_impl::base_traits_impl::FarmStakingWrapper, tiered_rewards::total_tokens::TotalTokens,
+    farm_base_impl::base_traits_impl::FarmStakingWrapper,
+    tiered_rewards::total_tokens::TotalTokens, tokens::token_attributes::LocalFarmToken,
 };
 
 multiversx_sc::imports!();
@@ -47,6 +48,17 @@ pub trait CompoundStakeFarmRewardsModule:
             .update(|total| *total += &compound_result.compounded_rewards);
 
         self.call_increase_total_staked_tokens(compound_result.compounded_rewards.clone());
+
+        let base_farm_amount = compound_result
+            .new_farm_token
+            .attributes
+            .get_initial_farming_tokens();
+        let compounded_rewards = compound_result
+            .new_farm_token
+            .attributes
+            .get_compounded_rewards();
+        self.tokens_for_nonce(new_farm_token.token_nonce)
+            .set(TotalTokens::new(base_farm_amount, compounded_rewards));
 
         self.emit_compound_rewards_event(
             &caller,

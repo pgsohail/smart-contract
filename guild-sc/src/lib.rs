@@ -9,10 +9,9 @@ use crate::farm_base_impl::base_traits_impl::FarmContract;
 use common_errors::{ERROR_NOT_AN_ESDT, ERROR_ZERO_AMOUNT};
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmStakingWrapper;
-use fixed_supply_token::FixedSupplyToken;
 use pausable::State;
 use permissions_module::Permissions;
-use tokens::token_attributes::StakingFarmTokenAttributes;
+use tokens::token_attributes::{FixedSupplyToken, StakingFarmTokenAttributes};
 
 pub mod config;
 pub mod contexts;
@@ -100,8 +99,8 @@ pub trait FarmStaking:
         token_mapper.require_all_same_token(&payments);
 
         let output_attributes: StakingFarmTokenAttributes<Self::Api> =
-            self.merge_from_payments_and_burn(payments, &token_mapper);
-        let new_token_amount = output_attributes.get_total_supply();
+            self.merge_from_payments_and_burn_local(payments, &token_mapper);
+        let new_token_amount = FixedSupplyToken::<Self>::get_total_supply(&output_attributes);
 
         let merged_farm_token = token_mapper.nft_create(new_token_amount, &output_attributes);
         self.send_payment_non_zero(&caller, &merged_farm_token);

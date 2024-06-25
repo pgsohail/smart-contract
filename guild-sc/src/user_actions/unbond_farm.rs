@@ -1,10 +1,10 @@
 multiversx_sc::imports!();
 
+use crate::tokens::token_attributes::FixedSupplyToken;
 use crate::{
     contexts::storage_cache::StorageCache, farm_base_impl::base_traits_impl::FarmStakingWrapper,
     tokens::token_attributes::LocalFarmToken,
 };
-use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
     tiered_rewards::total_tokens::TotalTokens, tokens::token_attributes::UnbondSftAttributes,
@@ -47,6 +47,10 @@ pub trait UnbondFarmModule:
 
             let attributes: UnbondSftAttributes<Self::Api> =
                 unbond_token_mapper.get_token_attributes(payment.token_nonce);
+            require!(
+                attributes.supply == payment.amount,
+                "Must unbond with all tokens"
+            );
 
             let current_epoch = self.blockchain().get_block_epoch();
             require!(
@@ -81,14 +85,17 @@ pub trait UnbondFarmModule:
         unbond_token_mapper.require_same_token(&payment.token_identifier);
 
         let unbond_attributes: UnbondSftAttributes<Self::Api> =
-            self.get_attributes_as_part_of_fixed_supply(&payment, &unbond_token_mapper);
-
-        unbond_token_mapper.nft_burn(payment.token_nonce, &payment.amount);
-
+            unbond_token_mapper.get_token_attributes(payment.token_nonce);
+        require!(
+            payment.amount == unbond_attributes.supply,
+            "Must cancel unbond with all tokens"
+        );
         require!(
             unbond_attributes.opt_original_attributes.is_some(),
             "May not cancel unbond for this token"
         );
+
+        unbond_token_mapper.nft_burn(payment.token_nonce, &payment.amount);
 
         let original_attributes = unsafe {
             unbond_attributes
@@ -120,15 +127,22 @@ pub trait UnbondFarmModule:
                 new_attributes.compounded_reward.clone(),
             ),
         );
-        self.call_increase_total_staked_tokens(new_attributes.get_total_supply());
+        self.call_increase_total_staked_tokens(FixedSupplyToken::<Self>::get_total_supply(
+            &new_attributes,
+        ));
 
         self.total_compounded_tokens()
             .update(|total| *total += &new_attributes.compounded_reward);
 
-        let total_farm_tokens = new_attributes.get_total_supply();
+        let total_farm_tokens = FixedSupplyToken::<Self>::get_total_supply(&new_attributes);
         let new_farm_token =
             self.farm_token()
                 .nft_create_and_send(&caller, total_farm_tokens, &new_attributes);
+
+        let base_farm_amount = new_attributes.get_initial_farming_tokens();
+        let compounded_rewards = new_attributes.get_compounded_rewards();
+        self.tokens_for_nonce(new_farm_token.token_nonce)
+            .set(TotalTokens::new(base_farm_amount, compounded_rewards));
 
         self.emit_cancel_unbond_event(
             &caller,

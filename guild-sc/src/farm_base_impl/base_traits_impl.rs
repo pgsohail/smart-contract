@@ -4,10 +4,10 @@ use core::marker::PhantomData;
 
 use crate::contexts::storage_cache::StorageCache;
 use crate::tiered_rewards::total_tokens::TotalTokens;
-use crate::tokens::token_attributes::{LocalFarmToken, StakingFarmTokenAttributes};
+use crate::tokens::token_attributes::{
+    FixedSupplyToken, LocalFarmToken, Mergeable, StakingFarmTokenAttributes,
+};
 use common_structs::Nonce;
-use fixed_supply_token::FixedSupplyToken;
-use mergeable::Mergeable;
 
 pub trait FarmStakingTraits =
     crate::custom_rewards::CustomRewardsModule
@@ -48,8 +48,8 @@ pub trait FarmContract {
         + TopDecode
         + NestedEncode
         + NestedDecode
-        + Mergeable<<Self::FarmSc as ContractBase>::Api>
-        + FixedSupplyToken<<Self::FarmSc as ContractBase>::Api>
+        + Mergeable<Self::FarmSc>
+        + FixedSupplyToken<Self::FarmSc>
         + LocalFarmToken<<Self::FarmSc as ContractBase>::Api>
         + ManagedVecItem;
 

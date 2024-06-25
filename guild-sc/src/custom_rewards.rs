@@ -2,10 +2,12 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use crate::farm_base_impl::base_traits_impl::{FarmContract, TotalRewards};
+use crate::tiered_rewards::total_tokens::TotalTokens;
+use crate::tokens::token_attributes::{FixedSupplyToken, Mergeable};
 use crate::{
     contexts::storage_cache::StorageCache, farm_base_impl::base_traits_impl::FarmStakingWrapper,
 };
-use common_structs::Percent;
+use common_structs::{Nonce, PaymentAttributesPair, PaymentsVec, Percent};
 use guild_sc_config::tier_types::{GuildMasterRewardTier, UserRewardTier};
 
 pub const MAX_PERCENT: Percent = 10_000;
@@ -202,6 +204,75 @@ pub trait CustomRewardsModule:
         self.update_internal_staking_token_minted();
     }
 
+    fn get_attributes_as_part_of_fixed_supply_local<T: FixedSupplyToken<Self> + TopDecode>(
+        &self,
+        payment: &EsdtTokenPayment,
+        mapper: &NonFungibleTokenMapper,
+    ) -> T {
+        let attr: T = mapper.get_token_attributes(payment.token_nonce);
+        attr.into_part(self, payment)
+    }
+
+    fn merge_from_payments_and_burn_local<
+        T: FixedSupplyToken<Self> + Mergeable<Self> + TopDecode,
+    >(
+        &self,
+        mut payments: PaymentsVec<Self::Api>,
+        mapper: &NonFungibleTokenMapper,
+    ) -> T {
+        let first_payment = self.pop_first_payment(&mut payments);
+        let base_attributes: T =
+            self.get_attributes_as_part_of_fixed_supply_local(&first_payment, mapper);
+        mapper.nft_burn(first_payment.token_nonce, &first_payment.amount);
+
+        let output_attributes =
+            self.merge_attributes_from_payments_local(base_attributes, &payments, mapper);
+        self.send().esdt_local_burn_multi(&payments);
+
+        output_attributes
+    }
+
+    fn merge_attributes_from_payments_local<
+        T: FixedSupplyToken<Self> + Mergeable<Self> + TopDecode,
+    >(
+        &self,
+        mut base_attributes: T,
+        payments: &PaymentsVec<Self::Api>,
+        mapper: &NonFungibleTokenMapper,
+    ) -> T {
+        for payment in payments {
+            let attributes: T = self.get_attributes_as_part_of_fixed_supply_local(&payment, mapper);
+            base_attributes.merge_with(attributes, self);
+        }
+
+        base_attributes
+    }
+
+    fn merge_and_create_token_local<
+        T: FixedSupplyToken<Self>
+            + Mergeable<Self>
+            + Clone
+            + TopEncode
+            + TopDecode
+            + NestedEncode
+            + NestedDecode,
+    >(
+        &self,
+        base_attributes: T,
+        payments: &PaymentsVec<Self::Api>,
+        mapper: &NonFungibleTokenMapper,
+    ) -> PaymentAttributesPair<Self::Api, T> {
+        let output_attributes =
+            self.merge_attributes_from_payments_local(base_attributes, payments, mapper);
+        let new_token_amount = output_attributes.get_total_supply();
+        let new_token_payment = mapper.nft_create(new_token_amount, &output_attributes);
+
+        PaymentAttributesPair {
+            payment: new_token_payment,
+            attributes: output_attributes,
+        }
+    }
+
     #[proxy]
     fn guild_factory_proxy(
         &self,
@@ -227,4 +298,7 @@ pub trait CustomRewardsModule:
 
     #[storage_mapper("internalTotalStakingTokenMinted")]
     fn internal_total_staking_token_minted(&self) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("tokensForNonce")]
+    fn tokens_for_nonce(&self, token_nonce: Nonce) -> SingleValueMapper<TotalTokens<Self::Api>>;
 }

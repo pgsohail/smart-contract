@@ -1,11 +1,13 @@
 multiversx_sc::imports!();
 
 use super::base_traits_impl::FarmContract;
-use crate::contexts::{
-    exit_farm_context::ExitFarmContext,
-    storage_cache::{FarmContracTraitBounds, StorageCache},
+use crate::{
+    contexts::{
+        exit_farm_context::ExitFarmContext,
+        storage_cache::{FarmContracTraitBounds, StorageCache},
+    },
+    tokens::token_attributes::FixedSupplyToken,
 };
-use fixed_supply_token::FixedSupplyToken;
 
 pub struct InternalExitFarmResult<'a, C, T>
 where
@@ -32,6 +34,9 @@ pub trait BaseExitFarmModule:
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
+    + crate::custom_rewards::CustomRewardsModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
 {
     fn exit_farm_base<FC: FarmContract<FarmSc = Self>>(
         &self,
@@ -49,17 +54,17 @@ pub trait BaseExitFarmModule:
 
         FC::generate_aggregated_rewards(self, &mut storage_cache);
 
-        let farm_token_amount = &exit_farm_context.farm_token.payment.amount;
+        let farm_token = &exit_farm_context.farm_token.payment;
         let token_attributes = exit_farm_context
             .farm_token
             .attributes
             .clone()
-            .into_part(farm_token_amount);
+            .into_part(self, farm_token);
 
         let rewards = FC::calculate_rewards(
             self,
             &caller,
-            farm_token_amount,
+            &farm_token.amount,
             &token_attributes,
             &storage_cache,
         );

@@ -6,10 +6,9 @@ use crate::{
         claim_rewards_context::ClaimRewardsContext,
         storage_cache::{FarmContracTraitBounds, StorageCache},
     },
-    tokens::token_attributes::LocalFarmToken,
+    tokens::token_attributes::{FixedSupplyToken, LocalFarmToken},
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
-use fixed_supply_token::FixedSupplyToken;
 
 pub struct InternalClaimRewardsResult<'a, C, T>
 where
@@ -46,6 +45,9 @@ pub trait BaseClaimRewardsModule:
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
+    + crate::custom_rewards::CustomRewardsModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
 {
     fn claim_rewards_base<FC: FarmContract<FarmSc = Self>>(
         &self,
@@ -81,7 +83,7 @@ pub trait BaseClaimRewardsModule:
             first_token_attributes.clone(),
             rps.clone(),
         );
-        let mut new_token_attributes = self.merge_attributes_from_payments(
+        let mut new_token_attributes = self.merge_attributes_from_payments_local(
             base_attributes,
             &temp_result.context.additional_payments,
             &farm_token_mapper,
@@ -149,12 +151,12 @@ pub trait BaseClaimRewardsModule:
         &self,
         claim_rewards_context: &ClaimRewardsContext<Self::Api, FC::AttributesType>,
     ) -> FC::AttributesType {
-        let first_farm_token_amount = &claim_rewards_context.first_farm_token.payment.amount;
+        let first_farm_token = &claim_rewards_context.first_farm_token.payment;
         claim_rewards_context
             .first_farm_token
             .attributes
             .clone()
-            .into_part(first_farm_token_amount)
+            .into_part(self, first_farm_token)
     }
 
     fn get_first_token_rewards<FC: FarmContract<FarmSc = Self>>(
@@ -189,7 +191,7 @@ pub trait BaseClaimRewardsModule:
                 .into_iter(),
         ) {
             let farm_token_amount = &payment.amount;
-            let token_attributes = attributes.clone().into_part(farm_token_amount);
+            let token_attributes = attributes.clone().into_part(self, &payment);
             let rewards = FC::calculate_rewards(
                 self,
                 caller,
