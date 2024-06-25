@@ -1,5 +1,5 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
-use guild_sc_config::tiers::{GuildMasterRewardTier, UserRewardTier};
+use guild_sc_config::tier_types::{GuildMasterRewardTier, UserRewardTier};
 use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 

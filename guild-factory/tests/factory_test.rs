@@ -730,17 +730,17 @@ fn id_to_human_readable_test() {
     farm_setup
         .b_mock
         .execute_query(&farm_setup.first_farm_wrapper, |sc| {
-            let id_str = sc.id_to_human_readable(12345);
-            assert_eq!(id_str, managed_buffer!(b"12345"));
+            let id_str = sc.build_token_display_name(managed_buffer!(b"FARM"), 12345, None);
+            assert_eq!(id_str, managed_buffer!(b"FARM12345"));
 
-            let id_str = sc.id_to_human_readable(0);
-            assert_eq!(id_str, managed_buffer!(b"0"));
+            let id_str = sc.build_token_display_name(managed_buffer!(b"FARM"), 0, None);
+            assert_eq!(id_str, managed_buffer!(b"FARM0"));
 
-            let id_str = sc.id_to_human_readable(1);
-            assert_eq!(id_str, managed_buffer!(b"1"));
+            let id_str = sc.build_token_display_name(managed_buffer!(b"FARM"), 1, None);
+            assert_eq!(id_str, managed_buffer!(b"FARM1"));
 
-            let id_str = sc.id_to_human_readable(10);
-            assert_eq!(id_str, managed_buffer!(b"10"));
+            let id_str = sc.build_token_display_name(managed_buffer!(b"FARM"), 10, None);
+            assert_eq!(id_str, managed_buffer!(b"FARM10"));
         })
         .assert_ok();
 }
