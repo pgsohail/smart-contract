@@ -50,6 +50,7 @@ pub trait ConfigModule {
     #[proxy]
     fn config_proxy(&self) -> guild_sc_config::Proxy<Self::Api>;
 
+    #[view(getConfigAddress)]
     #[storage_mapper("configScAddress")]
     fn config_sc_address(&self) -> SingleValueMapper<ManagedAddress>;
 }
