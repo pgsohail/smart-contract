@@ -92,6 +92,7 @@ pub trait FarmStaking:
     #[endpoint(mergeFarmTokens)]
     fn merge_farm_tokens_endpoint(&self) -> EsdtTokenPayment {
         self.require_not_closing();
+        self.require_not_globally_paused();
 
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();
@@ -127,6 +128,7 @@ pub trait FarmStaking:
     #[view(calculateRewardsForGivenPosition)]
     fn calculate_rewards_for_given_position(
         &self,
+        user: ManagedAddress,
         farm_token_amount: BigUint,
         attributes: StakingFarmTokenAttributes<Self::Api>,
     ) -> BigUint {
@@ -135,7 +137,7 @@ pub trait FarmStaking:
 
         FarmStakingWrapper::<Self>::calculate_rewards(
             self,
-            &ManagedAddress::zero(),
+            &user,
             &farm_token_amount,
             &attributes,
             &storage_cache,
@@ -172,13 +174,7 @@ pub trait FarmStaking:
         }
 
         let caller = self.blockchain().get_caller();
-        if admins.is_empty() {
-            // backwards compatibility
-            let all_permissions = Permissions::OWNER | Permissions::ADMIN | Permissions::PAUSE;
-            self.add_permissions(caller, all_permissions);
-        } else {
-            self.add_permissions(caller, Permissions::OWNER | Permissions::PAUSE);
-            self.add_permissions_for_all(admins, Permissions::ADMIN);
-        };
+        self.add_permissions(caller, Permissions::OWNER | Permissions::PAUSE);
+        self.add_permissions_for_all(admins, Permissions::ADMIN);
     }
 }

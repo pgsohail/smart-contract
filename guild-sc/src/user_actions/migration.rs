@@ -1,8 +1,3 @@
-use crate::{
-    contexts::storage_cache::StorageCache,
-    farm_base_impl::base_traits_impl::{FarmContract, FarmStakingWrapper},
-};
-
 mod guild_factory_proxy {
     multiversx_sc::imports!();
 
@@ -79,8 +74,6 @@ pub trait MigrationModule:
             unbond_epochs,
         );
 
-        let mut storage_cache = StorageCache::new(self);
-        FarmStakingWrapper::<Self>::generate_aggregated_rewards(self, &mut storage_cache);
         self.produce_rewards_enabled().set(false);
         self.guild_closing().set(true);
 

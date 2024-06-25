@@ -3,8 +3,9 @@ multiversx_sc::imports!();
 use core::marker::PhantomData;
 
 use crate::contexts::storage_cache::StorageCache;
-use crate::tokens::token_attributes::StakingFarmTokenAttributes;
-use common_structs::{FarmToken, Nonce};
+use crate::tiered_rewards::total_tokens::TotalTokens;
+use crate::tokens::token_attributes::{LocalFarmToken, StakingFarmTokenAttributes};
+use common_structs::Nonce;
 use fixed_supply_token::FixedSupplyToken;
 use mergeable::Mergeable;
 
@@ -49,7 +50,7 @@ pub trait FarmContract {
         + NestedDecode
         + Mergeable<<Self::FarmSc as ContractBase>::Api>
         + FixedSupplyToken<<Self::FarmSc as ContractBase>::Api>
-        + FarmToken<<Self::FarmSc as ContractBase>::Api>
+        + LocalFarmToken<<Self::FarmSc as ContractBase>::Api>
         + ManagedVecItem;
 
     fn calculate_per_block_rewards(
@@ -89,7 +90,8 @@ pub trait FarmContract {
         }
 
         let guild_master_tokens = sc.guild_master_tokens().get();
-        let total_user_tokens = sc.total_staked_tokens().get() + sc.total_compounded_tokens().get();
+        let total_user_tokens =
+            sc.total_base_staked_tokens().get() + sc.total_compounded_tokens().get();
         let guild_master_rewards =
             &guild_master_tokens.total() * &extra_rewards_unbounded / total_user_tokens;
         let user_rewards = &extra_rewards_unbounded - &guild_master_rewards;
@@ -135,6 +137,8 @@ pub trait FarmContract {
 
         // If needed rewards STILL more than remaining rewards, just return instead of doing additional math
         if total_reward > remaining_rewards {
+            sc.update_all();
+
             return;
         }
 
@@ -143,17 +147,34 @@ pub trait FarmContract {
         accumulated_rewards_mapper.set(&accumulated_rewards);
 
         if storage_cache.farm_token_supply == 0 {
+            sc.update_all();
+
             return;
         }
 
-        // TODO: Is it correct to still use farm token supply here?
-        let increase_guild_master = (split_rewards.guild_master
-            * &storage_cache.division_safety_constant)
-            / &storage_cache.farm_token_supply;
-        let increase_users = (split_rewards.users * &storage_cache.division_safety_constant)
-            / &storage_cache.farm_token_supply;
-        storage_cache.guild_master_rps += increase_guild_master;
-        storage_cache.user_rps += increase_users;
+        let guild_master_tokens = sc.guild_master_tokens().get();
+        let total_tokens_base = sc.total_base_staked_tokens().get();
+        let total_compounded = sc.total_compounded_tokens().get();
+        let user_tokens = TotalTokens {
+            base: &total_tokens_base - &guild_master_tokens.base,
+            compounded: &total_compounded - &guild_master_tokens.compounded,
+        };
+
+        let total_guild_master_tokens = guild_master_tokens.total();
+        let total_user_tokens = user_tokens.total();
+
+        if total_guild_master_tokens > 0 {
+            let increase_guild_master = (split_rewards.guild_master
+                * &storage_cache.division_safety_constant)
+                / &total_guild_master_tokens;
+            storage_cache.guild_master_rps += increase_guild_master;
+        }
+
+        if total_user_tokens > 0 {
+            let increase_users = (split_rewards.users * &storage_cache.division_safety_constant)
+                / &total_user_tokens;
+            storage_cache.user_rps += increase_users;
+        }
 
         sc.update_all();
     }

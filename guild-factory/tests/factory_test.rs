@@ -4,6 +4,7 @@ pub mod factory_setup;
 
 use factory_setup::*;
 use guild_sc::{
+    tiered_rewards::total_tokens::{TokenPerTierModule, TotalTokens},
     tokens::{request_id::RequestIdModule, token_attributes::StakingFarmTokenAttributes},
     user_actions::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
@@ -166,7 +167,7 @@ fn migrate_to_other_guild_test() {
     setup.b_mock.set_block_epoch(5);
     setup.b_mock.set_block_epoch(8);
 
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
 
     setup
         .b_mock
@@ -223,9 +224,9 @@ fn test_unstake_farm() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 39);
+    assert_eq!(expected_rewards, 40);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -259,10 +260,10 @@ fn test_claim_rewards() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
     let expected_farming_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS - farm_in_amount + expected_reward_token_out);
-    let expected_reward_per_share = 399_999;
+    let expected_reward_per_share = 400_000;
     farm_setup.claim_rewards(
         farm_in_amount,
         expected_farm_token_nonce,
@@ -294,8 +295,8 @@ fn compound_rewards_test() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
-    let expected_reward_per_share = 399_999;
+    let expected_reward_token_out = 40;
+    let expected_reward_per_share = 400_000;
 
     farm_setup
         .b_mock
@@ -435,7 +436,7 @@ fn claim_rewards_multi_test() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
 
     // Not sure why the +10 difference here. Likely rounding errors.
     let expected_farming_token_balance = rust_biguint!(
@@ -513,7 +514,7 @@ where
 
     let total_amount = farm_in_amount + second_farm_in_amount + 1;
     let first_reward_share = 0;
-    let second_reward_share = 399_999;
+    let second_reward_share = 400_000;
     let expected_reward_per_share = (first_reward_share * farm_in_amount
         + second_reward_share * second_farm_in_amount
         + total_amount
@@ -596,9 +597,9 @@ fn test_unbond() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 39);
+    assert_eq!(expected_rewards, 40);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -647,9 +648,9 @@ fn cancel_unbond_test() {
 
     // ~= 4 * 10 = 40
     let expected_rewards_max_apr =
-        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff - 1;
+        farm_in_amount * MAX_APR / MAX_PERCENT / BLOCKS_IN_YEAR * block_diff;
     let expected_rewards = core::cmp::min(expected_rewards_unbounded, expected_rewards_max_apr);
-    assert_eq!(expected_rewards, 39);
+    assert_eq!(expected_rewards, 40);
 
     let expected_ride_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS) - farm_in_amount + expected_rewards;
@@ -787,8 +788,9 @@ fn calculate_rewards_test() {
     farm_setup.set_block_nonce(10);
 
     // value taken from the "test_unstake_farm" test
-    let expected_reward_token_out = 39;
+    let expected_reward_token_out = 40;
 
+    let user_addr = farm_setup.user_address.clone();
     farm_setup
         .b_mock
         .execute_query(&farm_setup.first_farm_wrapper, |sc| {
@@ -799,6 +801,7 @@ fn calculate_rewards_test() {
             };
 
             let calculated_reward = sc.calculate_rewards_for_given_position(
+                managed_address!(&user_addr),
                 managed_biguint!(farm_in_amount),
                 token_attributes,
             );
@@ -808,7 +811,7 @@ fn calculate_rewards_test() {
 
     let expected_farming_token_balance =
         rust_biguint!(USER_TOTAL_RIDE_TOKENS - farm_in_amount + expected_reward_token_out);
-    let expected_reward_per_share = 399_999;
+    let expected_reward_per_share = 400_000;
     farm_setup.claim_rewards(
         farm_in_amount,
         expected_farm_token_nonce,
@@ -833,6 +836,7 @@ fn calculate_rewards_test() {
             };
 
             let _ = sc.calculate_rewards_for_given_position(
+                managed_address!(&user_addr),
                 managed_biguint!(farm_in_amount),
                 token_attributes,
             );
@@ -840,6 +844,7 @@ fn calculate_rewards_test() {
         .assert_ok();
 
     // check guild master rewards
+    let guild_master_addr = farm_setup.first_owner_address.clone();
     farm_setup
         .b_mock
         .execute_query(&farm_setup.first_farm_wrapper, |sc| {
@@ -849,7 +854,105 @@ fn calculate_rewards_test() {
                 current_farm_amount: managed_biguint!(1),
             };
 
-            let _ = sc.calculate_rewards_for_given_position(managed_biguint!(1), token_attributes);
+            let _ = sc.calculate_rewards_for_given_position(
+                managed_address!(&guild_master_addr),
+                managed_biguint!(1),
+                token_attributes,
+            );
         })
+        .assert_ok();
+}
+
+#[test]
+fn try_manipulate_staked_amounts_test() {
+    DebugApi::dummy();
+
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 2;
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
+
+    farm_setup.set_block_epoch(5);
+    farm_setup.set_block_nonce(10);
+
+    // value taken from the "test_unstake_farm" test
+    let expected_reward_token_out = 40;
+    let expected_reward_per_share = 400_000;
+
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce,
+            &rust_biguint!(farm_in_amount),
+            |sc| {
+                let _ = sc.compound_rewards();
+            },
+        )
+        .assert_ok();
+
+    let expected_attributes = StakingFarmTokenAttributes::<DebugApi> {
+        reward_per_share: managed_biguint!(expected_reward_per_share),
+        compounded_reward: managed_biguint!(expected_reward_token_out),
+        current_farm_amount: managed_biguint!(farm_in_amount + expected_reward_token_out),
+    };
+
+    farm_setup.b_mock.check_nft_balance(
+        &farm_setup.user_address,
+        FARM_TOKEN_ID,
+        expected_farm_token_nonce + 1,
+        &rust_biguint!(farm_in_amount + expected_reward_token_out),
+        Some(&expected_attributes),
+    );
+
+    farm_setup.check_farm_token_supply(farm_in_amount + expected_reward_token_out + 1);
+
+    farm_setup.set_block_epoch(10);
+    farm_setup.set_block_nonce(20);
+
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce + 1,
+            &rust_biguint!(farm_in_amount + expected_reward_token_out),
+            |sc| {
+                let _ = sc.unstake_farm();
+            },
+        )
+        .assert_ok();
+
+    let user_addr = farm_setup.user_address.clone();
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            UNBOND_TOKEN_ID,
+            1,
+            &rust_biguint!(farm_in_amount + expected_reward_token_out),
+            |sc| {
+                let _ = sc.cancel_unbond();
+
+                let user_tokens = sc.user_tokens(&managed_address!(&user_addr)).get();
+                assert_eq!(
+                    user_tokens,
+                    TotalTokens {
+                        base: managed_biguint!(farm_in_amount),
+                        compounded: managed_biguint!(expected_reward_token_out)
+                    }
+                );
+            },
+        )
         .assert_ok();
 }

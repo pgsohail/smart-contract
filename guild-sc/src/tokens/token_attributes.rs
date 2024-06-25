@@ -1,10 +1,20 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-use common_structs::{Epoch, FarmToken};
+use common_structs::Epoch;
 use fixed_supply_token::FixedSupplyToken;
 use math::weighted_average_round_up;
 use mergeable::Mergeable;
+
+pub trait LocalFarmToken<M: ManagedTypeApi> {
+    fn get_reward_per_share(&self) -> BigUint<M>;
+
+    fn get_compounded_rewards(&self) -> BigUint<M>;
+
+    fn get_initial_farming_tokens(&self) -> BigUint<M>;
+
+    fn set_reward_per_share(&mut self, new_rps: BigUint<M>);
+}
 
 #[derive(
     ManagedVecItem,
@@ -29,7 +39,7 @@ pub struct StakingFarmToken<M: ManagedTypeApi> {
     pub attributes: StakingFarmTokenAttributes<M>,
 }
 
-impl<M: ManagedTypeApi> FarmToken<M> for StakingFarmTokenAttributes<M> {
+impl<M: ManagedTypeApi> LocalFarmToken<M> for StakingFarmTokenAttributes<M> {
     #[inline]
     fn get_reward_per_share(&self) -> BigUint<M> {
         self.reward_per_share.clone()
@@ -40,9 +50,13 @@ impl<M: ManagedTypeApi> FarmToken<M> for StakingFarmTokenAttributes<M> {
         self.compounded_reward.clone()
     }
 
-    #[inline]
     fn get_initial_farming_tokens(&self) -> BigUint<M> {
         &self.current_farm_amount - &self.compounded_reward
+    }
+
+    #[inline]
+    fn set_reward_per_share(&mut self, new_rps: BigUint<M>) {
+        self.reward_per_share = new_rps;
     }
 }
 

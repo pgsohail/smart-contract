@@ -59,7 +59,7 @@ pub trait StakeFarmModule:
             self.enter_farm_base::<FarmStakingWrapper<Self>>(original_caller.clone(), payments);
 
         let enter_farm_amount = enter_result.context.farming_token_payment.amount.clone();
-        self.add_total_staked_tokens(&enter_farm_amount);
+        self.add_total_base_staked_tokens(&enter_farm_amount);
         self.add_tokens(
             &original_caller,
             &TotalTokens::new_base(enter_farm_amount.clone()),
