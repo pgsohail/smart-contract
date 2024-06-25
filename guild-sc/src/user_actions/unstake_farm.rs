@@ -3,6 +3,7 @@ multiversx_sc::imports!();
 use crate::contexts::storage_cache::{FarmContracTraitBounds, StorageCache};
 use crate::farm_base_impl::base_traits_impl::FarmStakingWrapper;
 use crate::farm_base_impl::exit_farm::InternalExitFarmResult;
+use crate::tokens::token_attributes::LocalFarmToken;
 use common_structs::{Epoch, PaymentsVec};
 use farm::ExitFarmWithPartialPosResultType;
 use mergeable::Mergeable;
@@ -98,9 +99,7 @@ pub trait UnstakeFarmModule:
             self.exit_farm_base::<FarmStakingWrapper<Self>>(original_caller.clone(), payment);
 
         let original_attributes = exit_result.original_token_attributes.clone();
-
-        let base_tokens_removed =
-            &original_attributes.current_farm_amount - &original_attributes.compounded_reward;
+        let base_tokens_removed = original_attributes.get_initial_farming_tokens();
         self.remove_total_base_staked_tokens(&base_tokens_removed);
         self.remove_tokens(
             &original_caller,
