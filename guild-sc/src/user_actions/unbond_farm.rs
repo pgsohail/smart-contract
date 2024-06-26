@@ -139,10 +139,7 @@ pub trait UnbondFarmModule:
             self.farm_token()
                 .nft_create_and_send(&caller, total_farm_tokens, &new_attributes);
 
-        let base_farm_amount = new_attributes.get_initial_farming_tokens();
-        let compounded_rewards = new_attributes.get_compounded_rewards();
-        self.tokens_for_nonce(new_farm_token.token_nonce)
-            .set(TotalTokens::new(base_farm_amount, compounded_rewards));
+        self.set_tokens_for_nonce(&new_attributes, new_farm_token.token_nonce);
 
         self.emit_cancel_unbond_event(
             &caller,

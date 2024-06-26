@@ -2,10 +2,7 @@ multiversx_sc::imports!();
 
 use farm::base_functions::ClaimRewardsResultType;
 
-use crate::{
-    farm_base_impl::base_traits_impl::FarmStakingWrapper,
-    tiered_rewards::total_tokens::TotalTokens, tokens::token_attributes::LocalFarmToken,
-};
+use crate::farm_base_impl::base_traits_impl::FarmStakingWrapper;
 
 #[multiversx_sc::module]
 pub trait ClaimStakeFarmRewardsModule:
@@ -43,17 +40,8 @@ pub trait ClaimStakeFarmRewardsModule:
         self.send_payment_non_zero(&caller, &claim_result.new_farm_token.payment);
         self.send_payment_non_zero(&caller, &base_rewards_payment);
 
-        let new_farm_token = &claim_result.new_farm_token.payment;
-        let base_farm_amount = claim_result
-            .new_farm_token
-            .attributes
-            .get_initial_farming_tokens();
-        let compounded_rewards = claim_result
-            .new_farm_token
-            .attributes
-            .get_compounded_rewards();
-        self.tokens_for_nonce(new_farm_token.token_nonce)
-            .set(TotalTokens::new(base_farm_amount, compounded_rewards));
+        let farm_token_nonce = claim_result.new_farm_token.payment.token_nonce;
+        self.set_tokens_for_nonce(&claim_result.new_farm_token.attributes, farm_token_nonce);
 
         self.emit_claim_rewards_event(
             &caller,

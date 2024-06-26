@@ -3,7 +3,9 @@ multiversx_sc::derive_imports!();
 
 use crate::farm_base_impl::base_traits_impl::{FarmContract, TotalRewards};
 use crate::tiered_rewards::total_tokens::TotalTokens;
-use crate::tokens::token_attributes::{FixedSupplyToken, Mergeable};
+use crate::tokens::token_attributes::{
+    FixedSupplyToken, LocalFarmToken, Mergeable, StakingFarmTokenAttributes,
+};
 use crate::{
     contexts::storage_cache::StorageCache, farm_base_impl::base_traits_impl::FarmStakingWrapper,
 };
@@ -202,6 +204,17 @@ pub trait CustomRewardsModule:
         self.update_per_block_reward_amount();
         self.update_internal_tiers();
         self.update_internal_staking_token_minted();
+    }
+
+    fn set_tokens_for_nonce(
+        &self,
+        attributes: &StakingFarmTokenAttributes<Self::Api>,
+        token_nonce: Nonce,
+    ) {
+        let base_farm_amount = attributes.get_initial_farming_tokens();
+        let compounded_rewards = attributes.get_compounded_rewards();
+        self.tokens_for_nonce(token_nonce)
+            .set(TotalTokens::new(base_farm_amount, compounded_rewards));
     }
 
     fn get_attributes_as_part_of_fixed_supply_local<T: FixedSupplyToken<Self> + TopDecode>(
