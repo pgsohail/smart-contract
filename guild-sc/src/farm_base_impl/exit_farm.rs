@@ -78,11 +78,10 @@ pub trait BaseExitFarmModule:
             farming_token_amount,
         );
 
-        let farm_token_payment = &exit_farm_context.farm_token.payment;
         self.send().esdt_local_burn(
-            &farm_token_payment.token_identifier,
-            farm_token_payment.token_nonce,
-            &farm_token_payment.amount,
+            &farm_token.token_identifier,
+            farm_token.token_nonce,
+            &farm_token.amount,
         );
 
         storage_cache.farm_token_supply -= &farming_token_payment.amount;
