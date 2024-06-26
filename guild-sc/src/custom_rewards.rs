@@ -217,24 +217,23 @@ pub trait CustomRewardsModule:
             .set(TotalTokens::new(base_farm_amount, compounded_rewards));
     }
 
-    fn get_attributes_as_part_of_fixed_supply_local<T: FixedSupplyToken<Self> + TopDecode>(
+    fn get_attributes_as_part_of_fixed_supply_local(
         &self,
         payment: &EsdtTokenPayment,
         mapper: &NonFungibleTokenMapper,
-    ) -> T {
-        let attr: T = mapper.get_token_attributes(payment.token_nonce);
+    ) -> StakingFarmTokenAttributes<Self::Api> {
+        let attr: StakingFarmTokenAttributes<Self::Api> =
+            mapper.get_token_attributes(payment.token_nonce);
         attr.into_part(self, payment)
     }
 
-    fn merge_from_payments_and_burn_local<
-        T: FixedSupplyToken<Self> + Mergeable<Self> + TopDecode,
-    >(
+    fn merge_from_payments_and_burn_local(
         &self,
         mut payments: PaymentsVec<Self::Api>,
         mapper: &NonFungibleTokenMapper,
-    ) -> T {
+    ) -> StakingFarmTokenAttributes<Self::Api> {
         let first_payment = self.pop_first_payment(&mut payments);
-        let base_attributes: T =
+        let base_attributes =
             self.get_attributes_as_part_of_fixed_supply_local(&first_payment, mapper);
         mapper.nft_burn(first_payment.token_nonce, &first_payment.amount);
 
@@ -245,39 +244,29 @@ pub trait CustomRewardsModule:
         output_attributes
     }
 
-    fn merge_attributes_from_payments_local<
-        T: FixedSupplyToken<Self> + Mergeable<Self> + TopDecode,
-    >(
+    fn merge_attributes_from_payments_local(
         &self,
-        mut base_attributes: T,
+        mut base_attributes: StakingFarmTokenAttributes<Self::Api>,
         payments: &PaymentsVec<Self::Api>,
         mapper: &NonFungibleTokenMapper,
-    ) -> T {
+    ) -> StakingFarmTokenAttributes<Self::Api> {
         for payment in payments {
-            let attributes: T = self.get_attributes_as_part_of_fixed_supply_local(&payment, mapper);
+            let attributes = self.get_attributes_as_part_of_fixed_supply_local(&payment, mapper);
             base_attributes.merge_with(attributes, self);
         }
 
         base_attributes
     }
 
-    fn merge_and_create_token_local<
-        T: FixedSupplyToken<Self>
-            + Mergeable<Self>
-            + Clone
-            + TopEncode
-            + TopDecode
-            + NestedEncode
-            + NestedDecode,
-    >(
+    fn merge_and_create_token_local(
         &self,
-        base_attributes: T,
+        base_attributes: StakingFarmTokenAttributes<Self::Api>,
         payments: &PaymentsVec<Self::Api>,
         mapper: &NonFungibleTokenMapper,
-    ) -> PaymentAttributesPair<Self::Api, T> {
+    ) -> PaymentAttributesPair<Self::Api, StakingFarmTokenAttributes<Self::Api>> {
         let output_attributes =
             self.merge_attributes_from_payments_local(base_attributes, payments, mapper);
-        let new_token_amount = output_attributes.get_total_supply();
+        let new_token_amount = FixedSupplyToken::<Self>::get_total_supply(&output_attributes);
         let new_token_payment = mapper.nft_create(new_token_amount, &output_attributes);
 
         PaymentAttributesPair {

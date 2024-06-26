@@ -4,9 +4,7 @@ use core::marker::PhantomData;
 
 use crate::contexts::storage_cache::StorageCache;
 use crate::tiered_rewards::total_tokens::TotalTokens;
-use crate::tokens::token_attributes::{
-    FixedSupplyToken, LocalFarmToken, Mergeable, StakingFarmTokenAttributes,
-};
+use crate::tokens::token_attributes::{LocalFarmToken, StakingFarmTokenAttributes};
 use common_structs::Nonce;
 
 pub trait FarmStakingTraits =
@@ -41,17 +39,6 @@ impl<M: ManagedTypeApi> TotalRewards<M> {
 
 pub trait FarmContract {
     type FarmSc: FarmStakingTraits;
-
-    type AttributesType: 'static
-        + Clone
-        + TopEncode
-        + TopDecode
-        + NestedEncode
-        + NestedDecode
-        + Mergeable<Self::FarmSc>
-        + FixedSupplyToken<Self::FarmSc>
-        + LocalFarmToken<<Self::FarmSc as ContractBase>::Api>
-        + ManagedVecItem;
 
     fn calculate_per_block_rewards(
         sc: &Self::FarmSc,
@@ -183,7 +170,7 @@ pub trait FarmContract {
         sc: &Self::FarmSc,
         caller: &ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         farm_token_amount: &BigUint<<Self::FarmSc as ContractBase>::Api>,
-        token_attributes: &Self::AttributesType,
+        token_attributes: &StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>,
         storage_cache: &StorageCache<Self::FarmSc>,
     ) -> BigUint<<Self::FarmSc as ContractBase>::Api> {
         let storage_rps = sc.get_rps_by_user(caller, storage_cache);
@@ -197,26 +184,40 @@ pub trait FarmContract {
     }
 
     fn create_enter_farm_initial_attributes(
-        sc: &Self::FarmSc,
-        caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
         farming_token_amount: BigUint<<Self::FarmSc as ContractBase>::Api>,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
-    ) -> Self::AttributesType;
+    ) -> StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api> {
+        StakingFarmTokenAttributes {
+            reward_per_share: current_reward_per_share,
+            compounded_reward: BigUint::zero(),
+            current_farm_amount: farming_token_amount,
+        }
+    }
 
     fn create_claim_rewards_initial_attributes(
-        sc: &Self::FarmSc,
-        caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        first_token_attributes: Self::AttributesType,
+        first_token_attributes: StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
-    ) -> Self::AttributesType;
+    ) -> StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api> {
+        StakingFarmTokenAttributes {
+            reward_per_share: current_reward_per_share,
+            compounded_reward: first_token_attributes.compounded_reward,
+            current_farm_amount: first_token_attributes.current_farm_amount,
+        }
+    }
 
     fn create_compound_rewards_initial_attributes(
-        sc: &Self::FarmSc,
-        caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        first_token_attributes: Self::AttributesType,
+        first_token_attributes: StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>,
         current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
         reward: &BigUint<<Self::FarmSc as ContractBase>::Api>,
-    ) -> Self::AttributesType;
+    ) -> StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api> {
+        let new_pos_compounded_reward = first_token_attributes.compounded_reward + reward;
+        let new_pos_current_farm_amount = first_token_attributes.current_farm_amount + reward;
+        StakingFarmTokenAttributes {
+            reward_per_share: current_reward_per_share,
+            compounded_reward: new_pos_compounded_reward,
+            current_farm_amount: new_pos_current_farm_amount,
+        }
+    }
 }
 
 pub struct FarmStakingWrapper<T>
@@ -231,47 +232,4 @@ where
     T: FarmStakingTraits,
 {
     type FarmSc = T;
-    type AttributesType = StakingFarmTokenAttributes<<Self::FarmSc as ContractBase>::Api>;
-
-    fn create_enter_farm_initial_attributes(
-        _sc: &Self::FarmSc,
-        _caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        farming_token_amount: BigUint<<Self::FarmSc as ContractBase>::Api>,
-        current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
-    ) -> Self::AttributesType {
-        StakingFarmTokenAttributes {
-            reward_per_share: current_reward_per_share,
-            compounded_reward: BigUint::zero(),
-            current_farm_amount: farming_token_amount,
-        }
-    }
-
-    fn create_claim_rewards_initial_attributes(
-        _sc: &Self::FarmSc,
-        _caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        first_token_attributes: Self::AttributesType,
-        current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
-    ) -> Self::AttributesType {
-        StakingFarmTokenAttributes {
-            reward_per_share: current_reward_per_share,
-            compounded_reward: first_token_attributes.compounded_reward,
-            current_farm_amount: first_token_attributes.current_farm_amount,
-        }
-    }
-
-    fn create_compound_rewards_initial_attributes(
-        _sc: &Self::FarmSc,
-        _caller: ManagedAddress<<Self::FarmSc as ContractBase>::Api>,
-        first_token_attributes: Self::AttributesType,
-        current_reward_per_share: BigUint<<Self::FarmSc as ContractBase>::Api>,
-        reward: &BigUint<<Self::FarmSc as ContractBase>::Api>,
-    ) -> Self::AttributesType {
-        let new_pos_compounded_reward = first_token_attributes.compounded_reward + reward;
-        let new_pos_current_farm_amount = first_token_attributes.current_farm_amount + reward;
-        StakingFarmTokenAttributes {
-            reward_per_share: current_reward_per_share,
-            compounded_reward: new_pos_compounded_reward,
-            current_farm_amount: new_pos_current_farm_amount,
-        }
-    }
 }

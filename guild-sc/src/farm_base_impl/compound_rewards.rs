@@ -6,7 +6,7 @@ use crate::{
         claim_rewards_context::CompoundRewardsContext,
         storage_cache::{FarmContracTraitBounds, StorageCache},
     },
-    tokens::token_attributes::{LocalFarmToken, FixedSupplyToken},
+    tokens::token_attributes::{FixedSupplyToken, LocalFarmToken, StakingFarmTokenAttributes},
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
 
@@ -44,7 +44,7 @@ pub trait BaseCompoundRewardsModule:
         &self,
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
-    ) -> InternalCompoundRewardsResult<Self, FC::AttributesType> {
+    ) -> InternalCompoundRewardsResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut temp_result = self.claim_rewards_base_impl::<FC>(&caller, payments);
         let first_token_attributes =
             self.get_first_token_part_attributes::<FC>(&temp_result.context);
@@ -54,8 +54,6 @@ pub trait BaseCompoundRewardsModule:
         let farm_token_mapper = self.farm_token();
         let rps = self.get_rps_by_user(&caller, &temp_result.storage_cache);
         let base_attributes = FC::create_compound_rewards_initial_attributes(
-            self,
-            caller.clone(),
             first_token_attributes.clone(),
             rps.clone(),
             &temp_result.rewards,
@@ -69,7 +67,7 @@ pub trait BaseCompoundRewardsModule:
         new_token_attributes.set_reward_per_share(rps.clone());
 
         let new_farm_token = farm_token_mapper.nft_create(
-            new_token_attributes.get_total_supply(),
+            FixedSupplyToken::<Self>::get_total_supply(&new_token_attributes),
             &new_token_attributes,
         );
 

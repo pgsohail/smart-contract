@@ -6,7 +6,7 @@ use crate::{
         claim_rewards_context::ClaimRewardsContext,
         storage_cache::{FarmContracTraitBounds, StorageCache},
     },
-    tokens::token_attributes::{FixedSupplyToken, LocalFarmToken},
+    tokens::token_attributes::{FixedSupplyToken, LocalFarmToken, StakingFarmTokenAttributes},
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
 
@@ -53,7 +53,7 @@ pub trait BaseClaimRewardsModule:
         &self,
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
-    ) -> InternalClaimRewardsResult<Self, FC::AttributesType> {
+    ) -> InternalClaimRewardsResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut claim_result = self.claim_rewards_base_no_farm_token_mint::<FC>(caller, payments);
         let virtual_farm_token_payment = &claim_result.new_farm_token.payment;
         let minted_farm_token_nonce = self.send().esdt_nft_create_compact(
@@ -70,7 +70,7 @@ pub trait BaseClaimRewardsModule:
         &self,
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
-    ) -> InternalClaimRewardsResult<Self, FC::AttributesType> {
+    ) -> InternalClaimRewardsResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let temp_result = self.claim_rewards_base_impl::<FC>(&caller, payments);
         let first_token_attributes =
             self.get_first_token_part_attributes::<FC>(&temp_result.context);
@@ -78,8 +78,6 @@ pub trait BaseClaimRewardsModule:
         let farm_token_mapper = self.farm_token();
         let rps = self.get_rps_by_user(&caller, &temp_result.storage_cache);
         let base_attributes = FC::create_claim_rewards_initial_attributes(
-            self,
-            caller,
             first_token_attributes.clone(),
             rps.clone(),
         );
@@ -99,7 +97,7 @@ pub trait BaseClaimRewardsModule:
             payment: EsdtTokenPayment::new(
                 temp_result.storage_cache.farm_token_id.clone(),
                 0,
-                new_token_attributes.get_total_supply(),
+                FixedSupplyToken::<Self>::get_total_supply(&new_token_attributes),
             ),
             attributes: new_token_attributes,
         };
@@ -117,14 +115,15 @@ pub trait BaseClaimRewardsModule:
         &self,
         caller: &ManagedAddress,
         payments: PaymentsVec<Self::Api>,
-    ) -> TempInternalClaimRewardsResult<Self, FC::AttributesType> {
+    ) -> TempInternalClaimRewardsResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut storage_cache = StorageCache::new(self);
         self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
 
-        let claim_rewards_context = ClaimRewardsContext::<Self::Api, FC::AttributesType>::new(
-            payments,
-            &storage_cache.farm_token_id,
-            self.blockchain(),
+        let claim_rewards_context = ClaimRewardsContext::<
+            Self::Api,
+            StakingFarmTokenAttributes<Self::Api>,
+        >::new(
+            payments, &storage_cache.farm_token_id, self.blockchain()
         );
 
         FC::generate_aggregated_rewards(self, &mut storage_cache);
@@ -149,8 +148,11 @@ pub trait BaseClaimRewardsModule:
 
     fn get_first_token_part_attributes<FC: FarmContract<FarmSc = Self>>(
         &self,
-        claim_rewards_context: &ClaimRewardsContext<Self::Api, FC::AttributesType>,
-    ) -> FC::AttributesType {
+        claim_rewards_context: &ClaimRewardsContext<
+            Self::Api,
+            StakingFarmTokenAttributes<Self::Api>,
+        >,
+    ) -> StakingFarmTokenAttributes<Self::Api> {
         let first_farm_token = &claim_rewards_context.first_farm_token.payment;
         claim_rewards_context
             .first_farm_token
@@ -163,7 +165,10 @@ pub trait BaseClaimRewardsModule:
         &self,
         caller: &ManagedAddress,
         storage_cache: &StorageCache<Self>,
-        claim_rewards_context: &ClaimRewardsContext<Self::Api, FC::AttributesType>,
+        claim_rewards_context: &ClaimRewardsContext<
+            Self::Api,
+            StakingFarmTokenAttributes<Self::Api>,
+        >,
     ) -> BigUint {
         let first_farm_token_amount = &claim_rewards_context.first_farm_token.payment.amount;
         let first_token_attributes =
@@ -183,7 +188,10 @@ pub trait BaseClaimRewardsModule:
         total_rewards: &mut BigUint,
         caller: &ManagedAddress,
         storage_cache: &StorageCache<Self>,
-        claim_rewards_context: &ClaimRewardsContext<Self::Api, FC::AttributesType>,
+        claim_rewards_context: &ClaimRewardsContext<
+            Self::Api,
+            StakingFarmTokenAttributes<Self::Api>,
+        >,
     ) {
         for (payment, attributes) in claim_rewards_context.additional_payments.iter().zip(
             claim_rewards_context
