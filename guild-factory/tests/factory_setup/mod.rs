@@ -1,7 +1,7 @@
 #![allow(deprecated)]
 
 use guild_factory::config::ConfigModule as _;
-use guild_factory::factory::FactoryModule;
+use guild_factory::factory::{FactoryModule, GuildLocalConfig};
 use guild_factory::guild_interactions::GuildInteractionsModule;
 use guild_factory::GuildFactory;
 use guild_sc::custom_rewards::CustomRewardsModule;
@@ -133,9 +133,14 @@ where
                 sc.init(
                     managed_address!(guild_source_wrapper.address_ref()),
                     managed_token_id!(FARMING_TOKEN_ID),
-                    managed_biguint!(DIVISION_SAFETY_CONSTANT),
+                    managed_biguint!(1_000_000_000_000_000_000) + 1u32,
                     admins,
                 );
+
+                sc.guild_local_config().set(GuildLocalConfig {
+                    farming_token_id: managed_token_id!(FARMING_TOKEN_ID),
+                    division_safety_constant: managed_biguint!(DIVISION_SAFETY_CONSTANT),
+                });
 
                 // simulate deploy of config sc
                 sc.config_sc_address()

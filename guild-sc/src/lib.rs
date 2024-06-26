@@ -23,8 +23,6 @@ pub mod tiered_rewards;
 pub mod tokens;
 pub mod user_actions;
 
-const MIN_DIV_SAFETY: u64 = 1_000_000_000_000_000_000;
-
 #[multiversx_sc::contract]
 pub trait FarmStaking:
     custom_rewards::CustomRewardsModule
@@ -161,13 +159,6 @@ pub trait FarmStaking:
             farming_token_id.is_valid_esdt_identifier(),
             ERROR_NOT_AN_ESDT
         );
-
-        if !cfg!(debug_assertions) {
-            require!(
-                division_safety_constant >= MIN_DIV_SAFETY,
-                "Division safety constant too small"
-            );
-        }
 
         self.state().set(State::Inactive);
         self.division_safety_constant()
