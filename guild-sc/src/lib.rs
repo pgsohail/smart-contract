@@ -6,7 +6,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use crate::farm_base_impl::base_traits_impl::FarmContract;
-use common_errors::{ERROR_NOT_AN_ESDT, ERROR_ZERO_AMOUNT};
+use common_errors::ERROR_NOT_AN_ESDT;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmStakingWrapper;
 use pausable::State;
@@ -22,6 +22,8 @@ pub mod rewards;
 pub mod tiered_rewards;
 pub mod tokens;
 pub mod user_actions;
+
+const MIN_DIV_SAFETY: u64 = 1_000_000_000_000_000_000;
 
 #[multiversx_sc::contract]
 pub trait FarmStaking:
@@ -159,7 +161,13 @@ pub trait FarmStaking:
             farming_token_id.is_valid_esdt_identifier(),
             ERROR_NOT_AN_ESDT
         );
-        require!(division_safety_constant != 0u64, ERROR_ZERO_AMOUNT);
+
+        if !cfg!(debug_assertions) {
+            require!(
+                division_safety_constant >= MIN_DIV_SAFETY,
+                "Division safety constant too small"
+            );
+        }
 
         self.state().set(State::Inactive);
         self.division_safety_constant()
