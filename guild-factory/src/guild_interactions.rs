@@ -43,7 +43,7 @@ pub trait GuildInteractionsModule:
         let payment = self.check_payment_is_farming_token();
         let _: EsdtTokenPayment = self
             .guild_sc_proxy(guild)
-            .stake_farm_endpoint(original_caller.clone())
+            .stake_farm_endpoint(OptionalValue::Some(original_caller))
             .with_esdt_transfer(payment)
             .execute_on_dest_context();
     }
