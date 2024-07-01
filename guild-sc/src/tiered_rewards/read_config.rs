@@ -3,26 +3,8 @@ use guild_sc_config::{
     global_config::{GlobalPauseStatus, UNPAUSED},
     tier_types::{GuildMasterRewardTier, RewardTier, UserRewardTier},
 };
-use multiversx_sc::storage::StorageKey;
 
 multiversx_sc::imports!();
-
-static GUILD_MASTER_TIERS_STORAGE_KEY: &[u8] = b"guildMasterTiers";
-static USER_TIERS_STORAGE_KEY: &[u8] = b"userTiers";
-static MAX_TOKENS_STORAGE_KEY: &[u8] = b"maxStakedTokens";
-static MIN_UNBOND_EPOCHS_USER_KEY: &[u8] = b"minUnbondEpochsUser";
-static MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY: &[u8] = b"minUnbondEpochsGuildMaster";
-static MIN_STAKE_USER_KEY: &[u8] = b"minStakeUser";
-static SECONDS_PER_BLOCK_KEY: &[u8] = b"secondsPerBlock";
-static PER_BLOCK_REWARD_AMOUNT_KEY: &[u8] = b"perBlockRewardAmount";
-static MIN_STAKE_GUILD_MASTER_KEY: &[u8] = b"minStakeGuildMaster";
-static TOTAL_STAKING_TOKEN_MINTED_KEY: &[u8] = b"totalStakingTokenMinted";
-static TOTAL_STAKING_TOKEN_STAKED_KEY: &[u8] = b"totalStakingTokenStaked";
-static GLOBAL_PAUSE_STATUS_KEY: &[u8] = b"globalPauseStatus";
-static BASE_FARM_TOKEN_ID_KEY: &[u8] = b"baseFarmTokenId";
-static BASE_UNBOND_TOKEN_ID_KEY: &[u8] = b"baseUnbondTokenId";
-static BASE_DISPLAY_NAME_KEY: &[u8] = b"baseTokenDisplayName";
-static TOKEN_DECIMALS_KEY: &[u8] = b"tokensDecimals";
 
 #[multiversx_sc::module]
 pub trait ReadConfigModule {
@@ -46,70 +28,38 @@ pub trait ReadConfigModule {
         &self,
     ) -> VecMapper<GuildMasterRewardTier<Self::Api>, ManagedAddress> {
         let config_addr = self.config_sc_address().get();
-
-        VecMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(GUILD_MASTER_TIERS_STORAGE_KEY),
-        )
+        self.external_guild_master_tiers(config_addr)
     }
 
     fn get_user_tiers_mapper(&self) -> VecMapper<UserRewardTier, ManagedAddress> {
         let config_addr = self.config_sc_address().get();
-
-        VecMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(USER_TIERS_STORAGE_KEY),
-        )
+        self.external_user_tiers(config_addr)
     }
 
     fn get_max_staked_tokens(&self) -> BigUint {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(MAX_TOKENS_STORAGE_KEY),
-        );
-
-        mapper.get()
+        self.external_max_staked_tokens(config_addr).get()
     }
 
     fn get_min_unbond_epochs_user(&self) -> Epoch {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(MIN_UNBOND_EPOCHS_USER_KEY),
-        );
-
-        mapper.get()
+        self.external_min_unbond_epochs_user(config_addr).get()
     }
 
     fn get_min_unbond_epochs_guild_master(&self) -> Epoch {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(MIN_UNBOND_EPOCHS_GUILD_MASTER_KEY),
-        );
-
-        mapper.get()
+        self.external_min_unbond_epochs_guild_master(config_addr)
+            .get()
     }
 
     fn get_min_stake_user(&self) -> BigUint {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(MIN_STAKE_USER_KEY),
-        );
-
-        mapper.get()
+        self.external_min_stake_user(config_addr).get()
     }
 
     fn get_min_stake_guild_master(&self) -> BigUint {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(MIN_STAKE_GUILD_MASTER_KEY),
-        );
-
-        mapper.get()
+        self.external_min_stake_guild_master(config_addr).get()
     }
 
     fn get_min_stake_for_user(&self, user: &ManagedAddress) -> BigUint {
@@ -123,92 +73,49 @@ pub trait ReadConfigModule {
 
     fn get_seconds_per_block(&self) -> u64 {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(SECONDS_PER_BLOCK_KEY),
-        );
-
-        mapper.get()
+        self.external_seconds_per_block(config_addr).get()
     }
 
     fn get_per_block_reward_amount(&self) -> BigUint {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(PER_BLOCK_REWARD_AMOUNT_KEY),
-        );
-
-        mapper.get()
+        self.external_per_block_reward_amount(config_addr).get()
     }
 
     fn get_total_staking_token_minted(&self) -> BigUint {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(TOTAL_STAKING_TOKEN_MINTED_KEY),
-        );
-
-        mapper.get()
+        self.external_total_staking_token_minted(config_addr).get()
     }
 
     fn get_total_staking_token_staked(&self) -> BigUint {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(TOTAL_STAKING_TOKEN_STAKED_KEY),
-        );
-
-        mapper.get()
+        self.external_total_staking_token_staked(config_addr).get()
     }
 
     fn get_base_farm_token_id(&self) -> ManagedBuffer {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(BASE_FARM_TOKEN_ID_KEY),
-        );
-
-        mapper.get()
+        self.external_base_farm_token_id(config_addr).get()
     }
 
     fn get_base_unbond_token_id(&self) -> ManagedBuffer {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(BASE_UNBOND_TOKEN_ID_KEY),
-        );
-
-        mapper.get()
+        self.external_base_unbond_token_id(config_addr).get()
     }
 
     fn get_base_display_name(&self) -> ManagedBuffer {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(BASE_DISPLAY_NAME_KEY),
-        );
-
-        mapper.get()
+        self.external_base_token_display_name(config_addr).get()
     }
 
     fn get_token_decimals(&self) -> usize {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(TOKEN_DECIMALS_KEY),
-        );
-
-        mapper.get()
+        self.external_tokens_decimals(config_addr).get()
     }
 
     fn require_not_globally_paused(&self) {
         let config_addr = self.config_sc_address().get();
-        let mapper = SingleValueMapper::<_, GlobalPauseStatus, ManagedAddress>::new_from_address(
-            config_addr,
-            StorageKey::new(GLOBAL_PAUSE_STATUS_KEY),
-        );
+        let pause_status = self.external_global_pause_status(config_addr).get();
 
-        require!(mapper.get() == UNPAUSED, "All guilds are currently paused");
+        require!(pause_status == UNPAUSED, "All guilds are currently paused");
     }
 
     #[proxy]
@@ -219,4 +126,100 @@ pub trait ReadConfigModule {
 
     #[storage_mapper("guildMaster")]
     fn guild_master(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[storage_mapper_from_address("guildMasterTiers")]
+    fn external_guild_master_tiers(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> VecMapper<GuildMasterRewardTier<Self::Api>, ManagedAddress>;
+
+    #[storage_mapper_from_address("userTiers")]
+    fn external_user_tiers(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> VecMapper<UserRewardTier, ManagedAddress>;
+
+    #[storage_mapper_from_address("maxStakedTokens")]
+    fn external_max_staked_tokens(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
+
+    #[storage_mapper_from_address("minUnbondEpochsUser")]
+    fn external_min_unbond_epochs_user(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<Epoch, ManagedAddress>;
+
+    #[storage_mapper_from_address("minUnbondEpochsGuildMaster")]
+    fn external_min_unbond_epochs_guild_master(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<Epoch, ManagedAddress>;
+
+    #[storage_mapper_from_address("minStakeUser")]
+    fn external_min_stake_user(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
+
+    #[storage_mapper_from_address("minStakeGuildMaster")]
+    fn external_min_stake_guild_master(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
+
+    #[storage_mapper_from_address("secondsPerBlock")]
+    fn external_seconds_per_block(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<u64, ManagedAddress>;
+
+    #[storage_mapper_from_address("perBlockRewardAmount")]
+    fn external_per_block_reward_amount(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
+
+    #[storage_mapper_from_address("totalStakingTokenMinted")]
+    fn external_total_staking_token_minted(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
+
+    #[storage_mapper_from_address("totalStakingTokenStaked")]
+    fn external_total_staking_token_staked(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
+
+    #[storage_mapper_from_address("globalPauseStatus")]
+    fn external_global_pause_status(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<GlobalPauseStatus, ManagedAddress>;
+
+    #[storage_mapper_from_address("baseFarmTokenId")]
+    fn external_base_farm_token_id(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<ManagedBuffer, ManagedAddress>;
+
+    #[storage_mapper_from_address("baseUnbondTokenId")]
+    fn external_base_unbond_token_id(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<ManagedBuffer, ManagedAddress>;
+
+    #[storage_mapper_from_address("baseTokenDisplayName")]
+    fn external_base_token_display_name(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<ManagedBuffer, ManagedAddress>;
+
+    #[storage_mapper_from_address("tokensDecimals")]
+    fn external_tokens_decimals(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<usize, ManagedAddress>;
 }

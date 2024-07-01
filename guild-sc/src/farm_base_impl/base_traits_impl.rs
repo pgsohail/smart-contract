@@ -2,13 +2,31 @@ multiversx_sc::imports!();
 
 use core::marker::PhantomData;
 
+use crate::config::ConfigModule;
 use crate::contexts::storage_cache::StorageCache;
-use crate::tiered_rewards::total_tokens::TotalTokens;
+use crate::custom_rewards::CustomRewardsModule;
+use crate::rewards::RewardsModule;
+use crate::tiered_rewards::total_tokens::{TokenPerTierModule, TotalTokens};
 use crate::tokens::token_attributes::{LocalFarmToken, StakingFarmTokenAttributes};
+use crate::user_actions::close_guild::CloseGuildModule;
 use common_structs::Nonce;
 
-pub trait FarmStakingTraits =
+pub trait FarmStakingTraits:
     crate::custom_rewards::CustomRewardsModule
+    + crate::rewards::RewardsModule
+    + crate::config::ConfigModule
+    + crate::tokens::farm_token::FarmTokenModule
+    + pausable::PausableModule
+    + permissions_module::PermissionsModule
+    + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
+    + crate::tiered_rewards::read_config::ReadConfigModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
+{
+}
+
+impl<T> FarmStakingTraits for T where
+    T: crate::custom_rewards::CustomRewardsModule
         + crate::rewards::RewardsModule
         + crate::config::ConfigModule
         + crate::tokens::farm_token::FarmTokenModule
@@ -17,7 +35,9 @@ pub trait FarmStakingTraits =
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
         + crate::tiered_rewards::read_config::ReadConfigModule
         + crate::tiered_rewards::total_tokens::TokenPerTierModule
-        + crate::user_actions::close_guild::CloseGuildModule;
+        + crate::user_actions::close_guild::CloseGuildModule
+{
+}
 
 pub struct TotalRewards<M: ManagedTypeApi> {
     pub guild_master: BigUint<M>,

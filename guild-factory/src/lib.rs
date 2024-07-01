@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(deprecated)]
 
 use factory::GuildLocalConfig;
 

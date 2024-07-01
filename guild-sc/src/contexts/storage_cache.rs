@@ -3,9 +3,19 @@ multiversx_sc::derive_imports!();
 
 use pausable::State;
 
-pub trait FarmContracTraitBounds = crate::config::ConfigModule
+pub trait FarmContracTraitBounds:
+    crate::config::ConfigModule
     + crate::rewards::RewardsModule
-    + crate::tokens::farm_token::FarmTokenModule;
+    + crate::tokens::farm_token::FarmTokenModule
+{
+}
+
+impl<T> FarmContracTraitBounds for T where
+    T: crate::config::ConfigModule
+        + crate::rewards::RewardsModule
+        + crate::tokens::farm_token::FarmTokenModule
+{
+}
 
 pub struct StorageCache<'a, C: FarmContracTraitBounds> {
     sc_ref: &'a C,
