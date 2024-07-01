@@ -6,10 +6,9 @@ use crate::{
         claim_rewards_context::CompoundRewardsContext,
         storage_cache::{FarmContracTraitBounds, StorageCache},
     },
-    tokens::token_attributes::LocalFarmToken,
+    tokens::token_attributes::{FixedSupplyToken, LocalFarmToken, StakingFarmTokenAttributes},
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
-use fixed_supply_token::FixedSupplyToken;
 
 pub struct InternalCompoundRewardsResult<'a, C, T>
 where
@@ -37,12 +36,15 @@ pub trait BaseCompoundRewardsModule:
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
     + super::claim_rewards::BaseClaimRewardsModule
+    + crate::custom_rewards::CustomRewardsModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
 {
     fn compound_rewards_base<FC: FarmContract<FarmSc = Self>>(
         &self,
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
-    ) -> InternalCompoundRewardsResult<Self, FC::AttributesType> {
+    ) -> InternalCompoundRewardsResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut temp_result = self.claim_rewards_base_impl::<FC>(&caller, payments);
         let first_token_attributes =
             self.get_first_token_part_attributes::<FC>(&temp_result.context);
@@ -52,14 +54,12 @@ pub trait BaseCompoundRewardsModule:
         let farm_token_mapper = self.farm_token();
         let rps = self.get_rps_by_user(&caller, &temp_result.storage_cache);
         let base_attributes = FC::create_compound_rewards_initial_attributes(
-            self,
-            caller.clone(),
             first_token_attributes.clone(),
             rps.clone(),
             &temp_result.rewards,
         );
 
-        let mut new_token_attributes = self.merge_attributes_from_payments(
+        let mut new_token_attributes = self.merge_attributes_from_payments_local(
             base_attributes,
             &temp_result.context.additional_payments,
             &farm_token_mapper,
@@ -67,7 +67,7 @@ pub trait BaseCompoundRewardsModule:
         new_token_attributes.set_reward_per_share(rps.clone());
 
         let new_farm_token = farm_token_mapper.nft_create(
-            new_token_attributes.get_total_supply(),
+            FixedSupplyToken::<Self>::get_total_supply(&new_token_attributes),
             &new_token_attributes,
         );
 

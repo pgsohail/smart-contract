@@ -1,12 +1,14 @@
 multiversx_sc::imports!();
 
 use super::base_traits_impl::FarmContract;
-use crate::contexts::{
-    enter_farm_context::EnterFarmContext,
-    storage_cache::{FarmContracTraitBounds, StorageCache},
+use crate::{
+    contexts::{
+        enter_farm_context::EnterFarmContext,
+        storage_cache::{FarmContracTraitBounds, StorageCache},
+    },
+    tokens::token_attributes::{FixedSupplyToken, StakingFarmTokenAttributes},
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
-use fixed_supply_token::FixedSupplyToken;
 
 pub struct InternalEnterFarmResult<'a, C, T>
 where
@@ -32,12 +34,15 @@ pub trait BaseEnterFarmModule:
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
+    + crate::custom_rewards::CustomRewardsModule
+    + crate::tiered_rewards::total_tokens::TokenPerTierModule
+    + crate::user_actions::close_guild::CloseGuildModule
 {
     fn enter_farm_base<FC: FarmContract<FarmSc = Self>>(
         &self,
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
-    ) -> InternalEnterFarmResult<Self, FC::AttributesType> {
+    ) -> InternalEnterFarmResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut result = self.enter_farm_base_no_token_create::<FC>(caller, payments);
         let new_farm_token_payment = self.farm_token().nft_create(
             result.new_farm_token.payment.amount,
@@ -52,7 +57,7 @@ pub trait BaseEnterFarmModule:
         &self,
         caller: ManagedAddress,
         payments: PaymentsVec<Self::Api>,
-    ) -> InternalEnterFarmResult<Self, FC::AttributesType> {
+    ) -> InternalEnterFarmResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut storage_cache = StorageCache::new(self);
         self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
 
@@ -69,12 +74,10 @@ pub trait BaseEnterFarmModule:
         let farm_token_mapper = self.farm_token();
         let rps = self.get_rps_by_user(&caller, &storage_cache);
         let base_attributes = FC::create_enter_farm_initial_attributes(
-            self,
-            caller,
             enter_farm_context.farming_token_payment.amount.clone(),
             rps.clone(),
         );
-        let new_token_attributes = self.merge_attributes_from_payments(
+        let new_token_attributes = self.merge_attributes_from_payments_local(
             base_attributes,
             &enter_farm_context.additional_farm_tokens,
             &farm_token_mapper,
@@ -83,7 +86,7 @@ pub trait BaseEnterFarmModule:
             payment: EsdtTokenPayment::new(
                 storage_cache.farm_token_id.clone(),
                 0,
-                new_token_attributes.get_total_supply(),
+                FixedSupplyToken::<Self>::get_total_supply(&new_token_attributes),
             ),
             attributes: new_token_attributes,
         };

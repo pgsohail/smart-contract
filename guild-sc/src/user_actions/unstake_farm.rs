@@ -3,10 +3,9 @@ multiversx_sc::imports!();
 use crate::contexts::storage_cache::{FarmContracTraitBounds, StorageCache};
 use crate::farm_base_impl::base_traits_impl::FarmStakingWrapper;
 use crate::farm_base_impl::exit_farm::InternalExitFarmResult;
-use crate::tokens::token_attributes::LocalFarmToken;
+use crate::tokens::token_attributes::{LocalFarmToken, Mergeable};
 use common_structs::{Epoch, PaymentsVec};
 use farm::ExitFarmWithPartialPosResultType;
-use mergeable::Mergeable;
 
 use crate::{
     tiered_rewards::total_tokens::TotalTokens,
@@ -137,7 +136,7 @@ pub trait UnstakeFarmModule:
             total_farming_tokens += unstake_result.exit_result.farming_token_payment.amount;
 
             match &mut opt_original_attributes {
-                Some(attr) => attr.merge_with(unstake_result.original_attributes),
+                Some(attr) => attr.merge_with(unstake_result.original_attributes, self),
                 None => opt_original_attributes = Some(unstake_result.original_attributes),
             }
         }

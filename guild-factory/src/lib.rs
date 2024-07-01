@@ -8,6 +8,8 @@ pub mod config;
 pub mod factory;
 pub mod guild_interactions;
 
+const MIN_DIV_SAFETY: u64 = 1_000_000_000_000_000_000;
+
 #[multiversx_sc::contract]
 pub trait GuildFactory:
     config::ConfigModule
@@ -26,6 +28,11 @@ pub trait GuildFactory:
     ) {
         self.require_sc_address(&guild_sc_source_address);
         self.require_valid_token_id(&farming_token_id);
+
+        require!(
+            division_safety_constant > MIN_DIV_SAFETY,
+            "Division safety constant too small"
+        );
 
         self.guild_sc_source_address().set(guild_sc_source_address);
         self.guild_local_config().set(GuildLocalConfig {
