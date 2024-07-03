@@ -4,7 +4,7 @@ pub mod factory_setup;
 
 use factory_setup::*;
 use guild_sc::{
-    tiered_rewards::total_tokens::{TokenPerTierModule, TotalTokens},
+    tiered_rewards::total_tokens::TokenPerTierModule,
     tokens::{request_id::RequestIdModule, token_attributes::StakingFarmTokenAttributes},
     user_actions::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
@@ -947,138 +947,96 @@ fn try_manipulate_staked_amounts_test() {
                 let user_tokens = sc.user_tokens(&managed_address!(&user_addr)).get();
                 assert_eq!(
                     user_tokens,
-                    TotalTokens {
-                        base: managed_biguint!(farm_in_amount),
-                        compounded: managed_biguint!(expected_reward_token_out)
-                    }
+                    managed_biguint!(farm_in_amount + expected_reward_token_out)
                 );
             },
         )
         .assert_ok();
 }
 
-// Will be fixed in future PR
+#[test]
+fn token_splitting_test() {
+    DebugApi::dummy();
 
-// #[test]
-// fn token_splitting_test() {
-//     DebugApi::dummy();
+    let mut farm_setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
 
-//     let mut farm_setup = FarmStakingSetup::new(
-//         guild_sc::contract_obj,
-//         guild_sc_config::contract_obj,
-//         guild_factory::contract_obj,
-//     );
+    let farm_in_amount = 100_000_000;
+    let expected_farm_token_nonce = 2;
+    farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
+    farm_setup.check_farm_token_supply(farm_in_amount + 1);
 
-//     let farm_in_amount = 100_000_000;
-//     let expected_farm_token_nonce = 2;
-//     farm_setup.stake_farm(farm_in_amount, &[], expected_farm_token_nonce, 0, 0);
-//     farm_setup.check_farm_token_supply(farm_in_amount + 1);
+    farm_setup.set_block_epoch(5);
+    farm_setup.set_block_nonce(10);
 
-//     farm_setup
-//         .b_mock
-//         .execute_query(&farm_setup.first_farm_wrapper, |sc| {
-//             let total_user_tokens = sc.tokens_for_nonce(expected_farm_token_nonce).get();
-//             assert_eq!(
-//                 total_user_tokens,
-//                 TotalTokens::new_base(managed_biguint!(farm_in_amount))
-//             );
-//         })
-//         .assert_ok();
+    // value taken from the "test_unstake_farm" test
+    let expected_reward_token_out = 40;
+    let expected_reward_per_share = 400_000;
 
-//     farm_setup.set_block_epoch(5);
-//     farm_setup.set_block_nonce(10);
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce,
+            &rust_biguint!(farm_in_amount),
+            |sc| {
+                let _ = sc.compound_rewards();
+            },
+        )
+        .assert_ok();
 
-//     // value taken from the "test_unstake_farm" test
-//     let expected_reward_token_out = 40;
-//     let expected_reward_per_share = 400_000;
+    let expected_attributes = StakingFarmTokenAttributes::<DebugApi> {
+        reward_per_share: managed_biguint!(expected_reward_per_share),
+        compounded_reward: managed_biguint!(expected_reward_token_out),
+        current_farm_amount: managed_biguint!(farm_in_amount + expected_reward_token_out),
+    };
 
-//     farm_setup
-//         .b_mock
-//         .execute_esdt_transfer(
-//             &farm_setup.user_address,
-//             &farm_setup.first_farm_wrapper,
-//             FARM_TOKEN_ID,
-//             expected_farm_token_nonce,
-//             &rust_biguint!(farm_in_amount),
-//             |sc| {
-//                 let _ = sc.compound_rewards();
+    farm_setup.b_mock.check_nft_balance(
+        &farm_setup.user_address,
+        FARM_TOKEN_ID,
+        expected_farm_token_nonce + 1,
+        &rust_biguint!(farm_in_amount + expected_reward_token_out),
+        Some(&expected_attributes),
+    );
 
-//                 assert!(sc.tokens_for_nonce(expected_farm_token_nonce).is_empty());
+    farm_setup.check_farm_token_supply(farm_in_amount + expected_reward_token_out + 1);
 
-//                 let total_user_tokens = sc.tokens_for_nonce(expected_farm_token_nonce + 1).get();
-//                 assert_eq!(
-//                     total_user_tokens,
-//                     TotalTokens::new(
-//                         managed_biguint!(farm_in_amount),
-//                         managed_biguint!(expected_reward_token_out)
-//                     )
-//                 );
-//             },
-//         )
-//         .assert_ok();
+    let total_user_tokens = farm_in_amount + expected_reward_token_out;
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce + 1,
+            &rust_biguint!(total_user_tokens / 3),
+            |sc| {
+                let _ = sc.unstake_farm();
+            },
+        )
+        .assert_ok();
 
-//     let expected_attributes = StakingFarmTokenAttributes::<DebugApi> {
-//         reward_per_share: managed_biguint!(expected_reward_per_share),
-//         compounded_reward: managed_biguint!(expected_reward_token_out),
-//         current_farm_amount: managed_biguint!(farm_in_amount + expected_reward_token_out),
-//     };
+    // unstake rest of tokens
+    let user_addr = farm_setup.user_address.clone();
+    farm_setup
+        .b_mock
+        .execute_esdt_transfer(
+            &farm_setup.user_address,
+            &farm_setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            expected_farm_token_nonce + 1,
+            &rust_biguint!(total_user_tokens - total_user_tokens / 3),
+            |sc| {
+                let _ = sc.unstake_farm();
 
-//     farm_setup.b_mock.check_nft_balance(
-//         &farm_setup.user_address,
-//         FARM_TOKEN_ID,
-//         expected_farm_token_nonce + 1,
-//         &rust_biguint!(farm_in_amount + expected_reward_token_out),
-//         Some(&expected_attributes),
-//     );
-
-//     farm_setup.check_farm_token_supply(farm_in_amount + expected_reward_token_out + 1);
-
-//     let total_user_tokens = farm_in_amount + expected_reward_token_out;
-//     farm_setup
-//         .b_mock
-//         .execute_esdt_transfer(
-//             &farm_setup.user_address,
-//             &farm_setup.first_farm_wrapper,
-//             FARM_TOKEN_ID,
-//             expected_farm_token_nonce + 1,
-//             &rust_biguint!(total_user_tokens / 3),
-//             |sc| {
-//                 let _ = sc.unstake_farm();
-
-//                 let total_user_tokens = sc.tokens_for_nonce(expected_farm_token_nonce + 1).get();
-//                 assert_eq!(
-//                     total_user_tokens,
-//                     TotalTokens::new(
-//                         managed_biguint!(farm_in_amount) * 2u32 / 3u32 + 1u32,
-//                         managed_biguint!(expected_reward_token_out) * 2u32 / 3u32 + 1u32
-//                     )
-//                 );
-//             },
-//         )
-//         .assert_ok();
-
-//     // unstake rest of tokens
-//     let user_addr = farm_setup.user_address.clone();
-//     farm_setup
-//         .b_mock
-//         .execute_esdt_transfer(
-//             &farm_setup.user_address,
-//             &farm_setup.first_farm_wrapper,
-//             FARM_TOKEN_ID,
-//             expected_farm_token_nonce + 1,
-//             &rust_biguint!(total_user_tokens - total_user_tokens / 3),
-//             |sc| {
-//                 let _ = sc.unstake_farm();
-
-//                 assert!(sc
-//                     .tokens_for_nonce(expected_farm_token_nonce + 1)
-//                     .is_empty());
-
-//                 assert_eq!(
-//                     sc.user_tokens(&managed_address!(&user_addr)).get(),
-//                     TotalTokens::default()
-//                 );
-//             },
-//         )
-//         .assert_ok();
-// }
+                assert!(sc.user_tokens(&managed_address!(&user_addr)).is_empty());
+                assert!(sc.total_base_staked_tokens().is_empty());
+            },
+        )
+        .assert_ok();
+}

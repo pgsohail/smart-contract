@@ -1,58 +1,10 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-#[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode, Clone, PartialEq, Debug)]
-pub struct TotalTokens<M: ManagedTypeApi> {
-    pub base: BigUint<M>,
-    pub compounded: BigUint<M>,
-}
-
-impl<M: ManagedTypeApi> Default for TotalTokens<M> {
-    fn default() -> Self {
-        Self {
-            base: BigUint::zero(),
-            compounded: BigUint::zero(),
-        }
-    }
-}
-
-impl<M: ManagedTypeApi> TotalTokens<M> {
-    pub fn new(base_amount: BigUint<M>, compounded_amount: BigUint<M>) -> Self {
-        Self {
-            base: base_amount,
-            compounded: compounded_amount,
-        }
-    }
-
-    pub fn new_base(base_amount: BigUint<M>) -> Self {
-        Self {
-            base: base_amount,
-            compounded: BigUint::zero(),
-        }
-    }
-
-    pub fn new_compounded(compounded_amount: BigUint<M>) -> Self {
-        Self {
-            base: BigUint::zero(),
-            compounded: compounded_amount,
-        }
-    }
-
-    pub fn is_default(&self) -> bool {
-        let big_zero = BigUint::zero();
-
-        self.base == big_zero && self.compounded == big_zero
-    }
-
-    pub fn total(&self) -> BigUint<M> {
-        &self.base + &self.compounded
-    }
-}
-
 #[multiversx_sc::module]
 pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     #[view(getUserStakedTokens)]
-    fn get_user_staked_tokens(&self, user: ManagedAddress) -> TotalTokens<Self::Api> {
+    fn get_user_staked_tokens(&self, user: ManagedAddress) -> BigUint {
         let guild_master = self.guild_master().get();
         let mapper = if user != guild_master {
             self.user_tokens(&user)
@@ -60,11 +12,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
             self.guild_master_tokens()
         };
 
-        if !mapper.is_empty() {
-            mapper.get()
-        } else {
-            TotalTokens::default()
-        }
+        mapper.get()
     }
 
     fn add_total_base_staked_tokens(&self, amount: &BigUint) {
@@ -79,14 +27,17 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         });
     }
 
-    #[inline]
     fn remove_total_base_staked_tokens(&self, amount: &BigUint) {
         self.total_base_staked_tokens().update(|total| {
-            *total -= amount;
+            if amount <= total {
+                *total -= amount;
+            } else {
+                *total = BigUint::zero();
+            }
         });
     }
 
-    fn add_tokens(&self, caller: &ManagedAddress, tokens: &TotalTokens<Self::Api>) {
+    fn add_tokens(&self, caller: &ManagedAddress, tokens: &BigUint<Self::Api>) {
         let guild_master = self.guild_master().get();
         if caller != &guild_master {
             let user_tokens_mapper = self.user_tokens(caller);
@@ -97,22 +48,14 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         }
     }
 
-    fn add_tokens_common(
-        &self,
-        tokens: &TotalTokens<Self::Api>,
-        mapper: &SingleValueMapper<TotalTokens<Self::Api>>,
-    ) {
-        if !mapper.is_empty() {
-            mapper.update(|total_tokens| {
-                total_tokens.base += &tokens.base;
-                total_tokens.compounded += &tokens.compounded;
-            });
-        } else {
-            mapper.set(tokens);
-        }
+    #[inline]
+    fn add_tokens_common(&self, tokens: &BigUint, mapper: &SingleValueMapper<BigUint>) {
+        mapper.update(|total_tokens| {
+            *total_tokens += tokens;
+        });
     }
 
-    fn remove_tokens(&self, caller: &ManagedAddress, tokens: &TotalTokens<Self::Api>) {
+    fn remove_tokens(&self, caller: &ManagedAddress, tokens: &BigUint) {
         let guild_master = self.guild_master().get();
         if caller != &guild_master {
             let user_tokens_mapper = self.user_tokens(caller);
@@ -123,26 +66,20 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
         }
     }
 
-    fn remove_tokens_common(
-        &self,
-        tokens: &TotalTokens<Self::Api>,
-        mapper: &SingleValueMapper<TotalTokens<Self::Api>>,
-    ) {
+    #[inline]
+    fn remove_tokens_common(&self, tokens: &BigUint, mapper: &SingleValueMapper<BigUint>) {
         mapper.update(|total_tokens| {
-            total_tokens.base -= &tokens.base;
-            total_tokens.compounded -= &tokens.compounded;
+            *total_tokens -= tokens;
         });
     }
 
     fn get_total_stake_for_user(&self, user: &ManagedAddress) -> BigUint {
         let guild_master = self.guild_master().get();
-        let total_tokens = if user != &guild_master {
+        if user != &guild_master {
             self.user_tokens(user).get()
         } else {
             self.guild_master_tokens().get()
-        };
-
-        total_tokens.total()
+        }
     }
 
     fn require_over_min_stake(&self, user: &ManagedAddress) {
@@ -159,12 +96,9 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     #[storage_mapper("totalBaseStakedTokens")]
     fn total_base_staked_tokens(&self) -> SingleValueMapper<BigUint>;
 
-    #[storage_mapper("totalCompoundedTokens")]
-    fn total_compounded_tokens(&self) -> SingleValueMapper<BigUint>;
-
     #[storage_mapper("guildMasterTokens")]
-    fn guild_master_tokens(&self) -> SingleValueMapper<TotalTokens<Self::Api>>;
+    fn guild_master_tokens(&self) -> SingleValueMapper<BigUint>;
 
     #[storage_mapper("userTokens")]
-    fn user_tokens(&self, user: &ManagedAddress) -> SingleValueMapper<TotalTokens<Self::Api>>;
+    fn user_tokens(&self, user: &ManagedAddress) -> SingleValueMapper<BigUint>;
 }

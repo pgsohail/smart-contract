@@ -6,7 +6,8 @@ use crate::config::ConfigModule;
 use crate::contexts::storage_cache::StorageCache;
 use crate::custom_rewards::CustomRewardsModule;
 use crate::rewards::RewardsModule;
-use crate::tiered_rewards::total_tokens::{TokenPerTierModule, TotalTokens};
+use crate::tiered_rewards::total_tokens::TokenPerTierModule;
+use crate::tokens::farm_token::FarmTokenModule;
 use crate::tokens::token_attributes::{LocalFarmToken, StakingFarmTokenAttributes};
 use crate::user_actions::close_guild::CloseGuildModule;
 use common_structs::Nonce;
@@ -97,10 +98,9 @@ pub trait FarmContract {
         }
 
         let guild_master_tokens = sc.guild_master_tokens().get();
-        let total_user_tokens =
-            sc.total_base_staked_tokens().get() + sc.total_compounded_tokens().get();
+        let total_user_tokens = sc.farm_token_supply().get();
         let guild_master_rewards =
-            &guild_master_tokens.total() * &extra_rewards_unbounded / total_user_tokens;
+            &guild_master_tokens * &extra_rewards_unbounded / total_user_tokens;
         let user_rewards = &extra_rewards_unbounded - &guild_master_rewards;
         let extra_rewards_unbounded_split = TotalRewards {
             guild_master: guild_master_rewards,
@@ -160,23 +160,14 @@ pub trait FarmContract {
         }
 
         let guild_master_tokens = sc.guild_master_tokens().get();
-        let total_tokens_base = sc.total_base_staked_tokens().get();
-        let total_compounded = sc.total_compounded_tokens().get();
-        let user_tokens = TotalTokens {
-            base: &total_tokens_base - &guild_master_tokens.base,
-            compounded: &total_compounded - &guild_master_tokens.compounded,
-        };
-
-        let total_guild_master_tokens = guild_master_tokens.total();
-        let total_user_tokens = user_tokens.total();
-
-        if total_guild_master_tokens > 0 {
+        if guild_master_tokens > 0 {
             let increase_guild_master = (split_rewards.guild_master
                 * &storage_cache.division_safety_constant)
-                / &total_guild_master_tokens;
+                / &guild_master_tokens;
             storage_cache.guild_master_rps += increase_guild_master;
         }
 
+        let total_user_tokens = &sc.farm_token_supply().get() - &guild_master_tokens;
         if total_user_tokens > 0 {
             let increase_users = (split_rewards.users * &storage_cache.division_safety_constant)
                 / &total_user_tokens;

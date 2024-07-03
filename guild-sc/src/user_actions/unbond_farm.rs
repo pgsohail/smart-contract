@@ -6,9 +6,7 @@ use crate::{
 };
 use fixed_supply_token::FixedSupplyToken;
 
-use crate::{
-    tiered_rewards::total_tokens::TotalTokens, tokens::token_attributes::UnbondSftAttributes,
-};
+use crate::tokens::token_attributes::UnbondSftAttributes;
 
 #[multiversx_sc::module]
 pub trait UnbondFarmModule:
@@ -120,17 +118,8 @@ pub trait UnbondFarmModule:
 
         let initial_farming_tokens = new_attributes.get_initial_farming_tokens();
         self.add_total_base_staked_tokens(&initial_farming_tokens);
-        self.add_tokens(
-            &caller,
-            &TotalTokens::new(
-                initial_farming_tokens,
-                new_attributes.compounded_reward.clone(),
-            ),
-        );
+        self.add_tokens(&caller, &new_attributes.get_total_supply());
         self.call_increase_total_staked_tokens(new_attributes.get_total_supply());
-
-        self.total_compounded_tokens()
-            .update(|total| *total += &new_attributes.compounded_reward);
 
         let total_farm_tokens = new_attributes.get_total_supply();
         let new_farm_token =

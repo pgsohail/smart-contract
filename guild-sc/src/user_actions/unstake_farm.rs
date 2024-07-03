@@ -6,12 +6,10 @@ use crate::farm_base_impl::exit_farm::InternalExitFarmResult;
 use crate::tokens::token_attributes::LocalFarmToken;
 use common_structs::{Epoch, PaymentsVec};
 use farm::ExitFarmWithPartialPosResultType;
+use fixed_supply_token::FixedSupplyToken;
 use mergeable::Mergeable;
 
-use crate::{
-    tiered_rewards::total_tokens::TotalTokens,
-    tokens::token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes},
-};
+use crate::tokens::token_attributes::{StakingFarmTokenAttributes, UnbondSftAttributes};
 
 pub struct UnstakeCommonNoTokenMintResultType<'a, C, T>
 where
@@ -101,15 +99,7 @@ pub trait UnstakeFarmModule:
         let original_attributes = exit_result.original_token_attributes.clone();
         let base_tokens_removed = original_attributes.get_initial_farming_tokens();
         self.remove_total_base_staked_tokens(&base_tokens_removed);
-        self.remove_tokens(
-            &original_caller,
-            &TotalTokens::new(
-                base_tokens_removed.clone(),
-                original_attributes.compounded_reward.clone(),
-            ),
-        );
-        self.total_compounded_tokens()
-            .update(|total| *total -= &original_attributes.compounded_reward);
+        self.remove_tokens(&original_caller, &original_attributes.get_total_supply());
 
         let reward_token_id = self.reward_token_id().get();
         let base_rewards_payment =
