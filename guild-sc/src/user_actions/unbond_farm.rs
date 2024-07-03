@@ -1,10 +1,10 @@
 multiversx_sc::imports!();
 
-use crate::tokens::token_attributes::FixedSupplyToken;
 use crate::{
     contexts::storage_cache::StorageCache, farm_base_impl::base_traits_impl::FarmStakingWrapper,
     tokens::token_attributes::LocalFarmToken,
 };
+use fixed_supply_token::FixedSupplyToken;
 
 use crate::{
     tiered_rewards::total_tokens::TotalTokens, tokens::token_attributes::UnbondSftAttributes,
@@ -127,19 +127,15 @@ pub trait UnbondFarmModule:
                 new_attributes.compounded_reward.clone(),
             ),
         );
-        self.call_increase_total_staked_tokens(FixedSupplyToken::<Self>::get_total_supply(
-            &new_attributes,
-        ));
+        self.call_increase_total_staked_tokens(new_attributes.get_total_supply());
 
         self.total_compounded_tokens()
             .update(|total| *total += &new_attributes.compounded_reward);
 
-        let total_farm_tokens = FixedSupplyToken::<Self>::get_total_supply(&new_attributes);
+        let total_farm_tokens = new_attributes.get_total_supply();
         let new_farm_token =
             self.farm_token()
                 .nft_create_and_send(&caller, total_farm_tokens, &new_attributes);
-
-        self.set_tokens_for_nonce(&new_attributes, new_farm_token.token_nonce);
 
         self.emit_cancel_unbond_event(
             &caller,

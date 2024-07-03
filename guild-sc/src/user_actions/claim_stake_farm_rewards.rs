@@ -40,9 +40,6 @@ pub trait ClaimStakeFarmRewardsModule:
         self.send_payment_non_zero(&caller, &claim_result.new_farm_token.payment);
         self.send_payment_non_zero(&caller, &base_rewards_payment);
 
-        let farm_token_nonce = claim_result.new_farm_token.payment.token_nonce;
-        self.set_tokens_for_nonce(&claim_result.new_farm_token.attributes, farm_token_nonce);
-
         self.emit_claim_rewards_event(
             &caller,
             claim_result.context,

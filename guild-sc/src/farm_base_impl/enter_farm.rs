@@ -6,9 +6,10 @@ use crate::{
         enter_farm_context::EnterFarmContext,
         storage_cache::{FarmContracTraitBounds, StorageCache},
     },
-    tokens::token_attributes::{FixedSupplyToken, StakingFarmTokenAttributes},
+    tokens::token_attributes::StakingFarmTokenAttributes,
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
+use fixed_supply_token::FixedSupplyToken;
 
 pub struct InternalEnterFarmResult<'a, C, T>
 where
@@ -34,9 +35,6 @@ pub trait BaseEnterFarmModule:
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
-    + crate::custom_rewards::CustomRewardsModule
-    + crate::tiered_rewards::total_tokens::TokenPerTierModule
-    + crate::user_actions::close_guild::CloseGuildModule
 {
     fn enter_farm_base<FC: FarmContract<FarmSc = Self>>(
         &self,
@@ -77,7 +75,7 @@ pub trait BaseEnterFarmModule:
             enter_farm_context.farming_token_payment.amount.clone(),
             rps.clone(),
         );
-        let new_token_attributes = self.merge_attributes_from_payments_local(
+        let new_token_attributes = self.merge_attributes_from_payments(
             base_attributes,
             &enter_farm_context.additional_farm_tokens,
             &farm_token_mapper,
@@ -86,7 +84,7 @@ pub trait BaseEnterFarmModule:
             payment: EsdtTokenPayment::new(
                 storage_cache.farm_token_id.clone(),
                 0,
-                FixedSupplyToken::<Self>::get_total_supply(&new_token_attributes),
+                new_token_attributes.get_total_supply(),
             ),
             attributes: new_token_attributes,
         };

@@ -32,6 +32,14 @@ rev = "8a7325b"
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "8a7325b"
 
+[dependencies.mergeable]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "8a7325b"
+
+[dependencies.fixed-supply-token]
+git = "https://github.com/multiversx/mx-exchange-sc"
+rev = "8a7325b"
+
 [dependencies.pair]
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "8a7325b"
