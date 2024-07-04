@@ -71,9 +71,6 @@ pub trait StakeFarmModule:
         let new_farm_token = enter_result.new_farm_token.payment.clone();
         self.send_payment_non_zero(&original_caller, &new_farm_token);
 
-        self.tokens_for_nonce(new_farm_token.token_nonce)
-            .set(TotalTokens::new_base(new_farm_token.amount.clone()));
-
         self.emit_enter_farm_event(
             &original_caller,
             enter_result.context.farming_token_payment,

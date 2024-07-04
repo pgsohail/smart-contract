@@ -6,9 +6,10 @@ use crate::{
         claim_rewards_context::CompoundRewardsContext,
         storage_cache::{FarmContracTraitBounds, StorageCache},
     },
-    tokens::token_attributes::{FixedSupplyToken, LocalFarmToken, StakingFarmTokenAttributes},
+    tokens::token_attributes::{LocalFarmToken, StakingFarmTokenAttributes},
 };
 use common_structs::{PaymentAttributesPair, PaymentsVec};
+use fixed_supply_token::FixedSupplyToken;
 
 pub struct InternalCompoundRewardsResult<'a, C, T>
 where
@@ -36,9 +37,6 @@ pub trait BaseCompoundRewardsModule:
     + super::base_farm_validation::BaseFarmValidationModule
     + utils::UtilsModule
     + super::claim_rewards::BaseClaimRewardsModule
-    + crate::custom_rewards::CustomRewardsModule
-    + crate::tiered_rewards::total_tokens::TokenPerTierModule
-    + crate::user_actions::close_guild::CloseGuildModule
 {
     fn compound_rewards_base<FC: FarmContract<FarmSc = Self>>(
         &self,
@@ -59,7 +57,7 @@ pub trait BaseCompoundRewardsModule:
             &temp_result.rewards,
         );
 
-        let mut new_token_attributes = self.merge_attributes_from_payments_local(
+        let mut new_token_attributes = self.merge_attributes_from_payments(
             base_attributes,
             &temp_result.context.additional_payments,
             &farm_token_mapper,
@@ -67,7 +65,7 @@ pub trait BaseCompoundRewardsModule:
         new_token_attributes.set_reward_per_share(rps.clone());
 
         let new_farm_token = farm_token_mapper.nft_create(
-            FixedSupplyToken::<Self>::get_total_supply(&new_token_attributes),
+            new_token_attributes.get_total_supply(),
             &new_token_attributes,
         );
 

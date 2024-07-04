@@ -48,11 +48,6 @@ pub trait CompoundStakeFarmRewardsModule:
 
         self.call_increase_total_staked_tokens(compound_result.compounded_rewards.clone());
 
-        self.set_tokens_for_nonce(
-            &compound_result.new_farm_token.attributes,
-            new_farm_token.token_nonce,
-        );
-
         self.emit_compound_rewards_event(
             &caller,
             compound_result.context,
