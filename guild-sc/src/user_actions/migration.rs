@@ -59,7 +59,7 @@ pub trait MigrationModule:
 
         let total_guild_master_tokens = self.guild_master_tokens().get();
         require!(
-            total_payment == total_guild_master_tokens.total(),
+            total_payment == total_guild_master_tokens,
             "Must send all tokens when closing guild"
         );
 
