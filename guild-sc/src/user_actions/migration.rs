@@ -47,7 +47,7 @@ pub trait MigrationModule:
         self.require_not_closing();
         self.require_not_globally_paused();
 
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         let caller = self.blockchain().get_caller();
         require!(guild_master == caller, "Only guild master may close guild");
 
@@ -107,7 +107,7 @@ pub trait MigrationModule:
         self.require_not_globally_paused();
 
         let caller = self.blockchain().get_caller();
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         require!(
             caller != guild_master,
             "Guild master cannot use this endpoint"

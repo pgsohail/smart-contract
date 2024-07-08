@@ -78,7 +78,7 @@ pub trait FarmStaking:
         self.require_sc_address(&config_sc_address);
 
         self.config_sc_address().set(config_sc_address);
-        self.guild_master().set(guild_master);
+        self.guild_master_address().set(guild_master);
 
         self.update_all();
     }

@@ -1,15 +1,11 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
 use guild_sc_config::tier_types::{GuildMasterRewardTier, UserRewardTier};
-use multiversx_sc::storage::StorageKey;
 use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 static UNKNOWN_GUILD_ERR_MSG: &[u8] = b"Unknown guild";
-static GUILD_MASTER_KEY: &[u8] = b"guildMaster";
-static GUILD_MASTER_TIERS_KEY: &[u8] = b"guildMasterTiers";
-static USER_TIERS_KEY: &[u8] = b"userTiers";
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct GuildLocalConfig<M: ManagedTypeApi> {
@@ -105,12 +101,7 @@ pub trait FactoryModule: crate::config::ConfigModule {
     }
 
     fn remove_guild_common(&self, guild: ManagedAddress) {
-        let guild_master_mapper = SingleValueMapper::<_, _, ManagedAddress>::new_from_address(
-            guild.clone(),
-            StorageKey::new(GUILD_MASTER_KEY),
-        );
-        let guild_master = guild_master_mapper.get();
-
+        let guild_master = self.external_guild_master_address(guild.clone()).get();
         let guild_id = self.guild_ids().remove_by_address(&guild);
         let user_id = self.user_ids().remove_by_address(&guild_master);
 
@@ -142,16 +133,8 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
     fn require_config_setup_complete(&self) {
         let config_sc_address = self.config_sc_address().get();
-        let guild_master_tiers_mapper =
-            VecMapper::<_, GuildMasterRewardTier<Self::Api>, ManagedAddress>::new_from_address(
-                config_sc_address.clone(),
-                StorageKey::new(GUILD_MASTER_TIERS_KEY),
-            );
-        let user_tiers_mapper = VecMapper::<_, UserRewardTier, ManagedAddress>::new_from_address(
-            config_sc_address,
-            StorageKey::new(USER_TIERS_KEY),
-        );
-
+        let guild_master_tiers_mapper = self.external_guild_master_tiers(config_sc_address.clone());
+        let user_tiers_mapper = self.external_user_tiers(config_sc_address);
         require!(
             !guild_master_tiers_mapper.is_empty() && !user_tiers_mapper.is_empty(),
             "Config setup not complete"
@@ -209,4 +192,24 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
     #[storage_mapper("guildIds")]
     fn guild_ids(&self) -> AddressToIdMapper<Self::Api>;
+
+    // guild storage
+
+    #[storage_mapper_from_address("guildMasterAddress")]
+    fn external_guild_master_address(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<ManagedAddress, ManagedAddress>;
+
+    #[storage_mapper_from_address("guildMasterTiers")]
+    fn external_guild_master_tiers(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> VecMapper<GuildMasterRewardTier<Self::Api>, ManagedAddress>;
+
+    #[storage_mapper_from_address("userTiers")]
+    fn external_user_tiers(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> VecMapper<UserRewardTier, ManagedAddress>;
 }

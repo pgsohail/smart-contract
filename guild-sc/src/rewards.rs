@@ -36,7 +36,7 @@ pub trait RewardsModule:
         user: &ManagedAddress,
         storage_cache: &'a StorageCache<Self>,
     ) -> &'a BigUint {
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         if user != &guild_master {
             &storage_cache.user_rps
         } else {
