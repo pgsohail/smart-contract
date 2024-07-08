@@ -60,24 +60,6 @@ pub trait CustomRewardsModule:
         self.start_produce_rewards();
     }
 
-    fn withdraw_rewards_common(&self, withdraw_amount: &BigUint) {
-        if withdraw_amount == &0 {
-            return;
-        }
-
-        let reward_capacity_mapper = self.reward_capacity();
-        let mut rewards_capacity = reward_capacity_mapper.get();
-        let accumulated_rewards = self.accumulated_rewards().get();
-        let remaining_rewards = &rewards_capacity - &accumulated_rewards;
-        require!(
-            &remaining_rewards >= withdraw_amount,
-            "Withdraw amount is higher than the remaining uncollected rewards!"
-        );
-
-        rewards_capacity -= withdraw_amount;
-        reward_capacity_mapper.set(rewards_capacity);
-    }
-
     fn get_amount_apr_bounded(&self) -> TotalRewards<Self::Api> {
         let mut total_guild_master = BigUint::zero();
         let mut total_users = BigUint::zero();

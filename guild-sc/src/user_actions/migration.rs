@@ -79,8 +79,8 @@ pub trait MigrationModule:
 
         let rewards_capacity = self.reward_capacity().get();
         let accumulated_rewards = self.accumulated_rewards().get();
-        let remaining_rewards = rewards_capacity - accumulated_rewards;
-        self.withdraw_rewards_common(&remaining_rewards);
+        let remaining_rewards = &rewards_capacity - &accumulated_rewards;
+        self.reward_capacity().set(accumulated_rewards);
 
         let reward_token_id = self.reward_token_id().get();
         let guild_factory = self.blockchain().get_owner_address();
