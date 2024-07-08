@@ -44,12 +44,7 @@ pub trait UnbondFarmModule:
             unbond_token_mapper.require_same_token(&payment.token_identifier);
 
             let attributes: UnbondSftAttributes<Self::Api> =
-                unbond_token_mapper.get_token_attributes(payment.token_nonce);
-            require!(
-                attributes.supply == payment.amount,
-                "Must unbond with all tokens"
-            );
-
+                self.get_attributes_as_part_of_fixed_supply(&payment, &unbond_token_mapper);
             let current_epoch = self.blockchain().get_block_epoch();
             require!(
                 current_epoch >= attributes.unlock_epoch,
@@ -83,11 +78,7 @@ pub trait UnbondFarmModule:
         unbond_token_mapper.require_same_token(&payment.token_identifier);
 
         let unbond_attributes: UnbondSftAttributes<Self::Api> =
-            unbond_token_mapper.get_token_attributes(payment.token_nonce);
-        require!(
-            payment.amount == unbond_attributes.supply,
-            "Must cancel unbond with all tokens"
-        );
+            self.get_attributes_as_part_of_fixed_supply(&payment, &unbond_token_mapper);
         require!(
             unbond_attributes.opt_original_attributes.is_some(),
             "May not cancel unbond for this token"
