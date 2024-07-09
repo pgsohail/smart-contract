@@ -31,7 +31,7 @@ pub trait GuildFactory:
         self.require_valid_token_id(&farming_token_id);
 
         require!(
-            division_safety_constant > MIN_DIV_SAFETY,
+            division_safety_constant >= MIN_DIV_SAFETY,
             "Division safety constant too small"
         );
 
