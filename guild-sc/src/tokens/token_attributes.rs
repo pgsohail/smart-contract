@@ -111,3 +111,27 @@ pub struct UnbondSftAttributes<M: ManagedTypeApi> {
     pub supply: BigUint<M>,
     pub opt_original_attributes: Option<StakingFarmTokenAttributes<M>>,
 }
+
+impl<M: ManagedTypeApi> FixedSupplyToken<M> for UnbondSftAttributes<M> {
+    #[inline]
+    fn get_total_supply(&self) -> BigUint<M> {
+        self.supply.clone()
+    }
+
+    fn into_part(self, payment_amount: &BigUint<M>) -> Self {
+        if payment_amount == &self.get_total_supply() {
+            return self;
+        }
+
+        let new_supply = payment_amount.clone();
+        let opt_new_attributes = self
+            .opt_original_attributes
+            .map(|attr| attr.into_part(payment_amount));
+
+        UnbondSftAttributes {
+            unlock_epoch: self.unlock_epoch,
+            supply: new_supply,
+            opt_original_attributes: opt_new_attributes,
+        }
+    }
+}

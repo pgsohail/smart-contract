@@ -45,7 +45,7 @@ pub trait StakeFarmModule:
         self.require_not_closing();
         self.require_not_globally_paused();
 
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         if original_caller != guild_master {
             require!(
                 !self.guild_master_tokens().is_empty(),

@@ -62,23 +62,22 @@ pub trait FarmStaking:
         guild_master: ManagedAddress,
         mut admins: MultiValueEncoded<ManagedAddress>,
     ) {
-        let owner = self.blockchain().get_caller();
+        let guild_factory = self.blockchain().get_caller();
         admins.push(guild_master.clone());
-        admins.push(owner.clone());
+        admins.push(guild_factory);
 
         // farming and reward token are the same
         self.base_farm_init(
             farming_token_id.clone(),
             farming_token_id,
             division_safety_constant,
-            owner.clone(),
             admins,
         );
 
         self.require_sc_address(&config_sc_address);
 
         self.config_sc_address().set(config_sc_address);
-        self.guild_master().set(guild_master);
+        self.guild_master_address().set(guild_master);
 
         self.update_all();
     }
@@ -147,7 +146,6 @@ pub trait FarmStaking:
         reward_token_id: TokenIdentifier,
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
-        owner: ManagedAddress,
         admins: MultiValueEncoded<ManagedAddress>,
     ) {
         require!(
@@ -165,10 +163,6 @@ pub trait FarmStaking:
 
         self.reward_token_id().set(&reward_token_id);
         self.farming_token_id().set(&farming_token_id);
-
-        if !owner.is_zero() {
-            self.add_permissions(owner, Permissions::OWNER | Permissions::PAUSE);
-        }
 
         let caller = self.blockchain().get_caller();
         self.add_permissions(caller, Permissions::OWNER | Permissions::PAUSE);

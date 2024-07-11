@@ -63,7 +63,7 @@ pub trait ReadConfigModule {
     }
 
     fn get_min_stake_for_user(&self, user: &ManagedAddress) -> BigUint {
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         if user != &guild_master {
             self.get_min_stake_user()
         } else {
@@ -124,8 +124,8 @@ pub trait ReadConfigModule {
     #[storage_mapper("configScAddress")]
     fn config_sc_address(&self) -> SingleValueMapper<ManagedAddress>;
 
-    #[storage_mapper("guildMaster")]
-    fn guild_master(&self) -> SingleValueMapper<ManagedAddress>;
+    #[storage_mapper("guildMasterAddress")]
+    fn guild_master_address(&self) -> SingleValueMapper<ManagedAddress>;
 
     #[storage_mapper_from_address("guildMasterTiers")]
     fn external_guild_master_tiers(

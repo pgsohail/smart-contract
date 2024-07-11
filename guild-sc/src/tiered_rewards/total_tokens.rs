@@ -5,7 +5,7 @@ multiversx_sc::derive_imports!();
 pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     #[view(getUserStakedTokens)]
     fn get_user_staked_tokens(&self, user: ManagedAddress) -> BigUint {
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         let mapper = if user != guild_master {
             self.user_tokens(&user)
         } else {
@@ -38,7 +38,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     }
 
     fn add_tokens(&self, caller: &ManagedAddress, tokens: &BigUint<Self::Api>) {
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         if caller != &guild_master {
             let user_tokens_mapper = self.user_tokens(caller);
             self.add_tokens_common(tokens, &user_tokens_mapper);
@@ -56,7 +56,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     }
 
     fn remove_tokens(&self, caller: &ManagedAddress, tokens: &BigUint) {
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         if caller != &guild_master {
             let user_tokens_mapper = self.user_tokens(caller);
             self.remove_tokens_common(tokens, &user_tokens_mapper);
@@ -74,7 +74,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
     }
 
     fn get_total_stake_for_user(&self, user: &ManagedAddress) -> BigUint {
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         if user != &guild_master {
             self.user_tokens(user).get()
         } else {
@@ -84,7 +84,7 @@ pub trait TokenPerTierModule: super::read_config::ReadConfigModule {
 
     fn require_over_min_stake(&self, user: &ManagedAddress) {
         let total_stake = self.get_total_stake_for_user(user);
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         if user != &guild_master && total_stake == 0 {
             return;
         }

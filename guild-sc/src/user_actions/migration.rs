@@ -47,7 +47,7 @@ pub trait MigrationModule:
         self.require_not_closing();
         self.require_not_globally_paused();
 
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         let caller = self.blockchain().get_caller();
         require!(guild_master == caller, "Only guild master may close guild");
 
@@ -79,8 +79,8 @@ pub trait MigrationModule:
 
         let rewards_capacity = self.reward_capacity().get();
         let accumulated_rewards = self.accumulated_rewards().get();
-        let remaining_rewards = rewards_capacity - accumulated_rewards;
-        self.withdraw_rewards_common(&remaining_rewards);
+        let remaining_rewards = &rewards_capacity - &accumulated_rewards;
+        self.reward_capacity().set(accumulated_rewards);
 
         let reward_token_id = self.reward_token_id().get();
         let guild_factory = self.blockchain().get_owner_address();
@@ -107,7 +107,7 @@ pub trait MigrationModule:
         self.require_not_globally_paused();
 
         let caller = self.blockchain().get_caller();
-        let guild_master = self.guild_master().get();
+        let guild_master = self.guild_master_address().get();
         require!(
             caller != guild_master,
             "Guild master cannot use this endpoint"
