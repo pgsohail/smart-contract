@@ -78,6 +78,10 @@ pub trait FactoryModule: crate::config::ConfigModule {
         );
 
         let guild_id = self.guild_ids().get_id_non_zero(&guild);
+        require!(
+            !self.active_guilds().contains(&guild_id),
+            "Guild already active"
+        );
 
         self.require_known_guild(guild_id);
 
@@ -90,6 +94,7 @@ pub trait FactoryModule: crate::config::ConfigModule {
         self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
 
+        self.active_guilds().insert(guild_id);
         self.current_active_guilds()
             .update(|active_guilds| *active_guilds += 1);
     }
@@ -198,6 +203,9 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
     #[storage_mapper("deployedGuilds")]
     fn deployed_guilds(&self) -> UnorderedSetMapper<AddressId>;
+
+    #[storage_mapper("activeGuilds")]
+    fn active_guilds(&self) -> UnorderedSetMapper<AddressId>;
 
     #[storage_mapper("guildScForUser")]
     fn guild_sc_for_user(&self, user_id: AddressId) -> SingleValueMapper<AddressId>;
