@@ -21,6 +21,18 @@ pub struct GetGuildResultType<M: ManagedTypeApi> {
 
 #[multiversx_sc::module]
 pub trait FactoryModule: crate::config::ConfigModule {
+    #[only_owner]
+    #[endpoint(setMaxActiveGuilds)]
+    fn set_max_active_guilds(&self, max_active_guilds: usize) {
+        let current_active_guilds = self.get_current_active_guilds();
+        require!(
+            max_active_guilds >= current_active_guilds,
+            "May not set active guilds number below current active guilds"
+        );
+
+        self.max_active_guilds().set(max_active_guilds);
+    }
+
     #[endpoint(deployGuild)]
     fn deploy_guild(&self) -> ManagedAddress {
         let caller = self.blockchain().get_caller();
@@ -58,7 +70,18 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
     #[endpoint(resumeGuild)]
     fn resume_guild_endpoint(&self, guild: ManagedAddress) {
+        let current_active_guilds = self.get_current_active_guilds();
+        let max_active_guilds = self.max_active_guilds().get();
+        require!(
+            current_active_guilds < max_active_guilds,
+            "May not start another guild at this point"
+        );
+
         let guild_id = self.guild_ids().get_id_non_zero(&guild);
+        require!(
+            !self.active_guilds().contains(&guild_id),
+            "Guild already active"
+        );
 
         self.require_known_guild(guild_id);
 
@@ -70,6 +93,8 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
         self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
+
+        self.active_guilds().insert(guild_id);
     }
 
     #[view(getAllGuilds)]
@@ -98,6 +123,11 @@ pub trait FactoryModule: crate::config::ConfigModule {
     #[view(getGuildId)]
     fn get_guild_id(&self, guild_address: ManagedAddress) -> AddressId {
         self.guild_ids().get_id_non_zero(&guild_address)
+    }
+
+    #[view(getCurrentActiveGuilds)]
+    fn get_current_active_guilds(&self) -> usize {
+        self.active_guilds().len()
     }
 
     fn remove_guild_common(&self, guild: ManagedAddress) {
@@ -177,6 +207,9 @@ pub trait FactoryModule: crate::config::ConfigModule {
     #[storage_mapper("deployedGuilds")]
     fn deployed_guilds(&self) -> UnorderedSetMapper<AddressId>;
 
+    #[storage_mapper("activeGuilds")]
+    fn active_guilds(&self) -> UnorderedSetMapper<AddressId>;
+
     #[storage_mapper("guildScForUser")]
     fn guild_sc_for_user(&self, user_id: AddressId) -> SingleValueMapper<AddressId>;
 
@@ -192,6 +225,10 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
     #[storage_mapper("guildIds")]
     fn guild_ids(&self) -> AddressToIdMapper<Self::Api>;
+
+    #[view(getMaxActiveGuilds)]
+    #[storage_mapper("maxActiveGuilds")]
+    fn max_active_guilds(&self) -> SingleValueMapper<usize>;
 
     // guild storage
 

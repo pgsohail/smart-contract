@@ -134,6 +134,7 @@ where
                     managed_address!(guild_source_wrapper.address_ref()),
                     managed_token_id!(FARMING_TOKEN_ID),
                     managed_biguint!(1_000_000_000_000_000_000) + 1u32,
+                    2,
                     admins,
                 );
 

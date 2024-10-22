@@ -1,14 +1,9 @@
 use common_structs::Epoch;
-use multiversx_sc::storage::StorageKey;
 
 multiversx_sc::imports!();
 
 pub static INVALID_MIN_UNBOND_EPOCHS_ERR_MSG: &[u8] = b"Invalid min unbond epochs";
 static INVALID_VALUE_ERR_MSG: &[u8] = b"Invalid value";
-
-static GUILD_SC_ID_STORAGE_KEY: &[u8] = b"deployedGuilds";
-static GUILD_ADDRESS_TO_ID_MAPPER_STORAGE_KEY: &[u8] = b"guildIds";
-static CLOSED_GUILDS_MAPPER_STORAGE_KEY: &[u8] = b"closedGuilds";
 
 pub const MAX_MIN_UNBOND_EPOCHS: Epoch = 30;
 
@@ -103,48 +98,18 @@ pub trait GlobalConfigModule {
     fn require_guild_sc_caller(&self) {
         let caller = self.blockchain().get_caller();
         let factory_sc = self.blockchain().get_owner_address();
-        let closed_guilds_mapper = self.get_closed_guilds_mapper(factory_sc.clone());
+        let closed_guilds_mapper = self.external_closed_guilds(factory_sc.clone());
         if closed_guilds_mapper.contains(&caller) {
             return;
         }
 
-        let deployed_guilds_mapper = self.get_deployed_guilds_mapper(factory_sc.clone());
-        let address_to_id_mapper = self.get_guild_address_to_id_mapper(factory_sc);
+        let deployed_guilds_mapper = self.external_deployed_guilds(factory_sc.clone());
+        let address_to_id_mapper = self.external_guild_ids(factory_sc);
         let guild_id = address_to_id_mapper.get_id_non_zero(&caller);
         require!(
             deployed_guilds_mapper.contains(&guild_id),
             "Only guilds may call this endpoint"
         );
-    }
-
-    fn get_closed_guilds_mapper(
-        &self,
-        factory_sc: ManagedAddress,
-    ) -> UnorderedSetMapper<ManagedAddress, ManagedAddress> {
-        UnorderedSetMapper::<_, _, ManagedAddress>::new_from_address(
-            factory_sc,
-            StorageKey::new(CLOSED_GUILDS_MAPPER_STORAGE_KEY),
-        )
-    }
-
-    fn get_deployed_guilds_mapper(
-        &self,
-        factory_sc: ManagedAddress,
-    ) -> UnorderedSetMapper<AddressId, ManagedAddress> {
-        UnorderedSetMapper::<_, _, ManagedAddress>::new_from_address(
-            factory_sc,
-            StorageKey::new(GUILD_SC_ID_STORAGE_KEY),
-        )
-    }
-
-    fn get_guild_address_to_id_mapper(
-        &self,
-        factory_sc: ManagedAddress,
-    ) -> AddressToIdMapper<Self::Api, ManagedAddress> {
-        AddressToIdMapper::<_, ManagedAddress>::new_from_address(
-            factory_sc,
-            StorageKey::new(GUILD_ADDRESS_TO_ID_MAPPER_STORAGE_KEY),
-        )
     }
 
     #[view(getMaxStakedTokens)]
@@ -202,4 +167,24 @@ pub trait GlobalConfigModule {
     #[view(areAllGuildsPaused)]
     #[storage_mapper("globalPauseStatus")]
     fn global_pause_status(&self) -> SingleValueMapper<GlobalPauseStatus>;
+
+    // Factory storage
+
+    #[storage_mapper_from_address("closedGuilds")]
+    fn external_closed_guilds(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> UnorderedSetMapper<ManagedAddress, ManagedAddress>;
+
+    #[storage_mapper_from_address("deployedGuilds")]
+    fn external_deployed_guilds(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> UnorderedSetMapper<AddressId, ManagedAddress>;
+
+    #[storage_mapper_from_address("guildIds")]
+    fn external_guild_ids(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> AddressToIdMapper<Self::Api, ManagedAddress>;
 }
