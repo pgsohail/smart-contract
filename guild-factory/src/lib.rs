@@ -25,6 +25,7 @@ pub trait GuildFactory:
         guild_sc_source_address: ManagedAddress,
         farming_token_id: TokenIdentifier,
         division_safety_constant: BigUint,
+        max_active_guilds: usize,
         admins: MultiValueEncoded<ManagedAddress>,
     ) {
         self.require_sc_address(&guild_sc_source_address);
@@ -40,6 +41,8 @@ pub trait GuildFactory:
             farming_token_id,
             division_safety_constant,
         });
+
+        self.set_max_active_guilds(max_active_guilds);
 
         self.admins().extend(admins);
     }

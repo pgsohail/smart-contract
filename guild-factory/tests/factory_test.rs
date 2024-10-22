@@ -3,9 +3,13 @@
 pub mod factory_setup;
 
 use factory_setup::*;
+use guild_factory::factory::FactoryModule;
 use guild_sc::{
     tiered_rewards::total_tokens::TokenPerTierModule,
-    tokens::{request_id::RequestIdModule, token_attributes::StakingFarmTokenAttributes},
+    tokens::{
+        farm_token::FarmTokenModule, request_id::RequestIdModule,
+        token_attributes::StakingFarmTokenAttributes, unbond_token::UnbondTokenModule,
+    },
     user_actions::{
         claim_stake_farm_rewards::ClaimStakeFarmRewardsModule,
         compound_stake_farm_rewards::CompoundStakeFarmRewardsModule, migration::MigrationModule,
@@ -15,7 +19,11 @@ use guild_sc::{
     FarmStaking,
 };
 use guild_sc_config::tiers::{TierModule, MAX_PERCENT};
-use multiversx_sc::{codec::Empty, imports::OptionalValue};
+use multiversx_sc::{
+    codec::Empty,
+    imports::{OptionalValue, StorageTokenWrapper},
+    types::EsdtLocalRole,
+};
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_buffer, managed_token_id, rust_biguint,
     whitebox_legacy::TxTokenTransfer, DebugApi,
@@ -1036,6 +1044,118 @@ fn token_splitting_test() {
 
                 assert!(sc.user_tokens(&managed_address!(&user_addr)).is_empty());
                 assert!(sc.total_base_staked_tokens().is_empty());
+            },
+        )
+        .assert_ok();
+}
+
+#[test]
+fn try_activate_too_many_guilds_test() {
+    let mut setup = FarmStakingSetup::new(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+
+    let third_farm_wrapper = setup
+        .b_mock
+        .prepare_deploy_from_sc(setup.factory_wrapper.address_ref(), guild_sc::contract_obj);
+
+    let third_owner_address = setup.b_mock.create_user_account(&rust_biguint!(0));
+    setup
+        .b_mock
+        .execute_tx(
+            &third_owner_address,
+            &setup.factory_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                let guild_address = sc.deploy_guild();
+                assert_eq!(
+                    guild_address,
+                    managed_address!(third_farm_wrapper.address_ref())
+                );
+            },
+        )
+        .assert_ok();
+
+    // simulate issue and set roles
+    setup
+        .b_mock
+        .execute_tx(
+            &third_owner_address,
+            &third_farm_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.farm_token()
+                    .set_token_id(managed_token_id!(FARM_TOKEN_ID));
+                sc.unbond_token()
+                    .set_token_id(managed_token_id!(UNBOND_TOKEN_ID));
+                sc.unbond_token_transfer_role_set().set(true);
+                sc.farm_token_transfer_role_set().set(true);
+            },
+        )
+        .assert_ok();
+
+    let farm_token_roles = [
+        EsdtLocalRole::NftCreate,
+        EsdtLocalRole::NftAddQuantity,
+        EsdtLocalRole::NftBurn,
+        EsdtLocalRole::Transfer,
+    ];
+    setup.b_mock.set_esdt_local_roles(
+        third_farm_wrapper.address_ref(),
+        FARM_TOKEN_ID,
+        &farm_token_roles[..],
+    );
+
+    let unbond_token_roles = [
+        EsdtLocalRole::NftCreate,
+        EsdtLocalRole::NftBurn,
+        EsdtLocalRole::Transfer,
+    ];
+    setup.b_mock.set_esdt_local_roles(
+        third_farm_wrapper.address_ref(),
+        UNBOND_TOKEN_ID,
+        &unbond_token_roles[..],
+    );
+
+    // try set guild active
+    setup
+        .b_mock
+        .execute_tx(
+            &third_owner_address,
+            &setup.factory_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.resume_guild_endpoint(managed_address!(third_farm_wrapper.address_ref()));
+            },
+        )
+        .assert_user_error("May not start another guild at this point");
+
+    // close guild
+    setup
+        .b_mock
+        .execute_esdt_transfer(
+            &setup.first_owner_address,
+            &setup.first_farm_wrapper,
+            FARM_TOKEN_ID,
+            1,
+            &rust_biguint!(1),
+            |sc| {
+                sc.close_guild();
+            },
+        )
+        .assert_ok();
+
+    // user start guild again
+    setup
+        .b_mock
+        .execute_tx(
+            &third_owner_address,
+            &setup.factory_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.resume_guild_endpoint(managed_address!(third_farm_wrapper.address_ref()));
             },
         )
         .assert_ok();

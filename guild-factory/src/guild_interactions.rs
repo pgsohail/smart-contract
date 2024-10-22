@@ -59,6 +59,9 @@ pub trait GuildInteractionsModule:
 
         self.remove_guild_common(caller.clone());
         let _ = self.closed_guilds().insert(caller);
+
+        self.current_active_guilds()
+            .update(|active_guilds| *active_guilds -= 1);
     }
 
     #[endpoint(closeGuildNoRewardsRemaining)]
@@ -69,6 +72,9 @@ pub trait GuildInteractionsModule:
 
         self.remove_guild_common(caller.clone());
         let _ = self.closed_guilds().insert(caller);
+
+        self.current_active_guilds()
+            .update(|active_guilds| *active_guilds -= 1);
     }
 
     #[only_admin]

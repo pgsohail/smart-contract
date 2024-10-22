@@ -21,6 +21,18 @@ pub struct GetGuildResultType<M: ManagedTypeApi> {
 
 #[multiversx_sc::module]
 pub trait FactoryModule: crate::config::ConfigModule {
+    #[only_owner]
+    #[endpoint(setMaxActiveGuilds)]
+    fn set_max_active_guilds(&self, max_active_guilds: usize) {
+        let current_active_guilds = self.current_active_guilds().get();
+        require!(
+            max_active_guilds >= current_active_guilds,
+            "May not set active guilds number below current active guilds"
+        );
+
+        self.max_active_guilds().set(max_active_guilds);
+    }
+
     #[endpoint(deployGuild)]
     fn deploy_guild(&self) -> ManagedAddress {
         let caller = self.blockchain().get_caller();
@@ -58,6 +70,13 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
     #[endpoint(resumeGuild)]
     fn resume_guild_endpoint(&self, guild: ManagedAddress) {
+        let current_active_guilds = self.current_active_guilds().get();
+        let max_active_guilds = self.max_active_guilds().get();
+        require!(
+            current_active_guilds + 1 <= max_active_guilds,
+            "May not start another guild at this point"
+        );
+
         let guild_id = self.guild_ids().get_id_non_zero(&guild);
 
         self.require_known_guild(guild_id);
@@ -70,6 +89,9 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
         self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
+
+        self.current_active_guilds()
+            .update(|active_guilds| *active_guilds += 1);
     }
 
     #[view(getAllGuilds)]
@@ -192,6 +214,14 @@ pub trait FactoryModule: crate::config::ConfigModule {
 
     #[storage_mapper("guildIds")]
     fn guild_ids(&self) -> AddressToIdMapper<Self::Api>;
+
+    #[view(getCurrentActiveGuilds)]
+    #[storage_mapper("currentActiveGuilds")]
+    fn current_active_guilds(&self) -> SingleValueMapper<usize>;
+
+    #[view(getMaxActiveGuilds)]
+    #[storage_mapper("maxActiveGuilds")]
+    fn max_active_guilds(&self) -> SingleValueMapper<usize>;
 
     // guild storage
 
