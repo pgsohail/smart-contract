@@ -73,7 +73,7 @@ pub trait FactoryModule: crate::config::ConfigModule {
         let current_active_guilds = self.current_active_guilds().get();
         let max_active_guilds = self.max_active_guilds().get();
         require!(
-            current_active_guilds + 1 <= max_active_guilds,
+            current_active_guilds < max_active_guilds,
             "May not start another guild at this point"
         );
 
