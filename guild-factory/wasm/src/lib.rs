@@ -28,8 +28,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         resumeGuild => resume_guild_endpoint
         getAllGuilds => get_all_guilds
         getGuildId => get_guild_id
+        getCurrentActiveGuilds => get_current_active_guilds
         getRemainingRewards => remaining_rewards
-        getCurrentActiveGuilds => current_active_guilds
         getMaxActiveGuilds => max_active_guilds
         requestRewards => request_rewards
         migrateToOtherGuild => migrate_to_other_guild

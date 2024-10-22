@@ -61,8 +61,6 @@ pub trait GuildInteractionsModule:
         let _ = self.closed_guilds().insert(caller);
 
         self.active_guilds().swap_remove(&caller_id);
-        self.current_active_guilds()
-            .update(|active_guilds| *active_guilds -= 1);
     }
 
     #[endpoint(closeGuildNoRewardsRemaining)]
@@ -75,8 +73,6 @@ pub trait GuildInteractionsModule:
         let _ = self.closed_guilds().insert(caller);
 
         self.active_guilds().swap_remove(&caller_id);
-        self.current_active_guilds()
-            .update(|active_guilds| *active_guilds -= 1);
     }
 
     #[only_admin]
