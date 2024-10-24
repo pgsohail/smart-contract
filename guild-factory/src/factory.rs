@@ -33,6 +33,28 @@ pub trait FactoryModule: crate::config::ConfigModule {
         self.max_active_guilds().set(max_active_guilds);
     }
 
+    #[only_owner]
+    #[endpoint(upgradeGuild)]
+    fn upgrade_guild(
+        &self,
+        guild_address: ManagedAddress,
+        source_contract_address: ManagedAddress,
+    ) {
+        let guild_id = self.guild_ids().get_id_non_zero(&guild_address);
+        self.require_known_guild(guild_id);
+
+        let gas_left = self.blockchain().get_gas_left();
+        let code_metadata = self.get_default_code_metadata();
+        self.send_raw().upgrade_from_source_contract(
+            &guild_address,
+            gas_left,
+            &BigUint::zero(),
+            &source_contract_address,
+            code_metadata,
+            &ManagedArgBuffer::new(),
+        );
+    }
+
     #[endpoint(deployGuild)]
     fn deploy_guild(&self) -> ManagedAddress {
         let caller = self.blockchain().get_caller();
@@ -66,27 +88,6 @@ pub trait FactoryModule: crate::config::ConfigModule {
         guild_mapper.set(guild_id);
 
         guild_address
-    }
-
-    #[endpoint(upgradeGuild)]
-    fn upgrade_guild(
-        &self,
-        guild_address: ManagedAddress,
-        source_contract_address: ManagedAddress,
-    ) {
-        let guild_id = self.guild_ids().get_id_non_zero(&guild_address);
-        self.require_known_guild(guild_id);
-
-        let gas_left = self.blockchain().get_gas_left();
-        let code_metadata = self.get_default_code_metadata();
-        self.send_raw().upgrade_from_source_contract(
-            &guild_address,
-            gas_left,
-            &BigUint::zero(),
-            &source_contract_address,
-            code_metadata,
-            &ManagedArgBuffer::new(),
-        );
     }
 
     #[endpoint(resumeGuild)]
