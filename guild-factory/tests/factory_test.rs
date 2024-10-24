@@ -1160,3 +1160,53 @@ fn try_activate_too_many_guilds_test() {
         )
         .assert_ok();
 }
+
+#[test]
+fn calculate_rewards_only_guild_master_test() {
+    let mut setup = FarmStakingSetup::new_without_stake(
+        guild_sc::contract_obj,
+        guild_sc_config::contract_obj,
+        guild_factory::contract_obj,
+    );
+
+    let farm_in_amount = 200_000_000u64;
+    let first_owner = setup.first_owner_address.clone();
+    setup.b_mock.set_esdt_balance(
+        &first_owner,
+        FARMING_TOKEN_ID,
+        &rust_biguint!(farm_in_amount),
+    );
+
+    setup
+        .b_mock
+        .execute_esdt_transfer(
+            &first_owner,
+            &setup.first_farm_wrapper,
+            FARMING_TOKEN_ID,
+            0,
+            &rust_biguint!(farm_in_amount),
+            |sc| {
+                sc.stake_farm_endpoint(OptionalValue::None);
+            },
+        )
+        .assert_ok();
+
+    setup.b_mock.set_block_epoch(100);
+    setup.b_mock.set_block_nonce(100);
+
+    setup
+        .b_mock
+        .execute_query(&setup.first_farm_wrapper, |sc| {
+            let rewards = sc.calculate_rewards_for_given_position(
+                managed_address!(&first_owner),
+                managed_biguint!(farm_in_amount),
+                StakingFarmTokenAttributes {
+                    reward_per_share: managed_biguint!(0),
+                    compounded_reward: managed_biguint!(0),
+                    current_farm_amount: managed_biguint!(farm_in_amount),
+                },
+            );
+            assert_eq!(rewards, managed_biguint!(900));
+        })
+        .assert_ok();
+}
