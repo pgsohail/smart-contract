@@ -13,7 +13,7 @@ pub trait GuildInteractionsModule:
     + multiversx_sc_modules::only_admin::OnlyAdminModule
 {
     #[endpoint(requestRewards)]
-    fn request_rewards(&self, amount: BigUint) -> BigUint {
+    fn request_rewards(&self, amount: BigUint, is_query: bool) -> BigUint {
         let caller = self.blockchain().get_caller();
         let caller_id = self.guild_ids().get_id_non_zero(&caller);
         self.require_known_guild(caller_id);
@@ -26,8 +26,10 @@ pub trait GuildInteractionsModule:
 
         let guild_config = self.guild_local_config().get();
         let reward_payment = EsdtTokenPayment::new(guild_config.farming_token_id, 0, total_request);
-        self.send()
-            .direct_non_zero_esdt_payment(&caller, &reward_payment);
+        if !is_query {
+            self.send()
+                .direct_non_zero_esdt_payment(&caller, &reward_payment);
+        }
 
         reward_payment.amount
     }
