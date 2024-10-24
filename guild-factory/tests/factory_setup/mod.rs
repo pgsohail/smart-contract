@@ -71,6 +71,53 @@ where
         config_builder: ConfigScBuilder,
         factory_builder: FactoryBuilder,
     ) -> Self {
+        let mut setup = Self::new_without_stake(farm_builder, config_builder, factory_builder);
+        setup.b_mock.set_esdt_balance(
+            &setup.first_owner_address,
+            FARMING_TOKEN_ID,
+            &rust_biguint!(1),
+        );
+        setup
+            .b_mock
+            .execute_esdt_transfer(
+                &setup.first_owner_address,
+                &setup.first_farm_wrapper,
+                FARMING_TOKEN_ID,
+                0,
+                &rust_biguint!(1),
+                |sc| {
+                    let _ = sc.stake_farm_endpoint(OptionalValue::None);
+                },
+            )
+            .assert_ok();
+
+        setup.b_mock.set_esdt_balance(
+            &setup.second_owner_address,
+            FARMING_TOKEN_ID,
+            &rust_biguint!(1),
+        );
+        setup
+            .b_mock
+            .execute_esdt_transfer(
+                &setup.second_owner_address,
+                &setup.second_farm_wrapper,
+                FARMING_TOKEN_ID,
+                0,
+                &rust_biguint!(1),
+                |sc| {
+                    let _ = sc.stake_farm_endpoint(OptionalValue::None);
+                },
+            )
+            .assert_ok();
+
+        setup
+    }
+
+    pub fn new_without_stake(
+        farm_builder: FarmObjBuilder,
+        config_builder: ConfigScBuilder,
+        factory_builder: FactoryBuilder,
+    ) -> Self {
         let rust_zero = rust_biguint!(0u64);
         let mut b_mock = BlockchainStateWrapper::new();
         let first_owner_addr = b_mock.create_user_account(&rust_zero);
@@ -273,7 +320,7 @@ where
             &rust_biguint!(USER_TOTAL_RIDE_TOKENS),
         );
 
-        let mut setup = FarmStakingSetup {
+        FarmStakingSetup {
             b_mock,
             first_owner_address: first_owner_addr,
             second_owner_address: second_owner_addr,
@@ -282,46 +329,7 @@ where
             second_farm_wrapper,
             config_wrapper,
             factory_wrapper,
-        };
-        setup.b_mock.set_esdt_balance(
-            &setup.first_owner_address,
-            FARMING_TOKEN_ID,
-            &rust_biguint!(1),
-        );
-        setup
-            .b_mock
-            .execute_esdt_transfer(
-                &setup.first_owner_address,
-                &setup.first_farm_wrapper,
-                FARMING_TOKEN_ID,
-                0,
-                &rust_biguint!(1),
-                |sc| {
-                    let _ = sc.stake_farm_endpoint(OptionalValue::None);
-                },
-            )
-            .assert_ok();
-
-        setup.b_mock.set_esdt_balance(
-            &setup.second_owner_address,
-            FARMING_TOKEN_ID,
-            &rust_biguint!(1),
-        );
-        setup
-            .b_mock
-            .execute_esdt_transfer(
-                &setup.second_owner_address,
-                &setup.second_farm_wrapper,
-                FARMING_TOKEN_ID,
-                0,
-                &rust_biguint!(1),
-                |sc| {
-                    let _ = sc.stake_farm_endpoint(OptionalValue::None);
-                },
-            )
-            .assert_ok();
-
-        setup
+        }
     }
 
     pub fn stake_farm(
