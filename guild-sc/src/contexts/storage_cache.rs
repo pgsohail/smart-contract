@@ -1,8 +1,6 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-use pausable::State;
-
 pub trait FarmContracTraitBounds:
     crate::config::ConfigModule
     + crate::rewards::RewardsModule
@@ -19,7 +17,7 @@ impl<T> FarmContracTraitBounds for T where
 
 pub struct StorageCache<'a, C: FarmContracTraitBounds> {
     sc_ref: &'a C,
-    pub contract_state: State,
+    pub _unused_contract_state: u8,
     pub farm_token_id: TokenIdentifier<C::Api>,
     pub farm_token_supply: BigUint<C::Api>,
     pub farming_token_id: TokenIdentifier<C::Api>,
@@ -33,7 +31,7 @@ pub struct StorageCache<'a, C: FarmContracTraitBounds> {
 impl<'a, C: FarmContracTraitBounds> StorageCache<'a, C> {
     pub fn new(sc_ref: &'a C) -> Self {
         StorageCache {
-            contract_state: sc_ref.state().get(),
+            _unused_contract_state: 0,
             farm_token_id: sc_ref.farm_token().get_token_id(),
             farm_token_supply: sc_ref.farm_token_supply().get(),
             farming_token_id: sc_ref.farming_token_id().get(),

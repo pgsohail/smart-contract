@@ -29,7 +29,6 @@ pub trait MigrationModule:
     + crate::events::EventsModule
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule

@@ -5,7 +5,6 @@ multiversx_sc::imports!();
 #[multiversx_sc::module]
 pub trait RewardsModule:
     crate::config::ConfigModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + crate::tiered_rewards::read_config::ReadConfigModule
     + crate::tokens::farm_token::FarmTokenModule

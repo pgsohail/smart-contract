@@ -17,7 +17,6 @@ pub trait FarmStakingTraits:
     + crate::rewards::RewardsModule
     + crate::config::ConfigModule
     + crate::tokens::farm_token::FarmTokenModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::tiered_rewards::read_config::ReadConfigModule
@@ -31,7 +30,6 @@ impl<T> FarmStakingTraits for T where
         + crate::rewards::RewardsModule
         + crate::config::ConfigModule
         + crate::tokens::farm_token::FarmTokenModule
-        + pausable::PausableModule
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
         + crate::tiered_rewards::read_config::ReadConfigModule

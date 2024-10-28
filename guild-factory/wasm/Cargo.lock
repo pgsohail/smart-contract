@@ -245,7 +245,6 @@ dependencies = [
  "guild-sc-config",
  "multiversx-sc",
  "multiversx-sc-modules",
- "pausable",
  "utils",
 ]
 
@@ -271,7 +270,6 @@ dependencies = [
  "multiversx-sc",
  "multiversx-sc-modules",
  "pair",
- "pausable",
  "permissions_module",
  "token_send",
  "utils",

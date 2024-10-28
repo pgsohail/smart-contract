@@ -30,7 +30,6 @@ pub trait BaseExitFarmModule:
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
@@ -42,7 +41,7 @@ pub trait BaseExitFarmModule:
         payment: EsdtTokenPayment<Self::Api>,
     ) -> InternalExitFarmResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut storage_cache = StorageCache::new(self);
-        self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
+        self.require_valid_farm_token_id(&storage_cache.farm_token_id);
 
         let exit_farm_context =
             ExitFarmContext::<Self::Api, StakingFarmTokenAttributes<Self::Api>>::new(

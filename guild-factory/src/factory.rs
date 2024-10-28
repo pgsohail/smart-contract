@@ -3,7 +3,6 @@ use guild_sc_config::{
     global_config::ProxyTrait as _,
     tier_types::{GuildMasterRewardTier, UserRewardTier},
 };
-use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -127,7 +126,6 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
         self.require_config_setup_complete();
         self.require_guild_setup_complete(guild.clone());
 
-        self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
 
         self.active_guilds().insert(guild_id);
@@ -212,14 +210,6 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
             .guild_proxy()
             .contract(guild)
             .check_local_roles_set()
-            .execute_on_dest_context();
-    }
-
-    fn resume_guild(&self, guild: ManagedAddress) {
-        let _: IgnoreValue = self
-            .guild_proxy()
-            .contract(guild)
-            .resume()
             .execute_on_dest_context();
     }
 

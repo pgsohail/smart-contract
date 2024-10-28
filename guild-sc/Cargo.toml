@@ -20,10 +20,6 @@ rev = "5712bb3"
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "5712bb3"
 
-[dependencies.pausable]
-git = "https://github.com/multiversx/mx-exchange-sc"
-rev = "5712bb3"
-
 [dependencies.permissions_module]
 git = "https://github.com/multiversx/mx-exchange-sc"
 rev = "5712bb3"

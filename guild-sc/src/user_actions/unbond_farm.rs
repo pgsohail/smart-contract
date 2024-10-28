@@ -18,7 +18,6 @@ pub trait UnbondFarmModule:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule
@@ -34,7 +33,7 @@ pub trait UnbondFarmModule:
     #[endpoint(unbondFarm)]
     fn unbond_farm(&self) -> EsdtTokenPayment {
         let storage_cache = StorageCache::new(self);
-        self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
+        self.require_valid_farm_token_id(&storage_cache.farm_token_id);
 
         let unbond_token_mapper = self.unbond_token();
         let payments = self.get_non_empty_payments();

@@ -41,7 +41,6 @@ pub trait BaseClaimRewardsModule:
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
     + crate::tiered_rewards::read_config::ReadConfigModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + super::base_farm_validation::BaseFarmValidationModule
@@ -115,7 +114,7 @@ pub trait BaseClaimRewardsModule:
         payments: PaymentsVec<Self::Api>,
     ) -> TempInternalClaimRewardsResult<Self, StakingFarmTokenAttributes<Self::Api>> {
         let mut storage_cache = StorageCache::new(self);
-        self.validate_contract_state(storage_cache.contract_state, &storage_cache.farm_token_id);
+        self.require_valid_farm_token_id(&storage_cache.farm_token_id);
 
         let claim_rewards_context = ClaimRewardsContext::<
             Self::Api,

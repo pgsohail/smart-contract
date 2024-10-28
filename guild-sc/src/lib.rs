@@ -8,7 +8,6 @@ use common_errors::ERROR_NOT_AN_ESDT;
 use contexts::storage_cache::StorageCache;
 use farm_base_impl::base_traits_impl::FarmStakingWrapper;
 use fixed_supply_token::FixedSupplyToken;
-use pausable::State;
 use permissions_module::Permissions;
 use tokens::token_attributes::StakingFarmTokenAttributes;
 
@@ -31,7 +30,6 @@ pub trait FarmStaking:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + farm_base_impl::base_farm_validation::BaseFarmValidationModule
@@ -79,6 +77,9 @@ pub trait FarmStaking:
         self.config_sc_address().set(config_sc_address);
         self.guild_master_address().set(guild_master);
 
+        let current_block = self.blockchain().get_block_nonce();
+        self.local_last_code_update_block().set(current_block);
+
         self.update_all();
     }
 
@@ -86,6 +87,8 @@ pub trait FarmStaking:
     fn upgrade(&self) {
         let current_block = self.blockchain().get_block_nonce();
         self.local_last_code_update_block().set(current_block);
+
+        self.update_all();
     }
 
     #[payable("*")]
@@ -161,7 +164,6 @@ pub trait FarmStaking:
             ERROR_NOT_AN_ESDT
         );
 
-        self.state().set(State::Inactive);
         self.division_safety_constant()
             .set(&division_safety_constant);
 

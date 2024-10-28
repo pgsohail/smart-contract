@@ -29,7 +29,6 @@ pub trait CustomRewardsModule:
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
     + utils::UtilsModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::tiered_rewards::read_config::ReadConfigModule
