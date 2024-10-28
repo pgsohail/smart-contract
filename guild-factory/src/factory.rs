@@ -1,8 +1,5 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
-use guild_sc_config::{
-    global_config::ProxyTrait as _,
-    tier_types::{GuildMasterRewardTier, UserRewardTier},
-};
+use guild_sc_config::tier_types::{GuildMasterRewardTier, UserRewardTier};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -41,12 +38,6 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
         self.require_sc_address(&sc_addr);
 
         self.guild_sc_source_address().set(sc_addr);
-
-        let config_address = self.config_sc_address().get();
-        let current_block = self.blockchain().get_block_nonce();
-        self.config_proxy_factory(config_address)
-            .set_last_update_block(current_block)
-            .execute_on_dest_context()
     }
 
     #[only_owner]

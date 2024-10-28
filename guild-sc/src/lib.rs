@@ -77,17 +77,11 @@ pub trait FarmStaking:
         self.config_sc_address().set(config_sc_address);
         self.guild_master_address().set(guild_master);
 
-        let current_block = self.blockchain().get_block_nonce();
-        self.local_last_code_update_block().set(current_block);
-
         self.update_all();
     }
 
     #[upgrade]
     fn upgrade(&self) {
-        let current_block = self.blockchain().get_block_nonce();
-        self.local_last_code_update_block().set(current_block);
-
         self.update_all();
     }
 
@@ -96,7 +90,6 @@ pub trait FarmStaking:
     fn merge_farm_tokens_endpoint(&self) -> EsdtTokenPayment {
         self.require_not_closing();
         self.require_not_globally_paused();
-        self.require_upgraded_after_source_change();
 
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();

@@ -117,17 +117,6 @@ pub trait ReadConfigModule {
         require!(pause_status == UNPAUSED, "All guilds are currently paused");
     }
 
-    fn require_upgraded_after_source_change(&self) {
-        let config_addr = self.config_sc_address().get();
-        let external_last_code_update_block =
-            self.external_last_code_update_block(config_addr).get();
-        let local_last_code_update_block = self.local_last_code_update_block().get();
-        require!(
-            local_last_code_update_block >= external_last_code_update_block,
-            "May not use guild until it's upgraded"
-        );
-    }
-
     #[proxy]
     fn config_proxy(&self, sc_address: ManagedAddress) -> guild_sc_config::Proxy<Self::Api>;
 
@@ -232,13 +221,4 @@ pub trait ReadConfigModule {
         &self,
         sc_addr: ManagedAddress,
     ) -> SingleValueMapper<usize, ManagedAddress>;
-
-    #[storage_mapper_from_address("lastCodeUpdateBlock")]
-    fn external_last_code_update_block(
-        &self,
-        sc_addr: ManagedAddress,
-    ) -> SingleValueMapper<u64, ManagedAddress>;
-
-    #[storage_mapper("localLastCodeUpdateBlock")]
-    fn local_last_code_update_block(&self) -> SingleValueMapper<u64>;
 }

@@ -43,9 +43,6 @@ pub trait GuildScConfig: tiers::TierModule + global_config::GlobalConfigModule {
         self.base_token_display_name()
             .set(args.base_token_display_name);
         self.tokens_decimals().set(args.tokens_decimals);
-
-        let current_block = self.blockchain().get_block_nonce();
-        self.last_code_update_block().set(current_block);
     }
 
     #[upgrade]
