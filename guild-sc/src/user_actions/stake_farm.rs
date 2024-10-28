@@ -44,6 +44,7 @@ pub trait StakeFarmModule:
     ) -> EsdtTokenPayment {
         self.require_not_closing();
         self.require_not_globally_paused();
+        self.require_upgraded_after_source_change();
 
         let guild_master = self.guild_master_address().get();
         if original_caller != guild_master {

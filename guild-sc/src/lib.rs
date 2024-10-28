@@ -83,13 +83,17 @@ pub trait FarmStaking:
     }
 
     #[upgrade]
-    fn upgrade(&self) {}
+    fn upgrade(&self) {
+        let current_block = self.blockchain().get_block_nonce();
+        self.local_last_code_update_block().set(current_block);
+    }
 
     #[payable("*")]
     #[endpoint(mergeFarmTokens)]
     fn merge_farm_tokens_endpoint(&self) -> EsdtTokenPayment {
         self.require_not_closing();
         self.require_not_globally_paused();
+        self.require_upgraded_after_source_change();
 
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();

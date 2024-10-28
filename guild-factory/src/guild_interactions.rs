@@ -11,6 +11,7 @@ pub trait GuildInteractionsModule:
     crate::factory::FactoryModule
     + crate::config::ConfigModule
     + multiversx_sc_modules::only_admin::OnlyAdminModule
+    + utils::UtilsModule
 {
     #[endpoint(requestRewards)]
     fn request_rewards(&self, amount: BigUint, is_query: bool) -> BigUint {

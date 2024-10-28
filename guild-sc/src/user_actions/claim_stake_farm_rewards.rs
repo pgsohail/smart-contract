@@ -28,6 +28,7 @@ pub trait ClaimStakeFarmRewardsModule:
     fn claim_rewards(&self) -> ClaimRewardsResultType<Self::Api> {
         self.require_not_closing();
         self.require_not_globally_paused();
+        self.require_upgraded_after_source_change();
 
         let caller = self.blockchain().get_caller();
         let payments = self.get_non_empty_payments();

@@ -46,6 +46,7 @@ pub trait MigrationModule:
     fn close_guild(&self) {
         self.require_not_closing();
         self.require_not_globally_paused();
+        self.require_upgraded_after_source_change();
 
         let guild_master = self.guild_master_address().get();
         let caller = self.blockchain().get_caller();

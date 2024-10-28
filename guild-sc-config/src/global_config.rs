@@ -31,6 +31,12 @@ pub trait GlobalConfigModule {
         self.total_staking_token_minted().set(total_minted);
     }
 
+    #[only_owner]
+    #[endpoint(setLastUpdateBlock)]
+    fn set_last_update_block(&self, block_nonce: u64) {
+        self.last_code_update_block().set(block_nonce);
+    }
+
     #[endpoint(increaseStakedTokens)]
     fn increase_staked_tokens(&self, amount: BigUint) {
         self.require_guild_sc_caller();
@@ -167,6 +173,10 @@ pub trait GlobalConfigModule {
     #[view(areAllGuildsPaused)]
     #[storage_mapper("globalPauseStatus")]
     fn global_pause_status(&self) -> SingleValueMapper<GlobalPauseStatus>;
+
+    #[view(getLastCodeUpdateBlock)]
+    #[storage_mapper("lastCodeUpdateBlock")]
+    fn last_code_update_block(&self) -> SingleValueMapper<u64>;
 
     // Factory storage
 

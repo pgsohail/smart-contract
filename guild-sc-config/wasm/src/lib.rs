@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           32
+// Endpoints:                           34
 // Async Callback (empty):               1
-// Total number of exported functions:  35
+// Total number of exported functions:  37
 
 #![no_std]
 
@@ -32,6 +32,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         setMinStakeUser => set_min_stake_user
         setMinStakeGuildMaster => set_min_stake_guild_master
         setTotalStakingTokenMinted => set_total_staking_token_minted
+        setLastUpdateBlock => set_last_update_block
         increaseStakedTokens => increase_staked_tokens
         decreaseStakedTokens => decrease_staked_tokens
         setSecondsPerBlock => set_seconds_per_block
@@ -52,6 +53,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getSecondsPerBlock => seconds_per_block
         getPerBlockRewardAmount => per_block_reward_amount
         areAllGuildsPaused => global_pause_status
+        getLastCodeUpdateBlock => last_code_update_block
     )
 }
 

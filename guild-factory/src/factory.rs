@@ -1,5 +1,8 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
-use guild_sc_config::tier_types::{GuildMasterRewardTier, UserRewardTier};
+use guild_sc_config::{
+    global_config::ProxyTrait as _,
+    tier_types::{GuildMasterRewardTier, UserRewardTier},
+};
 use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
@@ -20,7 +23,7 @@ pub struct GetGuildResultType<M: ManagedTypeApi> {
 }
 
 #[multiversx_sc::module]
-pub trait FactoryModule: crate::config::ConfigModule {
+pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
     #[only_owner]
     #[endpoint(setMaxActiveGuilds)]
     fn set_max_active_guilds(&self, max_active_guilds: usize) {
@@ -34,15 +37,26 @@ pub trait FactoryModule: crate::config::ConfigModule {
     }
 
     #[only_owner]
+    #[endpoint(setGuildScSourceAddress)]
+    fn set_guild_sc_source_address(&self, sc_addr: ManagedAddress) {
+        self.require_sc_address(&sc_addr);
+
+        self.guild_sc_source_address().set(sc_addr);
+
+        let config_address = self.config_sc_address().get();
+        let current_block = self.blockchain().get_block_nonce();
+        self.config_proxy_factory(config_address)
+            .set_last_update_block(current_block)
+            .execute_on_dest_context()
+    }
+
+    #[only_owner]
     #[endpoint(upgradeGuild)]
-    fn upgrade_guild(
-        &self,
-        guild_address: ManagedAddress,
-        source_contract_address: ManagedAddress,
-    ) {
+    fn upgrade_guild(&self, guild_address: ManagedAddress) {
         let guild_id = self.guild_ids().get_id_non_zero(&guild_address);
         self.require_known_guild(guild_id);
 
+        let source_contract_address = self.guild_sc_source_address().get();
         let gas_left = self.blockchain().get_gas_left();
         let code_metadata = self.get_default_code_metadata();
         self.send_raw().upgrade_from_source_contract(
@@ -220,6 +234,7 @@ pub trait FactoryModule: crate::config::ConfigModule {
     #[proxy]
     fn guild_proxy(&self) -> guild_sc::Proxy<Self::Api>;
 
+    #[view(getGuildScSourceAddress)]
     #[storage_mapper("guildScSourceAddress")]
     fn guild_sc_source_address(&self) -> SingleValueMapper<ManagedAddress>;
 
@@ -271,4 +286,9 @@ pub trait FactoryModule: crate::config::ConfigModule {
         &self,
         sc_addr: ManagedAddress,
     ) -> VecMapper<UserRewardTier, ManagedAddress>;
+
+    // proxy
+
+    #[proxy]
+    fn config_proxy_factory(&self, sc_addr: ManagedAddress) -> guild_sc_config::Proxy<Self::Api>;
 }
