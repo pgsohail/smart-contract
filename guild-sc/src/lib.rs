@@ -81,9 +81,7 @@ pub trait FarmStaking:
     }
 
     #[upgrade]
-    fn upgrade(&self) {
-        self.update_all();
-    }
+    fn upgrade(&self) {}
 
     #[payable("*")]
     #[endpoint(mergeFarmTokens)]

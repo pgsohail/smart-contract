@@ -116,6 +116,7 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
         self.require_guild_master_caller(guild_id, caller_id);
         self.require_config_setup_complete();
         self.require_guild_setup_complete(guild.clone());
+        self.require_guild_master_already_staked(guild.clone());
 
         self.start_produce_rewards(guild);
 
@@ -204,6 +205,13 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
             .execute_on_dest_context();
     }
 
+    fn require_guild_master_already_staked(&self, guild: ManagedAddress) {
+        require!(
+            !self.external_guild_master_tokens(guild).is_empty(),
+            "Guild master must stake first"
+        );
+    }
+
     fn start_produce_rewards(&self, guild: ManagedAddress) {
         let _: IgnoreValue = self
             .guild_proxy()
@@ -267,6 +275,12 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
         &self,
         sc_addr: ManagedAddress,
     ) -> VecMapper<UserRewardTier, ManagedAddress>;
+
+    #[storage_mapper_from_address("guildMasterTokens")]
+    fn external_guild_master_tokens(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
 
     // proxy
 

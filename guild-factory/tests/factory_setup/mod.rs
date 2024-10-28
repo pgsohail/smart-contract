@@ -110,6 +110,36 @@ where
             )
             .assert_ok();
 
+        // resume guild
+
+        setup
+            .b_mock
+            .execute_tx(
+                &setup.first_owner_address,
+                &setup.factory_wrapper,
+                &rust_biguint!(0),
+                |sc| {
+                    sc.resume_guild_endpoint(managed_address!(setup
+                        .first_farm_wrapper
+                        .address_ref()));
+                },
+            )
+            .assert_ok();
+
+        setup
+            .b_mock
+            .execute_tx(
+                &setup.second_owner_address,
+                &setup.factory_wrapper,
+                &rust_biguint!(0),
+                |sc| {
+                    sc.resume_guild_endpoint(managed_address!(setup
+                        .second_farm_wrapper
+                        .address_ref()));
+                },
+            )
+            .assert_ok();
+
         setup
     }
 
@@ -298,20 +328,6 @@ where
             OTHER_UNBOND_TOKEN_ID,
             &unbond_token_roles[..],
         );
-
-        // resume guild
-
-        b_mock
-            .execute_tx(&first_owner_addr, &factory_wrapper, &rust_zero, |sc| {
-                sc.resume_guild_endpoint(managed_address!(first_farm_wrapper.address_ref()));
-            })
-            .assert_ok();
-
-        b_mock
-            .execute_tx(&second_owner_addr, &factory_wrapper, &rust_zero, |sc| {
-                sc.resume_guild_endpoint(managed_address!(second_farm_wrapper.address_ref()));
-            })
-            .assert_ok();
 
         let user_addr = b_mock.create_user_account(&rust_biguint!(100_000_000));
         b_mock.set_esdt_balance(
