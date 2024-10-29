@@ -250,7 +250,6 @@ dependencies = [
  "multiversx-sc",
  "multiversx-sc-modules",
  "pair",
- "pausable",
  "permissions_module",
  "token_send",
  "utils",

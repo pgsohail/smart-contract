@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           41
+// Endpoints:                           36
 // Async Callback:                       1
-// Total number of exported functions:  44
+// Total number of exported functions:  39
 
 #![no_std]
 
@@ -39,11 +39,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         setTransferRoleFarmToken => set_transfer_role_farm_token
         getFarmTokenId => farm_token
         getFarmTokenSupply => farm_token_supply
-        addToPauseWhitelist => add_to_pause_whitelist
-        removeFromPauseWhitelist => remove_from_pause_whitelist
-        pause => pause
-        resume => resume
-        getState => state
         addAdmin => add_admin_endpoint
         removeAdmin => remove_admin_endpoint
         updateOwnerOrAdmin => update_owner_or_admin_endpoint

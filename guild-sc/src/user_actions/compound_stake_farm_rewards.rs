@@ -11,7 +11,6 @@ pub trait CompoundStakeFarmRewardsModule:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule

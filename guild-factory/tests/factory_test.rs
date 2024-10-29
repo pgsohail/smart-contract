@@ -1,5 +1,3 @@
-#![allow(deprecated)]
-
 pub mod factory_setup;
 
 use factory_setup::*;
@@ -1147,6 +1145,24 @@ fn try_activate_too_many_guilds_test() {
         )
         .assert_ok();
 
+    // guild master stake
+    setup
+        .b_mock
+        .set_esdt_balance(&third_owner_address, FARMING_TOKEN_ID, &rust_biguint!(1));
+    setup
+        .b_mock
+        .execute_esdt_transfer(
+            &third_owner_address,
+            &third_farm_wrapper,
+            FARMING_TOKEN_ID,
+            0,
+            &rust_biguint!(1),
+            |sc| {
+                let _ = sc.stake_farm_endpoint(OptionalValue::None);
+            },
+        )
+        .assert_ok();
+
     // user start guild again
     setup
         .b_mock
@@ -1187,6 +1203,20 @@ fn calculate_rewards_only_guild_master_test() {
             &rust_biguint!(farm_in_amount),
             |sc| {
                 sc.stake_farm_endpoint(OptionalValue::None);
+            },
+        )
+        .assert_ok();
+
+    // resume guild
+
+    setup
+        .b_mock
+        .execute_tx(
+            &setup.first_owner_address,
+            &setup.factory_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.resume_guild_endpoint(managed_address!(setup.first_farm_wrapper.address_ref()));
             },
         )
         .assert_ok();

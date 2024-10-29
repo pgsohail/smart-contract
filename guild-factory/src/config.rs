@@ -24,6 +24,25 @@ pub trait ConfigModule {
     }
 
     #[only_owner]
+    #[endpoint(upgradeConfigSc)]
+    fn upgrade_config_sc(&self, source_contract_address: ManagedAddress) {
+        let config_mapper = self.config_sc_address();
+        require!(!config_mapper.is_empty(), "Config SC not deployed");
+
+        let config_address = config_mapper.get();
+        let gas_left = self.blockchain().get_gas_left();
+        let code_metadata = self.get_default_code_metadata();
+        self.send_raw().upgrade_from_source_contract(
+            &config_address,
+            gas_left,
+            &BigUint::zero(),
+            &source_contract_address,
+            code_metadata,
+            &ManagedArgBuffer::new(),
+        );
+    }
+
+    #[only_owner]
     #[endpoint(callConfigFunction)]
     fn call_config_function(
         &self,

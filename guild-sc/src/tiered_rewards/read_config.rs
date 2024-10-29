@@ -114,7 +114,6 @@ pub trait ReadConfigModule {
     fn require_not_globally_paused(&self) {
         let config_addr = self.config_sc_address().get();
         let pause_status = self.external_global_pause_status(config_addr).get();
-
         require!(pause_status == UNPAUSED, "All guilds are currently paused");
     }
 

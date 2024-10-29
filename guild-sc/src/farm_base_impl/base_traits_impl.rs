@@ -17,7 +17,6 @@ pub trait FarmStakingTraits:
     + crate::rewards::RewardsModule
     + crate::config::ConfigModule
     + crate::tokens::farm_token::FarmTokenModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::tiered_rewards::read_config::ReadConfigModule
@@ -31,7 +30,6 @@ impl<T> FarmStakingTraits for T where
         + crate::rewards::RewardsModule
         + crate::config::ConfigModule
         + crate::tokens::farm_token::FarmTokenModule
-        + pausable::PausableModule
         + permissions_module::PermissionsModule
         + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
         + crate::tiered_rewards::read_config::ReadConfigModule
@@ -137,8 +135,12 @@ pub trait FarmContract {
         let split_rewards = Self::mint_per_block_rewards(sc);
         let total_reward = split_rewards.total();
         if total_reward > remaining_rewards {
+            let caller = sc.blockchain().get_caller();
+            let own_sc_address = sc.blockchain().get_sc_address();
+            let is_query = caller == own_sc_address;
+
             let needed_rewards = &total_reward - &remaining_rewards;
-            let received_rewards = sc.request_rewards(needed_rewards);
+            let received_rewards = sc.request_rewards(needed_rewards, is_query);
             remaining_rewards += received_rewards;
         }
 

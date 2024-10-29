@@ -2,16 +2,9 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use common_structs::Nonce;
-use pausable::State;
 
 #[multiversx_sc::module]
-pub trait ConfigModule: pausable::PausableModule + permissions_module::PermissionsModule {
-    #[inline]
-    fn is_active(&self) -> bool {
-        let state = self.state().get();
-        state == State::Active
-    }
-
+pub trait ConfigModule: permissions_module::PermissionsModule {
     #[view(getFarmingTokenId)]
     #[storage_mapper("farming_token_id")]
     fn farming_token_id(&self) -> SingleValueMapper<TokenIdentifier>;

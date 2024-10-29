@@ -534,7 +534,6 @@ dependencies = [
  "multiversx-sc-modules",
  "multiversx-sc-scenario",
  "num-bigint",
- "pausable",
  "utils",
 ]
 
@@ -562,7 +561,6 @@ dependencies = [
  "multiversx-sc-scenario",
  "num-bigint",
  "pair",
- "pausable",
  "permissions_module",
  "token_send",
  "utils",

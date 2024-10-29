@@ -13,7 +13,6 @@ pub trait StakeFarmModule:
     + token_send::TokenSendModule
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::farm_base_impl::base_farm_validation::BaseFarmValidationModule
@@ -23,6 +22,7 @@ pub trait StakeFarmModule:
     + crate::tiered_rewards::total_tokens::TokenPerTierModule
     + crate::tiered_rewards::call_config::CallConfigModule
     + super::close_guild::CloseGuildModule
+    + crate::tokens::unbond_token::UnbondTokenModule
 {
     #[payable("*")]
     #[endpoint(stakeFarm)]
@@ -44,6 +44,7 @@ pub trait StakeFarmModule:
     ) -> EsdtTokenPayment {
         self.require_not_closing();
         self.require_not_globally_paused();
+        self.unbond_token().require_issued_or_set();
 
         let guild_master = self.guild_master_address().get();
         if original_caller != guild_master {

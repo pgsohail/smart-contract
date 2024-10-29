@@ -1,6 +1,5 @@
 use guild_sc::custom_rewards::ProxyTrait as _;
 use guild_sc_config::tier_types::{GuildMasterRewardTier, UserRewardTier};
-use pausable::ProxyTrait as _;
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -20,7 +19,7 @@ pub struct GetGuildResultType<M: ManagedTypeApi> {
 }
 
 #[multiversx_sc::module]
-pub trait FactoryModule: crate::config::ConfigModule {
+pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
     #[only_owner]
     #[endpoint(setMaxActiveGuilds)]
     fn set_max_active_guilds(&self, max_active_guilds: usize) {
@@ -31,6 +30,33 @@ pub trait FactoryModule: crate::config::ConfigModule {
         );
 
         self.max_active_guilds().set(max_active_guilds);
+    }
+
+    #[only_owner]
+    #[endpoint(setGuildScSourceAddress)]
+    fn set_guild_sc_source_address(&self, sc_addr: ManagedAddress) {
+        self.require_sc_address(&sc_addr);
+
+        self.guild_sc_source_address().set(sc_addr);
+    }
+
+    #[only_owner]
+    #[endpoint(upgradeGuild)]
+    fn upgrade_guild(&self, guild_address: ManagedAddress) {
+        let guild_id = self.guild_ids().get_id_non_zero(&guild_address);
+        self.require_known_guild(guild_id);
+
+        let source_contract_address = self.guild_sc_source_address().get();
+        let gas_left = self.blockchain().get_gas_left();
+        let code_metadata = self.get_default_code_metadata();
+        self.send_raw().upgrade_from_source_contract(
+            &guild_address,
+            gas_left,
+            &BigUint::zero(),
+            &source_contract_address,
+            code_metadata,
+            &ManagedArgBuffer::new(),
+        );
     }
 
     #[endpoint(deployGuild)]
@@ -90,8 +116,8 @@ pub trait FactoryModule: crate::config::ConfigModule {
         self.require_guild_master_caller(guild_id, caller_id);
         self.require_config_setup_complete();
         self.require_guild_setup_complete(guild.clone());
+        self.require_guild_master_already_staked(guild.clone());
 
-        self.resume_guild(guild.clone());
         self.start_produce_rewards(guild);
 
         self.active_guilds().insert(guild_id);
@@ -179,12 +205,11 @@ pub trait FactoryModule: crate::config::ConfigModule {
             .execute_on_dest_context();
     }
 
-    fn resume_guild(&self, guild: ManagedAddress) {
-        let _: IgnoreValue = self
-            .guild_proxy()
-            .contract(guild)
-            .resume()
-            .execute_on_dest_context();
+    fn require_guild_master_already_staked(&self, guild: ManagedAddress) {
+        require!(
+            !self.external_guild_master_tokens(guild).is_empty(),
+            "Guild master must stake first"
+        );
     }
 
     fn start_produce_rewards(&self, guild: ManagedAddress) {
@@ -198,6 +223,7 @@ pub trait FactoryModule: crate::config::ConfigModule {
     #[proxy]
     fn guild_proxy(&self) -> guild_sc::Proxy<Self::Api>;
 
+    #[view(getGuildScSourceAddress)]
     #[storage_mapper("guildScSourceAddress")]
     fn guild_sc_source_address(&self) -> SingleValueMapper<ManagedAddress>;
 
@@ -249,4 +275,15 @@ pub trait FactoryModule: crate::config::ConfigModule {
         &self,
         sc_addr: ManagedAddress,
     ) -> VecMapper<UserRewardTier, ManagedAddress>;
+
+    #[storage_mapper_from_address("guildMasterTokens")]
+    fn external_guild_master_tokens(
+        &self,
+        sc_addr: ManagedAddress,
+    ) -> SingleValueMapper<BigUint, ManagedAddress>;
+
+    // proxy
+
+    #[proxy]
+    fn config_proxy_factory(&self, sc_addr: ManagedAddress) -> guild_sc_config::Proxy<Self::Api>;
 }

@@ -17,7 +17,7 @@ mod guild_factory_proxy {
     #[multiversx_sc::proxy]
     pub trait GuildFactoryProxy {
         #[endpoint(requestRewards)]
-        fn request_rewards(&self, amount: BigUint) -> BigUint;
+        fn request_rewards(&self, amount: BigUint, is_query: bool) -> BigUint;
     }
 }
 
@@ -29,7 +29,6 @@ pub trait CustomRewardsModule:
     + crate::tokens::farm_token::FarmTokenModule
     + crate::tokens::request_id::RequestIdModule
     + utils::UtilsModule
-    + pausable::PausableModule
     + permissions_module::PermissionsModule
     + multiversx_sc_modules::default_issue_callbacks::DefaultIssueCallbacksModule
     + crate::tiered_rewards::read_config::ReadConfigModule
@@ -122,11 +121,11 @@ pub trait CustomRewardsModule:
         unsafe { opt_result.unwrap_unchecked() }
     }
 
-    fn request_rewards(&self, base_amount: BigUint) -> BigUint {
+    fn request_rewards(&self, base_amount: BigUint, is_query: bool) -> BigUint {
         let guild_factory = self.blockchain().get_owner_address();
         let received_rewards = self
             .guild_factory_proxy(guild_factory)
-            .request_rewards(base_amount)
+            .request_rewards(base_amount, is_query)
             .execute_on_dest_context();
 
         self.reward_capacity()
