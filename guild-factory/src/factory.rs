@@ -125,25 +125,12 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
 
     #[view(getAllGuilds)]
     fn get_all_guilds(&self) -> MultiValueEncoded<GetGuildResultType<Self::Api>> {
-        let mut result = MultiValueEncoded::new();
-        for guild_id in self.deployed_guilds().iter() {
-            let guild_master_id = self.guild_master_for_guild(guild_id).get();
-            let opt_guild_address = self.guild_ids().get_address(guild_id);
-            let opt_guild_master_address = self.user_ids().get_address(guild_master_id);
-            require!(
-                opt_guild_address.is_some() && opt_guild_master_address.is_some(),
-                "Invalid setup"
-            );
+        self.get_all_guilds_in_mapper(&self.deployed_guilds())
+    }
 
-            let guild_address = unsafe { opt_guild_address.unwrap_unchecked() };
-            let guild_master_address = unsafe { opt_guild_master_address.unwrap_unchecked() };
-            result.push(GetGuildResultType {
-                guild: guild_address,
-                guild_master: guild_master_address,
-            });
-        }
-
-        result
+    #[view(getAllActiveGuilds)]
+    fn get_all_active_guilds(&self) -> MultiValueEncoded<GetGuildResultType<Self::Api>> {
+        self.get_all_guilds_in_mapper(&self.active_guilds())
     }
 
     #[view(getGuildId)]
@@ -154,6 +141,30 @@ pub trait FactoryModule: crate::config::ConfigModule + utils::UtilsModule {
     #[view(getCurrentActiveGuilds)]
     fn get_current_active_guilds(&self) -> usize {
         self.active_guilds().len()
+    }
+
+    fn get_all_guilds_in_mapper(
+        &self,
+        mapper: &UnorderedSetMapper<AddressId>,
+    ) -> MultiValueEncoded<GetGuildResultType<Self::Api>> {
+        let mut result = MultiValueEncoded::new();
+        for guild_id in mapper.iter() {
+            let guild_master_id = self.guild_master_for_guild(guild_id).get();
+            let opt_guild_address = self.guild_ids().get_address(guild_id);
+            let opt_guild_master_address = self.user_ids().get_address(guild_master_id);
+            require!(
+                opt_guild_address.is_some() && opt_guild_master_address.is_some(),
+                "Invalid setup"
+            );
+            let guild_address = unsafe { opt_guild_address.unwrap_unchecked() };
+            let guild_master_address = unsafe { opt_guild_master_address.unwrap_unchecked() };
+            result.push(GetGuildResultType {
+                guild: guild_address,
+                guild_master: guild_master_address,
+            });
+        }
+
+        result
     }
 
     fn remove_guild_common(&self, guild: ManagedAddress) {
