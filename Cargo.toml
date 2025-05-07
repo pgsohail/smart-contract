@@ -2,10 +2,10 @@
 resolver = "2"
 
 members = [
-  "guild-factory",
-  "guild-factory/meta",
-  "guild-sc",
-  "guild-sc/meta",
-  "guild-sc-config",
-  "guild-sc-config/meta",
+  "philanthrify-factory",
+  "philanthrify-factory/meta",
+  "philanthrify-charity",
+  "philanthrify-charity/meta",
+  "philanthrify-project",
+  "philanthrify-project/meta",
 ]
